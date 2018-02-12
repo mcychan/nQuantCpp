@@ -1,9 +1,9 @@
 # nQuantCpp
 nQuant cpp includes top 4 color quantizers producing high quality 256 color 8 bit PNG images using an algorithm optimized for the highest quality possible.
 
-Pairwise Nearest Neighbor quantization
-NeuQuant Neural-Net Quantization Algorithm
-Xialoin Wu's fast optimal color quantizer
+Pairwise Nearest Neighbor quantization, 
+NeuQuant Neural-Net Quantization Algorithm, 
+Xialoin Wu's fast optimal color quantizer, 
 DL3 Quantization
 
 Using nQuant cpp
