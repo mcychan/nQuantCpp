@@ -1,5 +1,4 @@
 # nQuantCpp
-Top 4 Color Quantizer
 nQuant cpp includes top 4 color quantizers producing high quality 256 color 8 bit PNG images using an algorithm optimized for the highest quality possible.
 
 Pairwise Nearest Neighbor quantization
