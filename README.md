@@ -18,3 +18,5 @@ If you are using native C++, you would call nQuant cpp as follows:
  auto m_pImage = ConvertTo(m_pImage.get(), PixelFormat32bppARGB);
 
  bool bSucceeded = wuQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), 256);
+
+Welcome for C++ experts for further improvement or provide color quantization algorithms better than the above algorithms.
