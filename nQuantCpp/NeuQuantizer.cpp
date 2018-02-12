@@ -1,8 +1,5 @@
 ﻿#pragma once
 
-/* Pairwise Nearest Neighbor quantization algorithm - minimizes mean square
- * error measure; time used is proportional to number of bins squared - WJ */
-
 #include "stdafx.h"
 #include "NeuQuantizer.h"
 #include <map>
