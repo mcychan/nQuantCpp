@@ -11,4 +11,13 @@ Each quantization algorithm has its own advantages. Pairwise Nearest Neighbor qu
 Either download nQuant from this site or add it to your Visual Studio project seamlessly.
 The main features show up to discuss would be the error diffusion and dithering.
 
+Here some examples of output:
+
+Original image<img src="https://i.stack.imgur.com/fOcIL.png" /><br>
+Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/4jLkg.png" /><br>
+Reduced to 256 colors by Xialoin Wu's fast optimal color Quantization Algorithm<img src="https://i.stack.imgur.com/PGWVF.png" /><br><br>
+Original photo<img src="https://i.stack.imgur.com/jFvEG.jpg" /><br>
+Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/yJIjQ.gif" />
+Reduced to 256 colors by Pairwise Nearest Neighbor Quantization Algorithm<img src="https://i.stack.imgur.com/dPTml.gif" />
+
 Welcome for C++ experts for further improvement or provide color quantization algorithms better than the above algorithms.
