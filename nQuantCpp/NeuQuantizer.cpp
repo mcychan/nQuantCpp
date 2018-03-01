@@ -77,7 +77,7 @@ namespace NeuralNet
 	const int primes[] = { 499, 491, 487, 503 };
 	double gamma_correction = 1.0;         // 1.0/2.2 usually
 
-	bool hasTransparent = false;
+	bool hasTransparency = false;
 	vector<ARGB> pixels;
 	map<ARGB, vector<UINT> > closestMap;
 
@@ -266,8 +266,6 @@ namespace NeuralNet
 				if (rad)
 					Alterneigh(rad, j, al, r, g, b);   /* alter neighbours */
 			}
-			else
-				hasTransparent = true;
 
 			pos += primes[stepIndex++ % 4];
 			while (pos >= lengthcount)
@@ -287,7 +285,7 @@ namespace NeuralNet
 
 	void Inxbuild(ColorPalette* pPalette) {
 		int k = 0;
-		if(hasTransparent)
+		if(hasTransparency)
 			++k;
 		
 		for (; k < netsize; k++) {
@@ -295,7 +293,7 @@ namespace NeuralNet
 			auto argb = Color::MakeARGB(alpha, biasvalue(unbiasvalue(network[k].r)), biasvalue(unbiasvalue(network[k].g)), biasvalue(unbiasvalue(network[k].b)));
 			pPalette->Entries[k] = argb;
 		}
-		if(hasTransparent)
+		if(hasTransparency)
 			pPalette->Entries[0] = Color::Transparent;
 
 		int previouscol = 0;
@@ -420,8 +418,7 @@ namespace NeuralNet
 				nextrowerr[0] = nextrowerr[1] = nextrowerr[2] = nextrowerr[3] = 0;
 				for (j = 0; j < width; j++) {
 					Color c(pixels[pixelIndex]);
-					if (c.GetA() == 0)
-						continue;
+
 					a_pix = range[((thisrowerr[0] + 8) >> 4) + c.GetA()];
 					r_pix = range[((thisrowerr[1] + 8) >> 4) + c.GetR()];
 					g_pix = range[((thisrowerr[2] + 8) >> 4) + c.GetG()];
@@ -429,6 +426,8 @@ namespace NeuralNet
 
 					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);					
 					qPixels[pixelIndex] = Inxsearch(pPalette, argb);
+					if (hasTransparency && qPixels[pixelIndex] == 0 && c.GetA() > 0)
+						qPixels[pixelIndex] = Inxsearch(pPalette, pixels[pixelIndex]);
 					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 					a_pix = dith_max[a_pix - c2.GetA()];
 					r_pix = dith_max[r_pix - c2.GetR()];
@@ -490,7 +489,7 @@ namespace NeuralNet
 
 	void NeuQuantizer::Clear() {
 		memset((void*) network, 0, sizeof(network));
-		hasTransparent = false;
+		hasTransparency = false;
 
 		for (int i = 0; i < 32; ++i)
 			radpower[i] = 0.0;
@@ -618,8 +617,7 @@ namespace NeuralNet
 				strideSource = -data.Stride;
 			}
 
-			int pixelIndex = 0;
-
+			int pixelIndex = 0;			
 			// First loop: gather color information
 			for (UINT y = 0; y < bitmapHeight; y++) {	// For each row...
 				auto pPixelSource = pRowSource;
@@ -629,7 +627,10 @@ namespace NeuralNet
 					byte pixelGreen = *pPixelSource++;
 					byte pixelRed = *pPixelSource++;
 					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
-
+					if (pixelAlpha < BYTE_MAX)
+						hasTransparency = true;
+					if (hasTransparency && pixelAlpha > 0 && pixelRed == 0 && pixelGreen == 0 && pixelBlue == 0)
+						pixelRed = pixelGreen = pixelBlue = 8;
 					pixels[pixelIndex++] = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
 				}
 

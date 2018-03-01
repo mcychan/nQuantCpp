@@ -279,6 +279,8 @@ namespace nQuant
 				byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
 				if (pixelAlpha < BYTE_MAX)
 					hasTransparency = true;
+				if (hasTransparency && pixelAlpha > 0 && pixelRed == 0 && pixelGreen == 0 && pixelBlue == 0)
+					pixelRed = pixelGreen = pixelBlue = 8;
 				Color color(Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue));
 
 				CompileColorData(colorData, color, alphaThreshold, alphaFader);
@@ -728,8 +730,7 @@ namespace nQuant
 				nextrowerr[0] = nextrowerr[1] = nextrowerr[2] = nextrowerr[3] = 0;
 				for (j = 0; j < width; j++) {
 					Color c(pixels[pixelIndex]);
-					if (c.GetA() == 0)
-						continue;
+
 					a_pix = range[((thisrowerr[0] + 8) >> 4) + c.GetA()];
 					r_pix = range[((thisrowerr[1] + 8) >> 4) + c.GetR()];
 					g_pix = range[((thisrowerr[2] + 8) >> 4) + c.GetG()];
@@ -737,6 +738,8 @@ namespace nQuant
 
 					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);					
 					qPixels[pixelIndex] = bestcolor(lookupData, argb, i, alphaThreshold);
+					if(hasTransparency && qPixels[pixelIndex] == 0 && c.GetA() > 0)
+						qPixels[pixelIndex] = bestcolor(lookupData, pixels[pixelIndex], i, alphaThreshold);
 					auto lookups = lookupData.lookups;
 					Color c2(lookups[qPixels[pixelIndex]]);
 					a_pix = dith_max[a_pix - c2.GetA()];

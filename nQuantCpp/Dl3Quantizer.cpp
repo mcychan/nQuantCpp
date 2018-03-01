@@ -333,8 +333,7 @@ namespace Dl3Quant
 				nextrowerr[0] = nextrowerr[1] = nextrowerr[2] = nextrowerr[3] = 0;
 				for (j = 0; j < width; j++) {
 					Color c(pixels[pixelIndex]);
-					if (c.GetA() == 0)
-						continue;
+
 					a_pix = range[((thisrowerr[0] + 8) >> 4) + c.GetA()];
 					r_pix = range[((thisrowerr[1] + 8) >> 4) + c.GetR()];
 					g_pix = range[((thisrowerr[2] + 8) >> 4) + c.GetG()];
