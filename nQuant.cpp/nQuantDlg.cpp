@@ -267,7 +267,9 @@ void CQuantDlg::OnBnClickedRetry()
 		m_pImage.reset(pBitmap);
 
 	UINT nMaxColors = 1 << GetPixelFormatSize(m_pImage256Color->GetPixelFormat());
-	bool bSucceeded = wuQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
+	//bool bSucceeded = wuQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
+	bool bSucceeded = neuQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
+	neuQuantizer.Clear();
 
 	HBITMAP bitmap;
 	m_pImage256Color->GetHBITMAP(NULL, &bitmap);
