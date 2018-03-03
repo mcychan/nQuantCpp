@@ -10,6 +10,7 @@
 
 GdiplusStartupInput  m_gdiplusStartupInput;
 ULONG_PTR m_gdiplusToken;
+NeuralNet::NeuQuantizer neuQuantizer;
 nQuant::WuQuantizer wuQuantizer;
 
 Bitmap* ConvertTo(Bitmap* pSource, PixelFormat format)
@@ -63,7 +64,7 @@ int main(int argc, char** argv)
 				m_pImage.reset(pBitmap);
 
 			UINT nMaxColors = 1 << GetPixelFormatSize(m_pImage256Color->GetPixelFormat());
-			bool bSucceeded = wuQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
+			bool bSucceeded = neuQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
 
 			CString pathName = CString(argv[3]);
 			if(pathName.FindOneOf(_T("\\")) < 0)

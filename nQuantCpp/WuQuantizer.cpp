@@ -35,6 +35,7 @@ namespace nQuant
 	const UINT TOTAL_SIDESIZE = SIDESIZE * SIDESIZE * SIDESIZE * SIDESIZE;
 	
 	bool hasTransparency = false;
+	ARGB m_transparentColor;
 	map<ARGB, vector<UINT> > closestMap;
 	map<ARGB, UINT> rightMatches;
 
@@ -242,6 +243,8 @@ namespace nQuant
 					sourceImage->GetPixel(x, y, &color);
 					if(color.GetA() < BYTE_MAX)
 						hasTransparency = true;
+					if(color.GetA() == 0)
+						m_transparentColor = color.GetValue();
 					CompileColorData(colorData, color, alphaThreshold, alphaFader);
 				}
 			}
@@ -279,10 +282,10 @@ namespace nQuant
 				byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
 				if (pixelAlpha < BYTE_MAX)
 					hasTransparency = true;
-				if (hasTransparency && pixelAlpha > 0 && pixelRed == 0 && pixelGreen == 0 && pixelBlue == 0)
-					pixelRed = pixelGreen = pixelBlue = 8;
+				
 				Color color(Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue));
-
+				if(pixelAlpha == 0)
+					m_transparentColor = color.GetValue();
 				CompileColorData(colorData, color, alphaThreshold, alphaFader);
 			}
 
@@ -679,7 +682,7 @@ namespace nQuant
 		}
 
 		if(hasTransparency)
-			qPalette.GetPalette()->Entries[0] = Color::Transparent;
+			qPalette.GetPalette()->Entries[0] = m_transparentColor;
 	}
 
 	bool quantize_image(const ARGB* pixels, const LookupData& lookupData, UINT* qPixels, UINT nMaxColors, int width, int height, bool dither, byte alphaThreshold)

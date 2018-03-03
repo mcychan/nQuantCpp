@@ -78,6 +78,7 @@ namespace NeuralNet
 	double gamma_correction = 1.0;         // 1.0/2.2 usually
 
 	bool hasTransparency = false;
+	ARGB m_transparentColor;
 	vector<ARGB> pixels;
 	map<ARGB, vector<UINT> > closestMap;
 
@@ -294,7 +295,7 @@ namespace NeuralNet
 			pPalette->Entries[k] = argb;
 		}
 		if(hasTransparency)
-			pPalette->Entries[0] = Color::Transparent;
+			pPalette->Entries[0] = m_transparentColor;
 
 		int previouscol = 0;
 		int startpos = 0;
@@ -592,6 +593,10 @@ namespace NeuralNet
 				for (UINT x = 0; x < bitmapWidth; x++) {
 					Color color;
 					pSource->GetPixel(x, y, &color);
+					if(color.GetA() < BYTE_MAX)
+						hasTransparency = true;
+					if(color.GetA() == 0)
+						m_transparentColor = color.GetValue();
 					pixels[pixelIndex++] = color.GetValue();
 				}
 			}
@@ -629,9 +634,11 @@ namespace NeuralNet
 					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
 					if (pixelAlpha < BYTE_MAX)
 						hasTransparency = true;
-					if (hasTransparency && pixelAlpha > 0 && pixelRed == 0 && pixelGreen == 0 && pixelBlue == 0)
-						pixelRed = pixelGreen = pixelBlue = 8;
-					pixels[pixelIndex++] = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
+					
+					auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
+					if (pixelAlpha == 0)
+						m_transparentColor = argb;
+					pixels[pixelIndex++] = argb;
 				}
 
 				pRowSource += strideSource;
@@ -641,7 +648,7 @@ namespace NeuralNet
 		}
 
 		SetUpArrays();
-		Learn(dither ? 10 : 1);
+		Learn(dither ? 5 : 1);
 
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();

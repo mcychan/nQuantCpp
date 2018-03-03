@@ -152,6 +152,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="NeuQuantizer.h" />
     <ClInclude Include="nQuantCpp.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -159,6 +160,7 @@
     <ClInclude Include="WuQuantizer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="NeuQuantizer.cpp" />
     <ClCompile Include="nQuantCpp.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

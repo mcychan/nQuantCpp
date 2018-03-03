@@ -33,6 +33,9 @@
     <ClInclude Include="WuQuantizer.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
+    <ClInclude Include="NeuQuantizer.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -42,6 +45,9 @@
       <Filter>原始程式檔</Filter>
     </ClCompile>
     <ClCompile Include="WuQuantizer.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="NeuQuantizer.cpp">
       <Filter>原始程式檔</Filter>
     </ClCompile>
   </ItemGroup>
