@@ -22,18 +22,18 @@ namespace PnnQuant
 		int i, nn = 0;
 		double err = 1e100;
 
-		pnnbin* bin1 = bins + idx;
+		pnnbin& bin1 = bins[idx];
 		pnnbin* bin2 = nullptr;
-		auto n1 = bin1->cnt;
-		auto wa = bin1->ac;
-		auto wr = bin1->rc;
-		auto wg = bin1->gc;
-		auto wb = bin1->bc;
-		for (i = bin1->fw; i; i = bin2->fw) {
+		auto n1 = bin1.cnt;
+		auto wa = bin1.ac;
+		auto wr = bin1.rc;
+		auto wg = bin1.gc;
+		auto wb = bin1.bc;
+		for (i = bin1.fw; i; i = bin2->fw) {
 			double nerr, n2;
 
-			bin2 = bins + i;
-			nerr = (bin2->ac - wa) * (bin2->ac - wa) + (bin2->rc - wr) * (bin2->rc - wr) + (bin2->gc - wg) * (bin2->gc - wg) + (bin2->bc - wb) * (bin2->bc - wb);
+			bin2 = &bins[i];
+			nerr = pow((bin2->ac - wa), 2) + pow((bin2->rc - wr), 2) + pow((bin2->gc - wg), 2) + pow((bin2->bc - wb) , 2);
 			n2 = bin2->cnt;
 			nerr *= (n1 * n2) / (n1 + n2);
 			if (nerr >= err)
@@ -41,16 +41,14 @@ namespace PnnQuant
 			err = nerr;
 			nn = i;
 		}
-		bin1->err = err;
-		bin1->nn = nn;
+		bin1.err = err;
+		bin1.nn = nn;
 	}
 
 	int pnnquan(const vector<ARGB>& pixels, pnnbin* bins, ColorPalette* pPalette, bool quan_sqrt)
 	{
 		unsigned short heap[32769] = { 0 };
-		pnnbin* nb = nullptr;
-		pnnbin* tb = nullptr;
-		double d, err, n1, n2;
+		double err, n1, n2;
 		int l, l2, h, b1, maxbins, extbins, res = 1;		
 
 		/* Build histogram */
@@ -59,34 +57,31 @@ namespace PnnQuant
 		// !!! nonuniformity then?
 			Color c(pixel);
 			int index = (c.GetR() & 0xF8) << 7 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
-			tb = bins + index;
-			if(c.GetA() > 0) {
-				tb->ac += c.GetA();
-				tb->rc += c.GetR();
-				tb->gc += c.GetG();
-				tb->bc += c.GetB();
-			}
-			else
-				tb->ac = tb->rc = tb->gc = tb->bc = 0.0;
-			tb->cnt++;
+			pnnbin& tb = bins[index];
+			tb.ac += c.GetA();
+			tb.rc += c.GetR();
+			tb.gc += c.GetG();
+			tb.bc += c.GetB();			
+			tb.cnt++;
 		}
 
 		/* Cluster nonempty bins at one end of array */
-		tb = bins;
+		maxbins = 0;
+
 		for (int i = 0; i < 32768; ++i) {
 			if (!bins[i].cnt)
 				continue;
-			*tb = bins[i];		
-			d = 1.0 / (double)tb->cnt;
-			tb->ac *= d;
-			tb->rc *= d;
-			tb->gc *= d;
-			tb->bc *= d;
+					
+			double d = 1.0 / (double)bins[i].cnt;
+			bins[i].ac *= d;
+			bins[i].rc *= d;
+			bins[i].gc *= d;
+			bins[i].bc *= d;
 			if (quan_sqrt)
-				tb->cnt = sqrt(tb->cnt);
-			++tb;
+				bins[i].cnt = sqrt(bins[i].cnt);
+			bins[maxbins++] = bins[i];
 		}
-		maxbins = tb - bins;
+		
 		for (int i = 0; i < maxbins - 1; i++) {
 			bins[i].fw = i + 1;
 			bins[i + 1].bk = i;
@@ -113,16 +108,16 @@ namespace PnnQuant
 		for (int i = 0; i < extbins; ) {
 			/* Use heap to find which bins to merge */
 			for(;;) {
-				tb = bins + (b1 = heap[1]); /* One with least error */
+				pnnbin& tb = bins[b1 = heap[1]]; /* One with least error */
 				/* Is stored error up to date? */
-				if ((tb->tm >= tb->mtm) && (bins[tb->nn].mtm <= tb->tm))
+				if ((tb.tm >= tb.mtm) && (bins[tb.nn].mtm <= tb.tm))
 					break;
-				if (tb->mtm == 0xFFFF) /* Deleted node */
+				if (tb.mtm == 0xFFFF) /* Deleted node */
 					b1 = heap[1] = heap[heap[0]--];
 				else /* Too old error value */
 				{
 					find_nn(bins, b1);
-					tb->tm = i;
+					tb.tm = i;
 				}
 				/* Push slot down */
 				err = bins[b1].err;
@@ -137,37 +132,36 @@ namespace PnnQuant
 			}
 
 			/* Do a merge */
-			nb = bins + tb->nn;
-			n1 = tb->cnt;
-			n2 = nb->cnt;
-			d = 1.0 / (n1 + n2);
-			tb->ac = d * rint(n1 * tb->ac + n2 * nb->ac);
-			tb->rc = d * rint(n1 * tb->rc + n2 * nb->rc);
-			tb->gc = d * rint(n1 * tb->gc + n2 * nb->gc);
-			tb->bc = d * rint(n1 * tb->bc + n2 * nb->bc);
-			tb->cnt += nb->cnt;
-			tb->mtm = ++i;
+			pnnbin& tb = bins[b1];
+			pnnbin& nb = bins[tb.nn];
+			n1 = tb.cnt;
+			n2 = nb.cnt;
+			double d = 1.0 / (n1 + n2);
+			tb.ac = d * rint(n1 * tb.ac + n2 * nb.ac);
+			tb.rc = d * rint(n1 * tb.rc + n2 * nb.rc);
+			tb.gc = d * rint(n1 * tb.gc + n2 * nb.gc);
+			tb.bc = d * rint(n1 * tb.bc + n2 * nb.bc);
+			tb.cnt += nb.cnt;
+			tb.mtm = ++i;
 
 			/* Unchain deleted bin */
-			bins[nb->bk].fw = nb->fw;
-			bins[nb->fw].bk = nb->bk;
-			nb->mtm = 0xFFFF;
+			bins[nb.bk].fw = nb.fw;
+			bins[nb.fw].bk = nb.bk;
+			nb.mtm = 0xFFFF;
 		}
 
 		/* Fill palette */
 		short k = 0;
 		for(int i=0;;++k) {		
 			auto alpha = rint(bins[i].ac);
-			if(alpha > 0)
-				pPalette->Entries[k] = Color::MakeARGB(alpha, rint(bins[i].rc), rint(bins[i].gc), rint(bins[i].bc));
-			else
-				pPalette->Entries[k] = Color::Transparent;
+			pPalette->Entries[k] = Color::MakeARGB(alpha, rint(bins[i].rc), rint(bins[i].gc), rint(bins[i].bc));
+			if (alpha <= 0)
+				swap(pPalette->Entries[k], pPalette->Entries[0]);
 			
 			if (!(i = bins[i].fw))
 				break;
-		}
+		}	
 		
-		swap(pPalette->Entries[k], pPalette->Entries[0]);
 		return 0;
 	}
 
