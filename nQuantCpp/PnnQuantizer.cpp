@@ -1,6 +1,6 @@
 ﻿#pragma once
 /* Pairwise Nearest Neighbor quantization algorithm - minimizes mean square
- * error measure; time used is proportional to number of bins squared - WJ */
+* error measure; time used is proportional to number of bins squared - WJ */
 
 #include "stdafx.h"
 #include "PnnQuantizer.h"
@@ -8,6 +8,8 @@
 
 namespace PnnQuant
 {
+	bool hasTransparency = false;
+	ARGB m_transparentColor;
 	map<ARGB, vector<UINT> > closestMap;
 	map<ARGB, UINT> rightMatches;
 
@@ -23,18 +25,16 @@ namespace PnnQuant
 		double err = 1e100;
 
 		pnnbin& bin1 = bins[idx];
-		pnnbin* bin2 = nullptr;
 		auto n1 = bin1.cnt;
 		auto wa = bin1.ac;
 		auto wr = bin1.rc;
 		auto wg = bin1.gc;
 		auto wb = bin1.bc;
-		for (i = bin1.fw; i; i = bin2->fw) {
+		for (i = bin1.fw; i; i = bins[i].fw) {
 			double nerr, n2;
 
-			bin2 = &bins[i];
-			nerr = pow((bin2->ac - wa), 2) + pow((bin2->rc - wr), 2) + pow((bin2->gc - wg), 2) + pow((bin2->bc - wb) , 2);
-			n2 = bin2->cnt;
+			nerr = pow((bins[i].ac - wa), 2) + pow((bins[i].rc - wr), 2) + pow((bins[i].gc - wg), 2) + pow((bins[i].bc - wb), 2);
+			n2 = bins[i].cnt;
 			nerr *= (n1 * n2) / (n1 + n2);
 			if (nerr >= err)
 				continue;
@@ -47,31 +47,33 @@ namespace PnnQuant
 
 	int pnnquan(const vector<ARGB>& pixels, pnnbin* bins, ColorPalette* pPalette, bool quan_sqrt)
 	{
-		unsigned short heap[32769] = { 0 };
+		unsigned short heap[65537] = { 0 };
 		double err, n1, n2;
-		int l, l2, h, b1, maxbins, extbins, res = 1;		
+		int l, l2, h, b1, maxbins, extbins, res = 1;
 
 		/* Build histogram */
 		for (const auto& pixel : pixels) {
-		// !!! Can throw gamma correction in here, but what to do about perceptual
-		// !!! nonuniformity then?
+			// !!! Can throw gamma correction in here, but what to do about perceptual
+			// !!! nonuniformity then?
 			Color c(pixel);
-			int index = (c.GetR() & 0xF8) << 7 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
+			int index = (c.GetR() & 0xFC) << 8 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
+			if (hasTransparency)
+				index = (c.GetA() & 0xF0) << 8 | (c.GetR() & 0xF0) << 4 | (c.GetG() & 0xF0) | (c.GetB() >> 4);
 			pnnbin& tb = bins[index];
 			tb.ac += c.GetA();
 			tb.rc += c.GetR();
 			tb.gc += c.GetG();
-			tb.bc += c.GetB();			
+			tb.bc += c.GetB();
 			tb.cnt++;
 		}
 
 		/* Cluster nonempty bins at one end of array */
 		maxbins = 0;
 
-		for (int i = 0; i < 32768; ++i) {
+		for (int i = 0; i < 65536; ++i) {
 			if (!bins[i].cnt)
 				continue;
-					
+
 			double d = 1.0 / (double)bins[i].cnt;
 			bins[i].ac *= d;
 			bins[i].rc *= d;
@@ -81,7 +83,7 @@ namespace PnnQuant
 				bins[i].cnt = sqrt(bins[i].cnt);
 			bins[maxbins++] = bins[i];
 		}
-		
+
 		for (int i = 0; i < maxbins - 1; i++) {
 			bins[i].fw = i + 1;
 			bins[i + 1].bk = i;
@@ -90,7 +92,7 @@ namespace PnnQuant
 		//	bins[0].bk = bins[i].fw = 0;
 
 		/* Initialize nearest neighbors and build heap of them */
-		for (int i = 0; i < maxbins; i++) {	
+		for (int i = 0; i < maxbins; i++) {
 			find_nn(bins, i);
 			/* Push slot on heap */
 			err = bins[i].err;
@@ -107,9 +109,9 @@ namespace PnnQuant
 		extbins = maxbins - pPalette->Count;
 		for (int i = 0; i < extbins; ) {
 			/* Use heap to find which bins to merge */
-			for(;;) {
+			for (;;) {
 				pnnbin& tb = bins[b1 = heap[1]]; /* One with least error */
-				/* Is stored error up to date? */
+												 /* Is stored error up to date? */
 				if ((tb.tm >= tb.mtm) && (bins[tb.nn].mtm <= tb.tm))
 					break;
 				if (tb.mtm == 0xFFFF) /* Deleted node */
@@ -152,16 +154,16 @@ namespace PnnQuant
 
 		/* Fill palette */
 		short k = 0;
-		for(int i=0;;++k) {		
+		for (int i = 0;; ++k) {
 			auto alpha = rint(bins[i].ac);
 			pPalette->Entries[k] = Color::MakeARGB(alpha, rint(bins[i].rc), rint(bins[i].gc), rint(bins[i].bc));
-			if (alpha <= 0)
-				swap(pPalette->Entries[k], pPalette->Entries[0]);
-			
+			if (hasTransparency && pPalette->Entries[k] == m_transparentColor)
+				swap(pPalette->Entries[0], pPalette->Entries[k]);
+
 			if (!(i = bins[i].fw))
 				break;
-		}	
-		
+		}
+
 		return 0;
 	}
 
@@ -241,7 +243,7 @@ namespace PnnQuant
 		closestMap[argb] = closest;
 		return k;
 	}
-	
+
 	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, UINT* qPixels, UINT nMaxColors, int width, int height, bool dither)
 	{
 		UINT pixelIndex = 0;
@@ -304,8 +306,10 @@ namespace PnnQuant
 					g_pix = range[((thisrowerr[2] + 8) >> 4) + c.GetG()];
 					b_pix = range[((thisrowerr[3] + 8) >> 4) + c.GetB()];
 
-					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);					
+					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 					qPixels[pixelIndex] = bestcolor(pPalette, squares3, argb);
+					if (hasTransparency && (argb == m_transparentColor || c.GetA() == 0))
+						qPixels[pixelIndex] = bestcolor(pPalette, squares3, pixels[pixelIndex]);
 					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 					a_pix = dith_max[a_pix - c2.GetA()];
 					r_pix = dith_max[r_pix - c2.GetR()];
@@ -320,7 +324,7 @@ namespace PnnQuant
 					nextrowerr[0] += a_pix;
 					a_pix += two_val;
 					thisrowerr[0 + DJ] += a_pix;
-					
+
 					two_val = r_pix * 2;
 					nextrowerr[1 - DJ] = r_pix;
 					r_pix += two_val;
@@ -329,7 +333,7 @@ namespace PnnQuant
 					nextrowerr[1] += r_pix;
 					r_pix += two_val;
 					thisrowerr[1 + DJ] += r_pix;
-					
+
 					two_val = g_pix * 2;
 					nextrowerr[2 - DJ] = g_pix;
 					g_pix += two_val;
@@ -338,7 +342,7 @@ namespace PnnQuant
 					nextrowerr[2] += g_pix;
 					g_pix += two_val;
 					thisrowerr[2 + DJ] += g_pix;
-					
+
 					two_val = b_pix * 2;
 					nextrowerr[3 - DJ] = b_pix;
 					b_pix += two_val;
@@ -438,10 +442,12 @@ namespace PnnQuant
 
 		status = pDest->UnlockBits(&targetData);
 		return pDest->GetLastStatus() == Ok;
-	}	
+	}
 
 	bool PnnQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
-	{		
+	{
+		if (nMaxColors > 256)
+			nMaxColors = 256;
 		UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
 		UINT bitmapWidth = pSource->GetWidth();
 		UINT bitmapHeight = pSource->GetHeight();
@@ -454,11 +460,15 @@ namespace PnnQuant
 				for (UINT x = 0; x < bitmapWidth; x++) {
 					Color color;
 					pSource->GetPixel(x, y, &color);
+					if (color.GetA() < BYTE_MAX)
+						hasTransparency = true;
+					if (color.GetA() == 0)
+						m_transparentColor = color.GetValue();
 					pixels[pixelIndex++] = color.GetValue();
 				}
 			}
 		}
-	
+
 		// Lock bits on 3x8 source bitmap
 		else {
 			BitmapData data;
@@ -490,8 +500,12 @@ namespace PnnQuant
 					byte pixelGreen = *pPixelSource++;
 					byte pixelRed = *pPixelSource++;
 					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
+					if (pixelAlpha < BYTE_MAX)
+						hasTransparency = true;
 
-					ARGB argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
+					auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
+					if (pixelAlpha == 0)
+						m_transparentColor = argb;
 					pixels[pixelIndex++] = argb;
 				}
 
@@ -499,16 +513,21 @@ namespace PnnQuant
 			}
 
 			pSource->UnlockBits(&data);
-		}			
-		
-		auto bins = make_unique<pnnbin[]>(32768);
+		}
+
+		auto bins = make_unique<pnnbin[]>(65536);
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
-		auto pPalette = (ColorPalette*) pPaletteBytes.get();
+		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 		bool quan_sqrt = nMaxColors > BYTE_MAX;
-		pnnquan(pixels, bins.get(), pPalette, quan_sqrt);
+		if (nMaxColors > 2)
+			pnnquan(pixels, bins.get(), pPalette, quan_sqrt);
+		else {
+			pPalette->Entries[0] = Color::Black;
+			pPalette->Entries[1] = Color::White;
+		}
 		bins.reset();
-		
+
 		auto qPixels = make_unique<UINT[]>(bitmapWidth * bitmapHeight);
 		quantize_image(&pixels[0], pPalette, qPixels.get(), nMaxColors, bitmapWidth, bitmapHeight, dither);
 		closestMap.clear();

@@ -358,6 +358,7 @@ namespace NeuralNet
 
 			if (closest[3] == 100000000)
 				closest[2] = 0;
+			closestMap[argb] = closest;
 		}
 		else
 			closest = got->second;
@@ -365,13 +366,11 @@ namespace NeuralNet
 		if (closest[2] == 0 || (rand() % (closest[3] + closest[2])) <= closest[3])
 			k = closest[0];
 		else
-			k = closest[1];
-
-		closestMap[argb] = closest;
+			k = closest[1];		
 		return k;
 	}
 
-	bool quantize_image(const vector<ARGB>& pixels, const ColorPalette* pPalette, UINT* qPixels, UINT nMaxColors, int width, int height, bool dither)
+	bool quantize_image(const vector<ARGB>& pixels, const ColorPalette* pPalette, UINT* qPixels, int width, int height, bool dither)
 	{		
 		if (dither) {
 			bool odd_scanline = false;
@@ -581,6 +580,8 @@ namespace NeuralNet
 	// The work horse for NeuralNet color quantizing.
 	bool NeuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
 	{
+		if (nMaxColors != 256)
+			nMaxColors = 256;
 		UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
 		UINT bitmapWidth = pSource->GetWidth();
 		UINT bitmapHeight = pSource->GetHeight();
@@ -656,7 +657,7 @@ namespace NeuralNet
 		Inxbuild(pPalette);
 
 		auto qPixels = make_unique<UINT[]>(bitmapWidth * bitmapHeight);
-		quantize_image(pixels, pPalette, qPixels.get(), nMaxColors, bitmapWidth, bitmapHeight, dither);
+		quantize_image(pixels, pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
 	}
 
