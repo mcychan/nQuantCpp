@@ -217,6 +217,7 @@ Bitmap* CQuantDlg::Load(LPCTSTR pszPathName)
 		return NULL;
 	}
 
+	m_PathName = pszPathName;
 	Bitmap* result = Bitmap::FromStream(fileStream, TRUE);
 	fileStream->Release();
 	return result;
@@ -236,24 +237,6 @@ void CQuantDlg::OnBnClickedFileOpen()
 	}
 }
 
-Bitmap* CQuantDlg::ConvertTo(Bitmap* pSource, PixelFormat format)
-{
-	UINT w = pSource->GetWidth();
-	UINT h = pSource->GetHeight();
-
-	// If necessary, convert source to 32 bpp RGB bitmap
-	if (pSource->GetPixelFormat() == format)
-		return pSource;
-
-	auto pSrcBitmap = new Bitmap(w, h, format);
-
-	Graphics g(pSrcBitmap);
-	if (g.DrawImage(pSource, 0, 0, w, h) != Ok)
-		return NULL;
-
-	return pSrcBitmap;
-}
-
 void CQuantDlg::OnBnClickedRetry()
 {
 	theApp.DoWaitCursor(1); // 1->>display the hourglass cursor
@@ -262,21 +245,34 @@ void CQuantDlg::OnBnClickedRetry()
 
 	// Create 8 bpp indexed bitmap of the same size
 	m_pImage256Color = make_unique<Bitmap>(w, h, PixelFormat8bppIndexed);
-	Bitmap* pBitmap = ConvertTo(m_pImage.get(), PixelFormat32bppARGB);
-	if (pBitmap != m_pImage.get())
-		m_pImage.reset(pBitmap);
 
 	UINT nMaxColors = 1 << GetPixelFormatSize(m_pImage256Color->GetPixelFormat());
-	//bool bSucceeded = wuQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
-	bool bSucceeded = neuQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
-	neuQuantizer.Clear();
+	bool bSucceeded = pnnQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
+	//bool bSucceeded = neuQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
+	//neuQuantizer.Clear();
 
 	HBITMAP bitmap;
 	m_pImage256Color->GetHBITMAP(NULL, &bitmap);
-	SetBackgroundImage(bitmap, CDialogEx::BACKGR_TILE);
+	
+	TCHAR path[MAX_PATH];
+	GetTempPath(MAX_PATH, path);
+	CString pathName;
+	pathName.Format(_T("%s\\%s_new.png"), path, PathFindFileName(m_PathName));
+
+	// image/png  : {557cf406-1a04-11d3-9a73-0000f81ef32e}
+	const CLSID pngEncoderClsId = { 0x557cf406, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };
+	Status status = m_pImage256Color->Save(pathName, &pngEncoderClsId);
+	if(bSucceeded && status != Status::Ok)
+		SetBackgroundImage(bitmap, CDialogEx::BACKGR_TOPLEFT);
 	theApp.DoWaitCursor(-1); // -1->>remove the hourglass cursor
-	if (bSucceeded)
-		AfxMessageBox(_T("Converted to 256 colors successfully"));
+	if (bSucceeded) {
+		CString msg = _T("Converted to 256 colors successfully");
+		if (status == Status::Ok) {
+			msg += _T(" [") + pathName + _T("]");
+			/*HINSTANCE hInst = */ShellExecute(GetSafeHwnd(), _T("open"), pathName, NULL, NULL, SW_SHOWNORMAL);
+		}
+		AfxMessageBox(msg, MB_ICONINFORMATION);
+	}
 	else
 		AfxMessageBox(_T("Failed to convert to 256 colors"));
 }

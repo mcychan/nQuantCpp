@@ -29,13 +29,12 @@ private:
 	LPCTSTR GetInitialDir();
 	CString GetFileType();
 	Bitmap* Load(LPCTSTR pszPathName);
-	Bitmap* ConvertTo(Bitmap* pSource, PixelFormat format);
 
 // Implementation
 protected:
 	HICON m_hIcon;
 	TCHAR szInitDir[MAX_PATH];
-	CString m_FileTypes;
+	CString m_PathName, m_FileTypes;
 	unique_ptr<Bitmap> m_pImage;
 	unique_ptr<Bitmap> m_pImage256Color;
 
