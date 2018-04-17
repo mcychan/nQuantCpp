@@ -154,21 +154,21 @@
   <ItemGroup>
     <ClInclude Include="NeuQuantizer.h" />
     <ClInclude Include="nQuantCpp.h" />
+    <ClInclude Include="PnnQuantizer.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="WuQuantizer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NeuQuantizer.cpp" />
     <ClCompile Include="nQuantCpp.cpp" />
+    <ClCompile Include="PnnQuantizer.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="WuQuantizer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="nQuantCpp.rc" />

@@ -339,11 +339,27 @@ namespace NeuralNet
 		vector<UINT> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
-			closest[2] = closest[3] = 100000000;
+			closest[2] = closest[3] = closest[4] = INT_MAX;
 
 			for (; k < pPalette->Count; k++) {
 				Color c2(pPalette->Entries[k]);
-				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
+				int curdist = abs(c2.GetA() - c.GetA());
+				if (curdist > closest[4])
+					continue;
+				
+				curdist += abs(c2.GetR() - c.GetR());
+				if (curdist > closest[4])
+					continue;
+				
+				curdist += abs(c2.GetG() - c.GetG());
+				if (curdist > closest[4])
+					continue;
+				
+				curdist += abs(c2.GetB() - c.GetB());
+				if (curdist > closest[4])
+					continue;
+
+				closest[4] = curdist;
 				if (closest[4] < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];
@@ -356,7 +372,7 @@ namespace NeuralNet
 				}
 			}
 
-			if (closest[3] == 100000000)
+			if (closest[3] == INT_MAX)
 				closest[2] = 0;
 			closestMap[argb] = closest;
 		}

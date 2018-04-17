@@ -56,7 +56,7 @@ namespace PnnQuant
 			// !!! Can throw gamma correction in here, but what to do about perceptual
 			// !!! nonuniformity then?
 			Color c(pixel);
-			int index = (c.GetR() & 0xFC) << 8 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
+			int index = (c.GetR() & 0xF8) << 8 | (c.GetG() & 0xFC) << 3 | (c.GetB() >> 3);
 			if (hasTransparency)
 				index = (c.GetA() & 0xF0) << 8 | (c.GetR() & 0xF0) << 4 | (c.GetG() & 0xF0) | (c.GetB() >> 4);
 			pnnbin& tb = bins[index];
@@ -167,7 +167,7 @@ namespace PnnQuant
 		return 0;
 	}
 
-	UINT bestcolor(const ColorPalette* pPalette, const int* squares3, ARGB argb)
+	UINT nearestColorIndex(const ColorPalette* pPalette, const int* squares3, ARGB argb)
 	{
 		UINT k = 0;
 		Color c(argb);
@@ -175,7 +175,7 @@ namespace PnnQuant
 			return k;
 
 		UINT nMaxColors = pPalette->Count;
-		if (nMaxColors < 256) {
+		if (hasTransparency || nMaxColors < 256) {
 			auto got = rightMatches.find(argb);
 			if (got == rightMatches.end()) {
 				int curdist, mindist = 200000;
@@ -212,7 +212,7 @@ namespace PnnQuant
 		vector<UINT> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
-			closest[2] = closest[3] = 100000000;
+			closest[2] = closest[3] = INT_MAX;
 
 			for (; k < nMaxColors; k++) {
 				Color c2(pPalette->Entries[k]);
@@ -229,7 +229,7 @@ namespace PnnQuant
 				}
 			}
 
-			if (closest[3] == 100000000)
+			if (closest[3] == INT_MAX)
 				closest[2] = 0;
 		}
 		else
@@ -307,9 +307,9 @@ namespace PnnQuant
 					b_pix = range[((thisrowerr[3] + 8) >> 4) + c.GetB()];
 
 					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-					qPixels[pixelIndex] = bestcolor(pPalette, squares3, argb);
+					qPixels[pixelIndex] = nearestColorIndex(pPalette, squares3, argb);
 					if (hasTransparency && (argb == m_transparentColor || c.GetA() == 0))
-						qPixels[pixelIndex] = bestcolor(pPalette, squares3, pixels[pixelIndex]);
+						qPixels[pixelIndex] = nearestColorIndex(pPalette, squares3, pixels[pixelIndex]);
 					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 					a_pix = dith_max[a_pix - c2.GetA()];
 					r_pix = dith_max[r_pix - c2.GetR()];
@@ -365,7 +365,7 @@ namespace PnnQuant
 		else {
 			for (UINT j = 0; j < height; j++) {
 				for (UINT i = 0; i < width; i++) {
-					qPixels[pixelIndex++] = bestcolor(pPalette, squares3, pixels[pixelIndex]);
+					qPixels[pixelIndex++] = nearestColorIndex(pPalette, squares3, pixels[pixelIndex]);
 				}
 			}
 		}

@@ -2,5 +2,5 @@
 
 #include "resource.h"
 #include "NeuQuantizer.h"
-#include "WuQuantizer.h"
+#include "PnnQuantizer.h"
 #include <memory>
