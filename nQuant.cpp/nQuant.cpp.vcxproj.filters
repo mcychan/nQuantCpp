@@ -45,6 +45,9 @@
     <ClInclude Include="..\nQuantCpp\PnnQuantizer.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
+    <ClInclude Include="..\nQuantCpp\SpatialQuantizer.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="nQuantDlg.cpp">
@@ -66,6 +69,9 @@
       <Filter>原始程式檔</Filter>
     </ClCompile>
     <ClCompile Include="..\nQuantCpp\PnnQuantizer.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nQuantCpp\SpatialQuantizer.cpp">
       <Filter>原始程式檔</Filter>
     </ClCompile>
   </ItemGroup>

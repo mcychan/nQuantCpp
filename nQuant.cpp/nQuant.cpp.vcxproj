@@ -194,6 +194,7 @@
     <ClInclude Include="..\nQuantCpp\Dl3Quantizer.h" />
     <ClInclude Include="..\nQuantCpp\NeuQuantizer.h" />
     <ClInclude Include="..\nQuantCpp\PnnQuantizer.h" />
+    <ClInclude Include="..\nQuantCpp\SpatialQuantizer.h" />
     <ClInclude Include="..\nQuantCpp\WuQuantizer.h" />
     <ClInclude Include="nQuant.h" />
     <ClInclude Include="nQuantDlg.h" />
@@ -205,6 +206,7 @@
     <ClCompile Include="..\nQuantCpp\Dl3Quantizer.cpp" />
     <ClCompile Include="..\nQuantCpp\NeuQuantizer.cpp" />
     <ClCompile Include="..\nQuantCpp\PnnQuantizer.cpp" />
+    <ClCompile Include="..\nQuantCpp\SpatialQuantizer.cpp" />
     <ClCompile Include="..\nQuantCpp\WuQuantizer.cpp" />
     <ClCompile Include="nQuant.cpp" />
     <ClCompile Include="nQuantDlg.cpp" />
