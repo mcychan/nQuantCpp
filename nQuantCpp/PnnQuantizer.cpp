@@ -1,5 +1,7 @@
 ﻿#pragma once
 /* Pairwise Nearest Neighbor quantization algorithm - minimizes mean square
+  Copyright (C) 2004-2016 Mark Tyler and Dmitry Groshev
+  Copyright (c) 2018 Miller Cy Chan
 * error measure; time used is proportional to number of bins squared - WJ */
 
 #include "stdafx.h"
@@ -24,7 +26,7 @@ namespace PnnQuant
 		int i, nn = 0;
 		double err = 1e100;
 
-		pnnbin& bin1 = bins[idx];
+		auto& bin1 = bins[idx];
 		auto n1 = bin1.cnt;
 		auto wa = bin1.ac;
 		auto wr = bin1.rc;
@@ -59,7 +61,7 @@ namespace PnnQuant
 			int index = (c.GetR() & 0xF8) << 8 | (c.GetG() & 0xFC) << 3 | (c.GetB() >> 3);
 			if (hasTransparency)
 				index = (c.GetA() & 0xF0) << 8 | (c.GetR() & 0xF0) << 4 | (c.GetG() & 0xF0) | (c.GetB() >> 4);
-			pnnbin& tb = bins[index];
+			auto& tb = bins[index];
 			tb.ac += c.GetA();
 			tb.rc += c.GetR();
 			tb.gc += c.GetG();
@@ -110,7 +112,7 @@ namespace PnnQuant
 		for (int i = 0; i < extbins; ) {
 			/* Use heap to find which bins to merge */
 			for (;;) {
-				pnnbin& tb = bins[b1 = heap[1]]; /* One with least error */
+				auto& tb = bins[b1 = heap[1]]; /* One with least error */
 												 /* Is stored error up to date? */
 				if ((tb.tm >= tb.mtm) && (bins[tb.nn].mtm <= tb.tm))
 					break;
@@ -134,8 +136,8 @@ namespace PnnQuant
 			}
 
 			/* Do a merge */
-			pnnbin& tb = bins[b1];
-			pnnbin& nb = bins[tb.nn];
+			auto& tb = bins[b1];
+			auto& nb = bins[tb.nn];
 			n1 = tb.cnt;
 			n2 = nb.cnt;
 			double d = 1.0 / (n1 + n2);
@@ -182,19 +184,22 @@ namespace PnnQuant
 				const double diff = sqrt(nMaxColors);
 				for (UINT i = 0; i < nMaxColors; i++) {
 					Color c2(pPalette->Entries[i]);
-					int adist = c2.GetA() - c.GetA();
-					int rdist = c2.GetR() - c.GetR();
-					int gdist = c2.GetG() - c.GetG();
-					int bdist = c2.GetB() - c.GetB();
+					int adist = c2.GetA() - c.GetA();					
 					curdist = squares3[adist];
 					if (curdist > mindist)
 						continue;
+
+					int rdist = c2.GetR() - c.GetR();
 					curdist += squares3[rdist];
 					if (curdist > mindist)
 						continue;
+
+					int gdist = c2.GetG() - c.GetG();
 					curdist += squares3[gdist];
 					if (curdist > mindist)
 						continue;
+
+					int bdist = c2.GetB() - c.GetB();
 					curdist += squares3[bdist];
 					if (curdist > mindist)
 						continue;
@@ -244,9 +249,9 @@ namespace PnnQuant
 		return k;
 	}
 
-	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, UINT* qPixels, UINT nMaxColors, int width, int height, bool dither)
+	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, UINT* qPixels, UINT width, UINT height, bool dither)
 	{
-		UINT pixelIndex = 0;
+		UINT nMaxColors = pPalette->Count;
 		int sqr_tbl[BYTE_MAX + BYTE_MAX + 1];
 
 		for (int i = (-BYTE_MAX); i <= BYTE_MAX; i++)
@@ -254,6 +259,7 @@ namespace PnnQuant
 
 		int* squares3 = &sqr_tbl[BYTE_MAX];
 
+		UINT pixelIndex = 0;
 		if (dither) {
 			bool odd_scanline = false;
 			short *thisrowerr, *nextrowerr;
@@ -283,8 +289,7 @@ namespace PnnQuant
 			}
 			for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
 				dith_max_tbl[i + 256] = i;
-
-			UINT pixelIndex = 0;
+			
 			for (int i = 0; i < height; i++) {
 				if (odd_scanline) {
 					dir = -1;
@@ -361,14 +366,14 @@ namespace PnnQuant
 
 				odd_scanline = !odd_scanline;
 			}
+			return true;
 		}
-		else {
-			for (UINT j = 0; j < height; j++) {
-				for (UINT i = 0; i < width; i++) {
-					qPixels[pixelIndex++] = nearestColorIndex(pPalette, squares3, pixels[pixelIndex]);
-				}
-			}
+
+		for (int j = 0; j < height; j++) {
+			for (int i = 0; i < width; i++)
+				qPixels[pixelIndex++] = nearestColorIndex(pPalette, squares3, pixels[pixelIndex]);
 		}
+
 		return true;
 	}
 
@@ -460,10 +465,11 @@ namespace PnnQuant
 				for (UINT x = 0; x < bitmapWidth; x++) {
 					Color color;
 					pSource->GetPixel(x, y, &color);
-					if (color.GetA() < BYTE_MAX)
+					if (color.GetA() < BYTE_MAX) {
 						hasTransparency = true;
-					if (color.GetA() == 0)
-						m_transparentColor = color.GetValue();
+						if (color.GetA() == 0)
+							m_transparentColor = color.GetValue();
+					}
 					pixels[pixelIndex++] = color.GetValue();
 				}
 			}
@@ -499,13 +505,14 @@ namespace PnnQuant
 					byte pixelBlue = *pPixelSource++;
 					byte pixelGreen = *pPixelSource++;
 					byte pixelRed = *pPixelSource++;
-					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
-					if (pixelAlpha < BYTE_MAX)
-						hasTransparency = true;
+					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;					
 
 					auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
-					if (pixelAlpha == 0)
-						m_transparentColor = argb;
+					if (pixelAlpha < BYTE_MAX) {
+						hasTransparency = true;
+						if (pixelAlpha == 0)
+							m_transparentColor = argb;
+					}
 					pixels[pixelIndex++] = argb;
 				}
 
@@ -529,7 +536,7 @@ namespace PnnQuant
 		bins.reset();
 
 		auto qPixels = make_unique<UINT[]>(bitmapWidth * bitmapHeight);
-		quantize_image(&pixels[0], pPalette, qPixels.get(), nMaxColors, bitmapWidth, bitmapHeight, dither);
+		quantize_image(&pixels[0], pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		closestMap.clear();
 		rightMatches.clear();
 
