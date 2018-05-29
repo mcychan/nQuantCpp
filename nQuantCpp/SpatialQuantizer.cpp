@@ -1,6 +1,6 @@
 ﻿#pragma once
 /* Copyright (c) 2006 Derrick Coetzee
-   Copyright (c) 2018 Miller Cy Chan
+Copyright (c) 2018 Miller Cy Chan
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -333,16 +333,16 @@ namespace SpatialQuant
 		for (int j_y = 0; j_y < b.get_height(); j_y++) {
 			for (int j_x = 0; j_x < b.get_width(); j_x++) {
 				for (int k_y = 0; k_y < filter_weights.get_height(); k_y++) {
+					if (k_y + offset_y < j_y - radius_width)
+						continue;
+					if (k_y + offset_y > j_y + radius_width)
+						continue;
+
 					for (int k_x = 0; k_x < filter_weights.get_width(); k_x++) {
 						if (k_x + offset_x < j_x - radius_width)
 							continue;
 						if (k_x + offset_x > j_x + radius_width)
 							continue;
-						if (k_y + offset_y < j_y - radius_width)
-							continue;
-						if (k_y + offset_y > j_y + radius_width)
-							continue;
-
 						b(j_x, j_y) += filter_weights(k_x, k_y).direct_product(filter_weights(k_x + offset_x - j_x + radius_width, k_y + offset_y - j_y + radius_height));
 					}
 				}
@@ -389,22 +389,15 @@ namespace SpatialQuant
 	{
 		for (int y = 0; y<coarse.get_height(); y++) {
 			for (int x = 0; x<coarse.get_width(); x++) {
-				double divisor = 1.0;
-				auto val = fine(x * 2, y * 2);
-				if (y * 2 + 1 < fine.get_height()) {
-					divisor++;
-					val += fine(x * 2, y * 2 + 1);
-				}
-				if (x * 2 + 1 < fine.get_width()) {
-					divisor++;
-					val += fine(x * 2 + 1, y * 2);
-					if (y * 2 + 1 < fine.get_height()) {
-						divisor++;
-						val += fine(x * 2 + 1, y * 2 + 1);
-					}
-				}
+				coarse(x, y) = fine(x * 2, y * 2);
+				if (y * 2 + 1 < fine.get_height())
+					coarse(x, y) += fine(x * 2, y * 2 + 1);
 
-				coarse(x, y) = /*(1/divisor)**/val;
+				if (x * 2 + 1 < fine.get_width()) {
+					coarse(x, y) += fine(x * 2 + 1, y * 2);
+					if (y * 2 + 1 < fine.get_height())
+						coarse(x, y) += fine(x * 2 + 1, y * 2 + 1);
+				}
 			}
 		}
 	}
@@ -494,17 +487,18 @@ namespace SpatialQuant
 				s(v, alpha) = zero_vector;
 		}
 		for (int i_y = 0; i_y<coarse_height; i_y++) {
+			int max_j_y = min(coarse_height, i_y - center_y + b.get_height());
 			for (int i_x = 0; i_x<coarse_width; i_x++) {
 				int max_j_x = min(coarse_width, i_x - center_x + b.get_width());
-				int max_j_y = min(coarse_height, i_y - center_y + b.get_height());
 				for (int j_y = max(0, i_y - center_y); j_y<max_j_y; j_y++) {
 					for (int j_x = max(0, i_x - center_x); j_x<max_j_x; j_x++) {
 						if (i_x == j_x && i_y == j_y)
 							continue;
 						auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 						for (int v = 0; v<palette_size; v++) {
+							double v1 = coarse_variables(i_x, i_y, v);
 							for (int alpha = v; alpha<palette_size; alpha++) {
-								double mult = coarse_variables(i_x, i_y, v) * coarse_variables(j_x, j_y, alpha);
+								double mult = v1 * coarse_variables(j_x, j_y, alpha);
 								s(v, alpha)(0) += mult * b_ij(0);
 								s(v, alpha)(1) += mult * b_ij(1);
 								s(v, alpha)(2) += mult * b_ij(2);
@@ -568,13 +562,13 @@ namespace SpatialQuant
 
 		for (int k = 0; k<3; k++) {
 			bool isBlack = true;
-			auto S_k = extract_vector_layer_2d(s, k);
-			auto R_k = extract_vector_layer_1d(r, k);
-			auto palette_channel = -1.0 * ((2.0 * S_k).matrix_inverse()) * R_k;
+			auto& S_k = extract_vector_layer_2d(s, k);
+			auto& R_k = extract_vector_layer_1d(r, k);
+			auto& palette_channel = -1.0 * ((2.0 * S_k).matrix_inverse()) * R_k;
 			UINT v = 0;
 			for (; v<palette.size(); v++) {
 				double val = palette_channel[v];
-				if (val < 0.0)
+				if (val < 0.0 || isnan(val))
 					val = 0.0;
 				else if (val > 1.0)
 					val = 1.0;
@@ -629,17 +623,14 @@ namespace SpatialQuant
 		compute_a_image(image, b0, a0);
 
 		// Compute a_I^l, b_{IJ}^l according to (18)
-		vector<array2d< vector_fixed<double, 3> > > a_vec, b_vec;
-		a_vec.push_back(a0);
-		b_vec.push_back(b0);
+		vector<array2d<vector_fixed<double, 3> > > a_vec, b_vec;
+		a_vec.emplace_back(a0);
+		b_vec.emplace_back(b0);
 
+		int radius_width = (filter_weights.get_width() - 1) / 2, radius_height = (filter_weights.get_height() - 1) / 2;
 		int coarse_level;
 		for (coarse_level = 1; coarse_level <= max_coarse_level; coarse_level++) {
-			int radius_width = (filter_weights.get_width() - 1) / 2,
-				radius_height = (filter_weights.get_height() - 1) / 2;
-			array2d<vector_fixed<double, 3> >
-				bi(max(3, b_vec.back().get_width() - 2),
-					max(3, b_vec.back().get_height() - 2));
+			array2d<vector_fixed<double, 3> > bi(max(3, b_vec.back().get_width() - 2), max(3, b_vec.back().get_height() - 2));
 
 			for (int J_y = 0; J_y<bi.get_height(); J_y++) {
 				for (int J_x = 0; J_x<bi.get_width(); J_x++) {
@@ -653,24 +644,23 @@ namespace SpatialQuant
 					}
 				}
 			}
-			b_vec.push_back(bi);
+			b_vec.emplace_back(bi);
 
 			array2d<vector_fixed<double, 3> > ai(image.get_width() >> coarse_level, image.get_height() >> coarse_level);
 			sum_coarsen(a_vec.back(), ai);
-			a_vec.push_back(ai);
+			a_vec.emplace_back(ai);
 		}
 
 		// Multiscale annealing
 		coarse_level = max_coarse_level;
 		const int iters_per_level = temps_per_level;
-		double temperature_multiplier = pow(final_temperature / initial_temperature, 1.0 / (max(3, max_coarse_level*iters_per_level)));
+		double temperature_multiplier = pow(final_temperature / initial_temperature, 1.0 / (max(3, max_coarse_level * iters_per_level)));
 
 		int iters_at_current_level = 0;
 		bool skip_palette_maintenance = false;
 		array2d<vector_fixed<double, 3> > s(palette.size(), palette.size());
 		compute_initial_s(s, coarse_variables, b_vec[coarse_level]);
-		auto p_palette_sum =
-			make_unique<array2d< vector_fixed<double, 3> > >(coarse_variables.get_width(), coarse_variables.get_height());
+		auto p_palette_sum = make_unique<array2d< vector_fixed<double, 3> > >(coarse_variables.get_width(), coarse_variables.get_height());
 		auto j_palette_sum = p_palette_sum.get();
 		compute_initial_j_palette_sum(*j_palette_sum, coarse_variables, palette);
 		while (coarse_level >= 0 || temperature > final_temperature) {
@@ -702,11 +692,14 @@ namespace SpatialQuant
 					// Compute (25)
 					vector_fixed<double, 3> p_i;
 					for (int y = 0; y<b.get_height(); y++) {
+						int j_y = y - center_y + i_y;
+						if (j_y < 0 || j_y >= coarse_variables.get_height())
+							continue;
 						for (int x = 0; x<b.get_width(); x++) {
-							int j_x = x - center_x + i_x, j_y = y - center_y + i_y;
+							int j_x = x - center_x + i_x;
 							if (i_x == j_x && i_y == j_y)
 								continue;
-							if (j_x < 0 || j_y < 0 || j_x >= coarse_variables.get_width() || j_y >= coarse_variables.get_height())
+							if (j_x < 0 || j_x >= coarse_variables.get_width())
 								continue;
 							auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 							auto& j_pal = (*j_palette_sum)(j_x, j_y);
@@ -767,9 +760,12 @@ namespace SpatialQuant
 						//for (int y=center_y-1; y<center_y+1; y++) {
 						//   for (int x=center_x-1; x<center_x+1; x++) {
 						for (int y = min(1, center_y - 1); y<max(b.get_height() - 1, center_y + 1); y++) {
+							int j_y = y - center_y + i_y;
+							if (j_y < 0 || j_y >= coarse_variables.get_height())
+								continue;
 							for (int x = min(1, center_x - 1); x<max(b.get_width() - 1, center_x + 1); x++) {
-								int j_x = x - center_x + i_x, j_y = y - center_y + i_y;
-								if (j_x < 0 || j_y < 0 || j_x >= coarse_variables.get_width() || j_y >= coarse_variables.get_height())
+								int j_x = x - center_x + i_x;
+								if (j_x < 0 || j_x >= coarse_variables.get_width())
 									continue;
 								visit_queue.emplace_back(j_x, j_y);
 							}
@@ -817,7 +813,7 @@ namespace SpatialQuant
 			pp_coarse_variables.reset(p_new_coarse_variables);
 			p_coarse_variables = pp_coarse_variables.get();
 		}
-		
+
 		for (int i_x = 0; i_x < image.get_width(); i_x++) {
 			for (int i_y = 0; i_y < image.get_height(); i_y++)
 				quantized_image(i_x, i_y) = best_match_color(*p_coarse_variables, i_x, i_y, palette.size());
@@ -853,8 +849,8 @@ namespace SpatialQuant
 
 		UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
 		// Second loop: fill indexed bitmap
-		for (int y = 0; y < h; y++) {	// For each row...
-			for (int x = 0; x < w; x++) {	// ...for each pixel...
+		for (UINT y = 0; y < h; y++) {	// For each row...
+			for (UINT x = 0; x < w; x++) {	// ...for each pixel...
 				byte nibbles = 0;
 				byte index = static_cast<byte>(quantized_image(x, y));
 
