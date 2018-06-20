@@ -11,13 +11,13 @@
 namespace PnnQuant
 {
 	bool hasTransparency = false;
-	ARGB m_transparentColor;
+	ARGB m_transparentColor = Color::Transparent;
 	map<ARGB, vector<UINT> > closestMap;
 	map<ARGB, UINT> rightMatches;
 
 	struct pnnbin {
-		double ac, rc, gc, bc, err;
-		int cnt;
+		double ac = 0, rc = 0, gc = 0, bc = 0, err = 0;
+		int cnt = 0;
 		unsigned short nn, fw, bk, tm, mtm;
 	};
 
@@ -173,8 +173,6 @@ namespace PnnQuant
 	{
 		UINT k = 0;
 		Color c(argb);
-		if (c.GetA() == 0)
-			return k;
 
 		UINT nMaxColors = pPalette->Count;
 		if (hasTransparency || nMaxColors < 256) {
@@ -313,8 +311,6 @@ namespace PnnQuant
 
 					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 					qPixels[pixelIndex] = nearestColorIndex(pPalette, squares3, argb);
-					if (hasTransparency && (argb == m_transparentColor || c.GetA() == 0))
-						qPixels[pixelIndex] = nearestColorIndex(pPalette, squares3, pixels[pixelIndex]);
 					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 					a_pix = dith_max[a_pix - c2.GetA()];
 					r_pix = dith_max[r_pix - c2.GetR()];
@@ -457,6 +453,7 @@ namespace PnnQuant
 		UINT bitmapWidth = pSource->GetWidth();
 		UINT bitmapHeight = pSource->GetHeight();
 
+		hasTransparency = false;
 		bool r = true;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);

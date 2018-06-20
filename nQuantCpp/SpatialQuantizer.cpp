@@ -36,7 +36,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace SpatialQuant
 {
 	bool hasTransparency = false;
-	ARGB m_transparentColor;
+	ARGB m_transparentColor = Color::Transparent;
 
 	template <typename T, int length>
 	class vector_fixed
@@ -900,6 +900,7 @@ namespace SpatialQuant
 		UINT bitmapWidth = pSource->GetWidth();
 		UINT bitmapHeight = pSource->GetHeight();
 
+		hasTransparency = false;
 		bool r = true;
 		int pixelIndex = 0;
 		array2d<vector_fixed<double, 3> > pixels(bitmapWidth, bitmapHeight);
