@@ -10,7 +10,7 @@ Copyright (c) 2018 Miller Cy Chan
 
 namespace PnnQuant
 {
-	bool hasTransparency = false;
+	bool hasTransparency = false, hasSemiTransparency = false;
 	ARGB m_transparentColor = Color::Transparent;
 	map<ARGB, vector<short> > closestMap;
 
@@ -20,10 +20,12 @@ namespace PnnQuant
 		unsigned short nn, fw, bk, tm, mtm;
 	};
 
-	inline int getIndex(const Color& c)
+	inline int getARGBIndex(const Color& c, bool semiTransparency = true)
 	{
-		if (hasTransparency)
+		if(semiTransparency)
 			return (c.GetA() & 0xF0) << 8 | (c.GetR() & 0xF0) << 4 | (c.GetG() & 0xF0) | (c.GetB() >> 4);
+		if (hasTransparency)
+			return (c.GetA() & 0x80) << 8 | (c.GetR() & 0xF8) << 7 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
 		return (c.GetR() & 0xF8) << 8 | (c.GetG() & 0xFC) << 3 | (c.GetB() >> 3);
 	}
 
@@ -64,7 +66,7 @@ namespace PnnQuant
 			// !!! Can throw gamma correction in here, but what to do about perceptual
 			// !!! nonuniformity then?
 			Color c(pixel);
-			int index = getIndex(c);
+			int index = getARGBIndex(c);
 			auto& tb = bins[index];
 			tb.ac += c.GetA();
 			tb.rc += c.GetR();
@@ -262,7 +264,7 @@ namespace PnnQuant
 		if (dither) {
 			bool odd_scanline = false;
 			short *row0, *row1;
-			int j, a_pix, r_pix, g_pix, b_pix, dir, k;
+			int a_pix, r_pix, g_pix, b_pix, dir, k;
 			const int DJ = 4;
 			const int DITHER_MAX = 20;
 			const int err_len = (width + 2) * DJ;
@@ -287,7 +289,7 @@ namespace PnnQuant
 			for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
 				limtb[i + 256] = i;
 
-			for (int i = 0; i < height; i++) {
+			for (UINT i = 0; i < height; i++) {
 				if (odd_scanline) {
 					dir = -1;
 					pixelIndex += (width - 1);
@@ -300,7 +302,7 @@ namespace PnnQuant
 					row1 = &orowerr[width * DJ];
 				}
 				row1[0] = row1[1] = row1[2] = row1[3] = 0;
-				for (j = 0; j < width; j++) {
+				for (UINT j = 0; j < width; j++) {
 					Color c(pixels[pixelIndex]);
 
 					r_pix = clamp[((row0[0] + 0x1008) >> 4) + c.GetR()];
@@ -310,7 +312,7 @@ namespace PnnQuant
 
 					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 					Color c1(argb);
-					int offset = getIndex(c1);
+					int offset = getARGBIndex(c1);
 					if (!lookup[offset])
 						lookup[offset] = nearestColorIndex(pPalette, squares3, argb) + 1;
 					qPixels[pixelIndex] = lookup[offset] - 1;
@@ -358,12 +360,127 @@ namespace PnnQuant
 			return true;
 		}
 
-		UINT (*fcnPtr)(const ColorPalette*, const int*, const ARGB) = (hasTransparency || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
+		UINT(*fcnPtr)(const ColorPalette*, const int*, const ARGB) = (hasSemiTransparency || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++)
 				qPixels[pixelIndex++] = (*fcnPtr)(pPalette, squares3, pixels[pixelIndex]);
 		}
 
+		return true;
+	}
+
+	bool quantize_image(const ARGB* pixels, short* qPixels, UINT width, UINT height)
+	{
+		UINT nMaxColors = 65536;
+		int sqr_tbl[BYTE_MAX + BYTE_MAX + 1];
+
+		for (int i = (-BYTE_MAX); i <= BYTE_MAX; i++)
+			sqr_tbl[i + BYTE_MAX] = i * i;
+
+		auto squares3 = &sqr_tbl[BYTE_MAX];
+
+		UINT pixelIndex = 0;
+		bool odd_scanline = false;
+		short *row0, *row1;
+		int a_pix, r_pix, g_pix, b_pix, dir, k;
+		const int DJ = 4;
+		const int DITHER_MAX = 20;
+		const int err_len = (width + 2) * DJ;
+		byte clamp[DJ * 256] = { 0 };
+		auto erowErr = make_unique<short[]>(err_len);
+		auto orowErr = make_unique<short[]>(err_len);
+		char limtb[512] = { 0 };
+		auto lim = &limtb[256];
+		auto erowerr = erowErr.get();
+		auto orowerr = orowErr.get();
+		int lookup[65536] = { 0 };
+
+		for (int i = 0; i < 256; i++) {
+			clamp[i] = 0;
+			clamp[i + 256] = static_cast<byte>(i);
+			clamp[i + 512] = BYTE_MAX;
+			clamp[i + 768] = BYTE_MAX;
+
+			limtb[i] = -DITHER_MAX;
+			limtb[i + 256] = DITHER_MAX;
+		}
+		for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
+			limtb[i + 256] = i;
+
+		for (int i = 0; i < height; i++) {
+			if (odd_scanline) {
+				dir = -1;
+				pixelIndex += (width - 1);
+				row0 = &orowerr[DJ];
+				row1 = &erowerr[width * DJ];
+			}
+			else {
+				dir = 1;
+				row0 = &erowerr[DJ];
+				row1 = &orowerr[width * DJ];
+			}
+			row1[0] = row1[1] = row1[2] = row1[3] = 0;
+			for (UINT j = 0; j < width; j++) {
+				Color c(pixels[pixelIndex]);
+
+				r_pix = clamp[((row0[0] + 0x1008) >> 4) + c.GetR()];
+				g_pix = clamp[((row0[1] + 0x1008) >> 4) + c.GetG()];
+				b_pix = clamp[((row0[2] + 0x1008) >> 4) + c.GetB()];
+				a_pix = clamp[((row0[3] + 0x1008) >> 4) + c.GetA()];
+
+				ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+				Color c1(argb);
+				int offset = getARGBIndex(c1, false);
+				if (!lookup[offset]) {
+					auto argb1 = Color::MakeARGB(BYTE_MAX, (c1.GetR() & 0xF8), (c1.GetG() & 0xFC), (c1.GetB() & 0xF8));
+					if (hasSemiTransparency)
+						argb1 = Color::MakeARGB((c1.GetA() & 0xF0), (c1.GetR() & 0xF0), (c1.GetG() & 0xF0), (c1.GetB() & 0xF0));
+					else if (hasTransparency)
+						argb1 = Color::MakeARGB((c1.GetA() < BYTE_MAX) ? 0 : BYTE_MAX, (c1.GetR() & 0xF8), (c1.GetG() & 0xF8), (c1.GetB() & 0xF8));
+					lookup[offset] = argb1 + 1;
+				}
+				qPixels[pixelIndex] = static_cast<short>(offset);
+
+				Color c2(static_cast<ARGB>(lookup[offset] - 1));
+
+				r_pix = lim[r_pix - c2.GetR()];
+				g_pix = lim[g_pix - c2.GetG()];
+				b_pix = lim[b_pix - c2.GetB()];
+				a_pix = lim[a_pix - c2.GetA()];
+
+				k = r_pix * 2;
+				row1[0 - DJ] = r_pix;
+				row1[0 + DJ] += (r_pix += k);
+				row1[0] += (r_pix += k);
+				row0[0 + DJ] += (r_pix += k);
+
+				k = g_pix * 2;
+				row1[1 - DJ] = g_pix;
+				row1[1 + DJ] += (g_pix += k);
+				row1[1] += (g_pix += k);
+				row0[1 + DJ] += (g_pix += k);
+
+				k = b_pix * 2;
+				row1[2 - DJ] = b_pix;
+				row1[2 + DJ] += (b_pix += k);
+				row1[2] += (b_pix += k);
+				row0[2 + DJ] += (b_pix += k);
+
+				k = a_pix * 2;
+				row1[3 - DJ] = a_pix;
+				row1[3 + DJ] += (a_pix += k);
+				row1[3] += (a_pix += k);
+				row0[3 + DJ] += (a_pix += k);
+
+				row0 += DJ;
+				row1 -= DJ;
+				pixelIndex += dir;
+			}
+			if ((i % 2) == 1)
+				pixelIndex += (width + 1);
+
+			odd_scanline = !odd_scanline;
+		}
 		return true;
 	}
 
@@ -439,15 +556,55 @@ namespace PnnQuant
 		return pDest->GetLastStatus() == Ok;
 	}
 
+	bool ProcessImagePixels(Bitmap* pDest, const short* qPixels)
+	{
+		UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
+		if (bpp < 16)
+			return false;
+
+		BitmapData targetData;
+		UINT w = pDest->GetWidth();
+		UINT h = pDest->GetHeight();
+
+		Status status = pDest->LockBits(&Gdiplus::Rect(0, 0, w, h), ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
+		if (status != Ok) {
+			AfxMessageBox(_T("Cannot write image"));
+			return false;
+		}
+
+		int pixelIndex = 0;
+
+		auto pRowDest = (byte*)targetData.Scan0;
+		UINT strideDest;
+
+		// Compensate for possible negative stride
+		if (targetData.Stride > 0)
+			strideDest = targetData.Stride;
+		else {
+			pRowDest += h * targetData.Stride;
+			strideDest = -targetData.Stride;
+		}
+
+		// Second loop: fill indexed bitmap
+		for (UINT y = 0; y < h; y++) {	// For each row...
+			for (UINT x = 0; x < w * 2;) {
+				pRowDest[x++] = static_cast<byte>(qPixels[pixelIndex] & 0xFF);
+				pRowDest[x++] = static_cast<byte>(qPixels[pixelIndex++] >> 8);				
+			}
+			pRowDest += strideDest;
+		}
+
+		status = pDest->UnlockBits(&targetData);
+		return pDest->GetLastStatus() == Ok;
+	}
+
 	bool PnnQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
 	{
-		if (nMaxColors > 256)
-			nMaxColors = 256;
 		UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
 		UINT bitmapWidth = pSource->GetWidth();
 		UINT bitmapHeight = pSource->GetHeight();
 
-		hasTransparency = false;
+		hasTransparency = hasSemiTransparency = false;
 		bool r = true;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
@@ -457,9 +614,11 @@ namespace PnnQuant
 					Color color;
 					pSource->GetPixel(x, y, &color);
 					if (color.GetA() < BYTE_MAX) {
-						hasTransparency = true;
-						if (color.GetA() == 0)
+						hasSemiTransparency = true;
+						if (color.GetA() == 0) {
+							hasTransparency = true;
 							m_transparentColor = color.GetValue();
+						}
 					}
 					pixels[pixelIndex++] = color.GetValue();
 				}
@@ -500,9 +659,11 @@ namespace PnnQuant
 
 					auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
 					if (pixelAlpha < BYTE_MAX) {
-						hasTransparency = true;
-						if (pixelAlpha == 0)
+						hasSemiTransparency = true;
+						if (pixelAlpha == 0) {
+							hasTransparency = true;
 							m_transparentColor = argb;
+						}
 					}
 					pixels[pixelIndex++] = argb;
 				}
@@ -513,6 +674,12 @@ namespace PnnQuant
 			pSource->UnlockBits(&data);
 		}
 
+		if (nMaxColors > 256) {
+			auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
+			quantize_image(pixels.data(), qPixels.get(), bitmapWidth, bitmapHeight);
+			return ProcessImagePixels(pDest, qPixels.get());
+		}
+
 		auto bins = make_unique<pnnbin[]>(65536);
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
@@ -521,7 +688,7 @@ namespace PnnQuant
 		if (nMaxColors > 2)
 			pnnquan(pixels, bins.get(), pPalette, quan_sqrt);
 		else {
-			if (hasTransparency) {
+			if (hasSemiTransparency) {
 				pPalette->Entries[0] = Color::Transparent;
 				pPalette->Entries[1] = Color::Black;
 			}
