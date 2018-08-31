@@ -1,5 +1,5 @@
 # nQuantCpp
-nQuantCpp includes top 5 color quantizers producing high quality 256 color 8 bit PNG images using an algorithm optimized for the highest quality possible.
+nQuantCpp includes top 5 color quantization algorithms producing high quality 256 color 8 bit PNG images using an algorithm optimized for the highest quality possible.
 
 Fast pairwise nearest neighbor based algorithm, 
 NeuQuant Neural-Net Quantization Algorithm, 
