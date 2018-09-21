@@ -36,7 +36,7 @@ namespace nQuant
 	
 	bool hasTransparency = false;
 	ARGB m_transparentColor;
-	map<ARGB, vector<UINT> > closestMap;
+	map<ARGB, vector<short> > closestMap;
 	map<ARGB, UINT> rightMatches;
 
 	struct Box {
@@ -593,10 +593,10 @@ namespace nQuant
 			return k;
 		}
 
-		vector<UINT> closest(5);
+		vector<short> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
-			closest[2] = closest[3] = 100000000;
+			closest[2] = closest[3] = SHORT_MAX;
 
 			auto lookups = lookupData.lookups;
 			auto lookupsCount = lookups.size();
@@ -741,8 +741,7 @@ namespace nQuant
 
 					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);					
 					qPixels[pixelIndex] = bestcolor(lookupData, argb, i, alphaThreshold);
-					if(hasTransparency && qPixels[pixelIndex] == 0 && c.GetA() > 0)
-						qPixels[pixelIndex] = bestcolor(lookupData, pixels[pixelIndex], i, alphaThreshold);
+
 					auto lookups = lookupData.lookups;
 					Color c2(lookups[qPixels[pixelIndex]]);
 					a_pix = dith_max[a_pix - c2.GetA()];

@@ -47,7 +47,9 @@
 
 namespace Dl3Quant
 {
-	map<ARGB, vector<UINT> > closestMap;
+	bool hasTransparency = false;
+	ARGB m_transparentColor;
+	map<ARGB, vector<short> > closestMap;
 	map<ARGB, UINT> rightMatches;
 
 	struct CUBE3 {
@@ -103,7 +105,9 @@ namespace Dl3Quant
 	void build_table3(CUBE3* rgb_table3, ARGB argb)
 	{
 		Color c(argb);
-		int index = (c.GetR() & 0xF8) << 7 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
+		int index = (c.GetR() & 0xFC) << 8 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
+		if (hasTransparency)
+			index = (c.GetA() & 0xF0) << 8 | (c.GetR() & 0xF0) << 4 | (c.GetG() & 0xF0) | (c.GetB() >> 4);
 
 		rgb_table3[index].a += c.GetA();
 		rgb_table3[index].r += c.GetR();
@@ -115,7 +119,7 @@ namespace Dl3Quant
 	UINT build_table3(CUBE3* rgb_table3)
 	{
 		UINT tot_colors = 0;
-		for (int i = 0; i < 32768; i++) {
+		for (int i = 0; i < 65536; i++) {
 			if (rgb_table3[i].pixel_count) {
 				setrgb(rgb_table3[i]);
 				rgb_table3[tot_colors++] = rgb_table3[i];
@@ -216,27 +220,31 @@ namespace Dl3Quant
 	UINT bestcolor3(CUBE3* rgb_table3, const int* squares3, UINT nMaxColors, ARGB argb)
 	{
 		UINT k = 0;
-		Color c(argb);		
+		Color c(argb);
+		if (c.GetA() == 0)
+			return k;
 
 		if (nMaxColors < 256) {
 			auto got = rightMatches.find(argb);
 			if (got == rightMatches.end()) {
 				int curdist, mindist = 200000;
 				for (UINT i = 0; i < nMaxColors; i++) {
-					int adist = rgb_table3[i].aa - c.GetA();
-					int rdist = rgb_table3[i].rr - c.GetR();
-					int gdist = rgb_table3[i].gg - c.GetG();
-					int bdist = rgb_table3[i].bb - c.GetB();
-					curdist = squares3[adist] + squares3[rdist] + squares3[gdist] + squares3[bdist];
+					curdist = squares3[rgb_table3[i].aa - c.GetA()];
+					if (curdist > mindist)
+						continue;
+					curdist += squares3[rgb_table3[i].rr - c.GetR()];
+					if (curdist > mindist)
+						continue;
+					curdist += squares3[rgb_table3[i].gg - c.GetG()];
+					if (curdist > mindist)
+						continue;
+					curdist += squares3[rgb_table3[i].bb - c.GetB()];
+					if (curdist > mindist)
+						continue;
 					if (curdist < mindist) {
 						mindist = curdist;					
 						k = i;
 					}
-				}
-
-				if (c.GetA() == 0) {
-					swap(rgb_table3[k], rgb_table3[0]);
-					k = 0;
 				}
 				rightMatches[argb] = k;
 			}
@@ -246,10 +254,10 @@ namespace Dl3Quant
 			return k;
 		}
 		
-		vector<UINT> closest(5);
+		vector<short> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
-			closest[2] = closest[3] = 100000000;
+			closest[2] = closest[3] = SHORT_MAX;
 
 			for (; k < nMaxColors; k++) {
 				closest[4] = abs(c.GetA() - rgb_table3[k].aa) + abs(c.GetR() - rgb_table3[k].rr) + abs(c.GetG() - rgb_table3[k].gg) + abs(c.GetB() - rgb_table3[k].bb);
@@ -341,6 +349,7 @@ namespace Dl3Quant
 
 					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);					
 					qPixels[pixelIndex] = bestcolor3(rgb_table3, squares3, nMaxColors, argb);
+
 					Color c2(qPixels[pixelIndex]);
 					a_pix = dith_max[a_pix - c2.GetA()];
 					r_pix = dith_max[r_pix - c2.GetR()];
@@ -409,12 +418,9 @@ namespace Dl3Quant
 				continue;
 
 			auto alpha = rgb_table3[paletteIndex].aa;
-			if(alpha > 0)
-				pPalette->Entries[paletteIndex] = Color::MakeARGB(alpha, rgb_table3[paletteIndex].rr, rgb_table3[paletteIndex].gg, rgb_table3[paletteIndex].bb);
-			else {
-				k = paletteIndex;
-				pPalette->Entries[paletteIndex] = Color::Transparent;
-			}
+			pPalette->Entries[paletteIndex] = Color::MakeARGB(alpha, rgb_table3[paletteIndex].rr, rgb_table3[paletteIndex].gg, rgb_table3[paletteIndex].bb);
+			if (hasTransparency && pPalette->Entries[paletteIndex] == m_transparentColor)
+				swap(pPalette->Entries[0], pPalette->Entries[paletteIndex]);
 		}
 	}
 
@@ -493,7 +499,7 @@ namespace Dl3Quant
 
 	bool Dl3Quantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
 	{
-		auto rgb_table3 = make_unique<CUBE3[]>(32768);
+		auto rgb_table3 = make_unique<CUBE3[]>(65536);
 		
 		UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
 		UINT bitmapWidth = pSource->GetWidth();
@@ -507,6 +513,10 @@ namespace Dl3Quant
 				for (UINT x = 0; x < bitmapWidth; x++) {
 					Color color;
 					pSource->GetPixel(x, y, &color);
+					if (color.GetA() < BYTE_MAX)
+						hasTransparency = true;
+					if (color.GetA() == 0)
+						m_transparentColor = color.GetValue();
 					pixels[pixelIndex++] = color.GetValue();
 					build_table3(&rgb_table3[0], color.GetValue());
 				}
@@ -544,8 +554,12 @@ namespace Dl3Quant
 					byte pixelGreen = *pPixelSource++;
 					byte pixelRed = *pPixelSource++;
 					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
+					if (pixelAlpha < BYTE_MAX)
+						hasTransparency = true;
 
-					ARGB argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
+					auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
+					if (pixelAlpha == 0)
+						m_transparentColor = argb;
 					pixels[pixelIndex++] = argb;
 					build_table3(&rgb_table3[0], argb);
 				}
