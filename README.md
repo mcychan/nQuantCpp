@@ -21,7 +21,8 @@ Original photo<img src="https://i.stack.imgur.com/jFvEG.jpg" /><br>
 Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/yJIjQ.gif" />
 Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<img src="https://i.stack.imgur.com/dPTml.gif" />
 
-<p><b><a href="http://www.cs.joensuu.fi/sipu/pub/Threshold-JEI.pdf">Fast pairwise nearest neighbor based algorithm with CIELAB color space</a></b> with 8 colors<br>
+<p>Original image<br><img src="https://i.stack.imgur.com/YiHQV.png" /><br>
+<b><a href="http://www.cs.joensuu.fi/sipu/pub/Threshold-JEI.pdf">Fast pairwise nearest neighbor based algorithm with CIELAB color space</a></b> with 8 colors<br>
 High quality and fast<br>
 <a href="https://i.stack.imgur.com/284Fh.png"><img src="https://i.stack.imgur.com/284Fh.png" alt="enter image description here"></a></p>
 <p><b><a href="http://cg.cs.tsinghua.edu.cn/people/~huanghz/publications/TIP-2015-CombinedColorQuantization.pdf">Efficient, Edge-Aware, Combined Color Quantization and Dithering</a></b> with 8 colors<br>
