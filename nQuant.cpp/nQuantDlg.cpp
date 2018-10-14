@@ -243,15 +243,14 @@ void CQuantDlg::OnBnClickedRetry()
 	UINT w = m_pImage->GetWidth();
 	UINT h = m_pImage->GetHeight();
 
-	// Create 8 bpp indexed bitmap of the same size
-	m_pImage256Color = make_unique<Bitmap>(w, h, PixelFormat8bppIndexed);
+	m_pTargetImage = make_unique<Bitmap>(w, h, PixelFormat8bppIndexed);
 
-	UINT nMaxColors = 1 << GetPixelFormatSize(m_pImage256Color->GetPixelFormat());
-	bool bSucceeded = pnnLABQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
-	//bool bSucceeded = easQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
+	UINT nMaxColors = 256;
+	bool bSucceeded = pnnLABQuantizer.QuantizeImage(m_pImage.get(), m_pTargetImage.get(), nMaxColors);
+	//bool bSucceeded = easQuantizer.QuantizeImage(m_pImage.get(), m_pTargetImage.get(), nMaxColors);
 
 	HBITMAP bitmap;
-	m_pImage256Color->GetHBITMAP(NULL, &bitmap);
+	m_pTargetImage->GetHBITMAP(NULL, &bitmap);
 	
 	TCHAR path[MAX_PATH];
 	GetTempPath(MAX_PATH, path);
@@ -260,7 +259,7 @@ void CQuantDlg::OnBnClickedRetry()
 
 	// image/png  : {557cf406-1a04-11d3-9a73-0000f81ef32e}
 	const CLSID pngEncoderClsId = { 0x557cf406, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };
-	Status status = m_pImage256Color->Save(pathName, &pngEncoderClsId);
+	Status status = m_pTargetImage->Save(pathName, &pngEncoderClsId);
 	if(bSucceeded && status != Status::Ok)
 		SetBackgroundImage(bitmap, CDialogEx::BACKGR_TOPLEFT);
 	theApp.DoWaitCursor(-1); // -1->>remove the hourglass cursor

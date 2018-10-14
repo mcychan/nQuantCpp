@@ -36,7 +36,7 @@ protected:
 	TCHAR szInitDir[MAX_PATH];
 	CString m_PathName, m_FileTypes;
 	unique_ptr<Bitmap> m_pImage;
-	unique_ptr<Bitmap> m_pImage256Color;
+	unique_ptr<Bitmap> m_pTargetImage;
 
 	PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
 	PnnQuant::PnnQuantizer pnnQuantizer;
