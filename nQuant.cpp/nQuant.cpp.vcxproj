@@ -191,6 +191,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\nQuantCpp\CIELABConvertor.h" />
     <ClInclude Include="..\nQuantCpp\Dl3Quantizer.h" />
     <ClInclude Include="..\nQuantCpp\NeuQuantizer.h" />
     <ClInclude Include="..\nQuantCpp\PnnQuantizer.h" />
@@ -203,8 +204,11 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\nQuantCpp\CIELABConvertor.cpp" />
     <ClCompile Include="..\nQuantCpp\Dl3Quantizer.cpp" />
+    <ClCompile Include="..\nQuantCpp\EdgeAwareSQuantizer.cpp" />
     <ClCompile Include="..\nQuantCpp\NeuQuantizer.cpp" />
+    <ClCompile Include="..\nQuantCpp\PnnLABQuantizer.cpp" />
     <ClCompile Include="..\nQuantCpp\PnnQuantizer.cpp" />
     <ClCompile Include="..\nQuantCpp\SpatialQuantizer.cpp" />
     <ClCompile Include="..\nQuantCpp\WuQuantizer.cpp" />

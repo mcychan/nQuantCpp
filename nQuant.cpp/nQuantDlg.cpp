@@ -247,9 +247,8 @@ void CQuantDlg::OnBnClickedRetry()
 	m_pImage256Color = make_unique<Bitmap>(w, h, PixelFormat8bppIndexed);
 
 	UINT nMaxColors = 1 << GetPixelFormatSize(m_pImage256Color->GetPixelFormat());
-	bool bSucceeded = pnnQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
-	//bool bSucceeded = neuQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
-	//neuQuantizer.Clear();
+	bool bSucceeded = pnnLABQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
+	//bool bSucceeded = easQuantizer.QuantizeImage(m_pImage.get(), m_pImage256Color.get(), nMaxColors);
 
 	HBITMAP bitmap;
 	m_pImage256Color->GetHBITMAP(NULL, &bitmap);
@@ -257,7 +256,7 @@ void CQuantDlg::OnBnClickedRetry()
 	TCHAR path[MAX_PATH];
 	GetTempPath(MAX_PATH, path);
 	CString pathName;
-	pathName.Format(_T("%s\\%s_new.png"), path, PathFindFileName(m_PathName));
+	pathName.Format(_T("%s%s_new.png"), path, PathFindFileName(m_PathName));
 
 	// image/png  : {557cf406-1a04-11d3-9a73-0000f81ef32e}
 	const CLSID pngEncoderClsId = { 0x557cf406, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };

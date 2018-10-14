@@ -5,10 +5,10 @@
 #include <memory>
 using namespace std;
 #include "afxwin.h"
-#include "../nQuantCpp/Dl3Quantizer.h"
 #include "../nQuantCpp/PnnQuantizer.h"
+#include "../nQuantCpp/PnnLABQuantizer.h"
+#include "../nQuantCpp/EdgeAwareSQuantizer.h"
 #include "../nQuantCpp/NeuQuantizer.h"
-#include "../nQuantCpp/WuQuantizer.h"
 
 // CQuantDlg dialog
 class CQuantDlg : public CDialogEx
@@ -38,10 +38,10 @@ protected:
 	unique_ptr<Bitmap> m_pImage;
 	unique_ptr<Bitmap> m_pImage256Color;
 
-	Dl3Quant::Dl3Quantizer dl3Quantizer;
+	PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
 	PnnQuant::PnnQuantizer pnnQuantizer;
 	NeuralNet::NeuQuantizer neuQuantizer;
-	nQuant::WuQuantizer wuQuantizer;
+	EdgeAwareSQuant::EdgeAwareSQuantizer easQuantizer;
 
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
