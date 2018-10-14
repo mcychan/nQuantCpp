@@ -21,8 +21,18 @@ Original photo<img src="https://i.stack.imgur.com/jFvEG.jpg" /><br>
 Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/yJIjQ.gif" />
 Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<img src="https://i.stack.imgur.com/dPTml.gif" />
 
+<p><b><a href="http://www.cs.joensuu.fi/sipu/pub/Threshold-JEI.pdf">Fast pairwise nearest neighbor based algorithm with CIELAB color space</a></b> with 8 colors<br>
+High quality and fast<br>
+<a href="https://i.stack.imgur.com/284Fh.png"><img src="https://i.stack.imgur.com/284Fh.png" alt="enter image description here"></a></p>
+<p><b><a href="http://cg.cs.tsinghua.edu.cn/people/~huanghz/publications/TIP-2015-CombinedColorQuantization.pdf">Efficient, Edge-Aware, Combined Color Quantization and Dithering</a></b> with 8 colors<br>
+Higher quality for 32 or less colors but slower<br>
+<a href="https://i.stack.imgur.com/qTlhN.png"><img src="https://i.stack.imgur.com/qTlhN.png" alt="enter image description here"></a></p>
+<p><b><a href="https://people.eecs.berkeley.edu/~dcoetzee/downloads/scolorq/">Spatial color quantization</a></b> with 8 colors<br>
+Higher quality for 32 or less colors but the slowest<br>
+<a href="https://i.stack.imgur.com/589Ce.png"><img src="https://i.stack.imgur.com/589Ce.png" alt="enter image description here"></a></p>
+
 The readers can see coding of the error diffusion and dithering are quite similar among the above quantization algorithms. 
 Each algorithm has its own advantages. I share the source of color quantization to invite further discussion and improvements.
 Such source code are written in C++ to gain best performance. It is readable and convertible to c#, java, or javascript.
 Welcome for C++ experts for further improvement or provide color quantization algorithms better than the above algorithms.
-Please send email to miller.chan@gmail.com to give suggestions or request the advanced version of Pairwise Nearest Neighbor quantization.
+Please send email to miller.chan@gmail.com to report issues or give suggestions.
