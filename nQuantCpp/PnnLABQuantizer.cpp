@@ -11,15 +11,17 @@ Copyright (c) 2018 Miller Cy Chan
 
 namespace PnnLABQuant
 {
-	bool hasTransparency = false;
+	bool hasTransparency = false, hasSemiTransparency = false;
 	ARGB m_transparentColor = Color::Transparent;
 	map<ARGB, CIELABConvertor::Lab> pixelMap;	
 	map<ARGB, vector<double> > closestMap;
 
-	inline int getIndex(const Color& c)
+	inline int getARGBIndex(const Color& c, bool semiTransparency = true)
 	{
-		if (hasTransparency)
+		if (semiTransparency)
 			return (c.GetA() & 0xF0) << 8 | (c.GetR() & 0xF0) << 4 | (c.GetG() & 0xF0) | (c.GetB() >> 4);
+		if (hasTransparency)
+			return (c.GetA() & 0x80) << 8 | (c.GetR() & 0xF8) << 7 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
 		return (c.GetR() & 0xF8) << 8 | (c.GetG() & 0xFC) << 3 | (c.GetB() >> 3);
 	}
 
@@ -71,12 +73,12 @@ namespace PnnLABQuant
 			// !!! Can throw gamma correction in here, but what to do about perceptual
 			// !!! nonuniformity then?			
 			Color c(pixel);
-			int index = getIndex(c);
+			int index = getARGBIndex(c);
 
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
 			auto& tb = bins[index];
-			tb.ac += lab1.alpha;
+			tb.ac += c.GetA();
 			tb.Lc += lab1.L;
 			tb.Ac += lab1.A;
 			tb.Bc += lab1.B;
@@ -170,17 +172,17 @@ namespace PnnLABQuant
 		short k = 0;
 		if (hasTransparency)
 			++k;
-		for (int i = 0;; k++) {
-			auto alpha = rint(bins[i].ac);
+		for (int i = 0;; k++) {			
 			CIELABConvertor::Lab lab1;
+			lab1.alpha = rint(bins[i].ac);
 			lab1.L = bins[i].Lc, lab1.A = bins[i].Ac, lab1.B = bins[i].Bc;
 			pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
+			if (hasTransparency && pPalette->Entries[k] == m_transparentColor)
+				swap(pPalette->Entries[0], pPalette->Entries[k]);
 
 			if (!(i = bins[i].fw))
 				break;
 		}
-		if (hasTransparency)
-			pPalette->Entries[0] = m_transparentColor;
 
 		return 0;
 	}
@@ -190,7 +192,7 @@ namespace PnnLABQuant
 		short k = 0;
 		Color c(argb);
 
-		unsigned short index = getIndex(c);
+		unsigned short index = getARGBIndex(c);
 		double mindist = SHORT_MAX;
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
@@ -199,7 +201,7 @@ namespace PnnLABQuant
 			Color c2(pPalette->Entries[i]);
 			getLab(c2, lab2);
 
-			double curdist = abs(lab2.alpha - lab1.alpha);
+			double curdist = pow(c2.GetA() - c.GetA(), 2.0);
 			if (curdist > mindist)
 				continue;
 
@@ -226,15 +228,15 @@ namespace PnnLABQuant
 					continue;
 			}
 			else {
-				curdist += abs(lab2.L - lab1.L);
+				curdist += pow(lab2.L - lab1.L, 2.0);
 				if (curdist > mindist)
 					continue;
 
-				curdist += abs(lab2.A - lab1.A);
+				curdist += pow(lab2.A - lab1.A, 2.0);
 				if (curdist > mindist)
 					continue;
 
-				curdist += abs(lab2.B - lab1.B);
+				curdist += pow(lab2.B - lab1.B, 2.0);
 				if (curdist > mindist)
 					continue;
 			}
@@ -344,12 +346,16 @@ namespace PnnLABQuant
 
 					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 					Color c1(argb);
-					int offset = getIndex(c1);
+					int offset = getARGBIndex(c1, false);
 					if (!lookup[offset])
 						lookup[offset] = nearestColorIndex(pPalette, argb) + 1;
 					qPixels[pixelIndex] = lookup[offset] - 1;
 
 					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
+					if (c2.GetA() < BYTE_MAX && c.GetA() == BYTE_MAX) {
+						lookup[offset] = nearestColorIndex(pPalette, pixels[pixelIndex]) + 1;
+						qPixels[pixelIndex] = lookup[offset] - 1;
+					}
 
 					r_pix = lim[r_pix - c2.GetR()];
 					g_pix = lim[g_pix - c2.GetG()];
@@ -480,7 +486,7 @@ namespace PnnLABQuant
 		UINT bitmapWidth = pSource->GetWidth();
 		UINT bitmapHeight = pSource->GetHeight();
 
-		hasTransparency = false;
+		hasTransparency = hasSemiTransparency = false;
 		bool r = true;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
@@ -490,9 +496,11 @@ namespace PnnLABQuant
 					Color color;
 					pSource->GetPixel(x, y, &color);
 					if (color.GetA() < BYTE_MAX) {
-						hasTransparency = true;
-						if (color.GetA() == 0)
+						hasSemiTransparency = true;
+						if (color.GetA() == 0) {
+							hasTransparency = true;
 							m_transparentColor = color.GetValue();
+						}
 					}
 					pixels[pixelIndex++] = color.GetValue();
 				}
