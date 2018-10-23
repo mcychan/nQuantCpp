@@ -16,9 +16,9 @@ namespace PnnLABQuant
 	map<ARGB, CIELABConvertor::Lab> pixelMap;	
 	map<ARGB, vector<double> > closestMap;
 
-	inline int getARGBIndex(const Color& c, bool semiTransparency = true)
+	inline int getARGBIndex(const Color& c)
 	{
-		if (semiTransparency)
+		if (hasSemiTransparency)
 			return (c.GetA() & 0xF0) << 8 | (c.GetR() & 0xF0) << 4 | (c.GetG() & 0xF0) | (c.GetB() >> 4);
 		if (hasTransparency)
 			return (c.GetA() & 0x80) << 8 | (c.GetR() & 0xF8) << 7 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
@@ -346,7 +346,7 @@ namespace PnnLABQuant
 
 					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 					Color c1(argb);
-					int offset = getARGBIndex(c1, false);
+					int offset = getARGBIndex(c1);
 					if (!lookup[offset])
 						lookup[offset] = nearestColorIndex(pPalette, argb) + 1;
 					qPixels[pixelIndex] = lookup[offset] - 1;
