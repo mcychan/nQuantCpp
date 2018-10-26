@@ -64,9 +64,9 @@ namespace PnnLABQuant
 
 	int PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, pnnbin* bins, ColorPalette* pPalette)
 	{
-		unsigned short heap[65537] = { 0 };
+		int heap[65537] = { 0 };
 		double err, n1, n2;
-		int l, l2, h, b1, maxbins, extbins, res = 1;
+		int l, l2, h, b1, maxbins, extbins;
 
 		/* Build histogram */
 		for (const auto& pixel : pixels) {

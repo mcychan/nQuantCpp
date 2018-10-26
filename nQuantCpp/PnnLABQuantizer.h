@@ -8,7 +8,7 @@ namespace PnnLABQuant
 	struct pnnbin {
 		double ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
 		int cnt = 0;
-		unsigned short nn, fw, bk, tm, mtm;
+		int nn, fw, bk, tm, mtm;
 	};
 
 	// =============================================================

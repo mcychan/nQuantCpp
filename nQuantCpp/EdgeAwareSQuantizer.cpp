@@ -799,8 +799,8 @@ namespace EdgeAwareSQuant
 				pPalette->Entries[0] = Color::Black;
 			}
 			else {
-				pPalette->Entries[1] = Color::Black;
-				pPalette->Entries[0] = Color::White;
+				pPalette->Entries[1] = Color::White;
+				pPalette->Entries[0] = Color::Black;
 			}
 		}
 

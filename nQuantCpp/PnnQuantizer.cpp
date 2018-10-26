@@ -17,7 +17,7 @@ namespace PnnQuant
 	struct pnnbin {
 		double ac = 0, rc = 0, gc = 0, bc = 0, err = 0;
 		int cnt = 0;
-		unsigned short nn, fw, bk, tm, mtm;
+		int nn, fw, bk, tm, mtm;
 	};
 
 	inline int getARGBIndex(const Color& c)
@@ -57,9 +57,9 @@ namespace PnnQuant
 
 	int pnnquan(const vector<ARGB>& pixels, pnnbin* bins, ColorPalette* pPalette, bool quan_sqrt)
 	{
-		unsigned short heap[65537] = { 0 };
+		int heap[65537] = { 0 };
 		double err, n1, n2;
-		int l, l2, h, b1, maxbins, extbins, res = 1;
+		int l, l2, h, b1, maxbins, extbins;
 
 		/* Build histogram */
 		for (const auto& pixel : pixels) {
@@ -360,7 +360,7 @@ namespace PnnQuant
 			return true;
 		}
 
-		UINT(*fcnPtr)(const ColorPalette*, const int*, const ARGB) = (hasSemiTransparency || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
+		UINT(*fcnPtr)(const ColorPalette*, const int*, const ARGB) = (hasTransparency || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++)
 				qPixels[pixelIndex++] = (*fcnPtr)(pPalette, squares3, pixels[pixelIndex]);
@@ -582,8 +582,9 @@ namespace PnnQuant
 		// Second loop: fill indexed bitmap
 		for (UINT y = 0; y < h; y++) {	// For each row...
 			for (UINT x = 0; x < w * 2;) {
-				pRowDest[x++] = static_cast<byte>(qPixels[pixelIndex] & 0xFF);
-				pRowDest[x++] = static_cast<byte>(qPixels[pixelIndex++] >> 8);				
+				auto argb = static_cast<unsigned short>(qPixels[pixelIndex++]);
+				pRowDest[x++] = static_cast<byte>(argb & 0xFF);
+				pRowDest[x++] = static_cast<byte>(argb >> 8);				
 			}
 			pRowDest += strideDest;
 		}
@@ -669,6 +670,7 @@ namespace PnnQuant
 		}
 
 		if (nMaxColors > 256) {
+			hasSemiTransparency = false;
 			auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
 			quantize_image(pixels.data(), qPixels.get(), bitmapWidth, bitmapHeight);
 			return ProcessImagePixels(pDest, qPixels.get());
@@ -682,7 +684,7 @@ namespace PnnQuant
 		if (nMaxColors > 2)
 			pnnquan(pixels, bins.get(), pPalette, quan_sqrt);
 		else {
-			if (hasSemiTransparency) {
+			if (hasTransparency) {
 				pPalette->Entries[0] = Color::Transparent;
 				pPalette->Entries[1] = Color::Black;
 			}
