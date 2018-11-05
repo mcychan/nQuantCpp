@@ -1014,8 +1014,8 @@ namespace SpatialQuant
 			}
 		}
 		else {
-			pPalette->Entries[0] = Color::Black;
-			pPalette->Entries[1] = Color::White;
+			pPalette->Entries[1] = Color::Black;
+			pPalette->Entries[0] = Color::White;
 		}
 
 		return ProcessImagePixels(pDest, pPalette, quantized_image);

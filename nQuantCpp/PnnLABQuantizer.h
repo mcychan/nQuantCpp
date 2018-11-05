@@ -5,12 +5,6 @@ using namespace std;
 
 namespace PnnLABQuant
 {
-	struct pnnbin {
-		double ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
-		int cnt = 0;
-		int nn, fw, bk, tm, mtm;
-	};
-
 	// =============================================================
 	// Quantizer objects and functions
 	//
@@ -30,7 +24,7 @@ namespace PnnLABQuant
 	class PnnLABQuantizer
 	{
 		public:
-			int pnnquan(const vector<ARGB>& pixels, pnnbin* bins, ColorPalette* pPalette);
+			int pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette);
 			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither = true);
 	};
 }

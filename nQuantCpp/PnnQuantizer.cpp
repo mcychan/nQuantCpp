@@ -28,6 +28,11 @@ namespace PnnQuant
 			return (c.GetA() & 0x80) << 8 | (c.GetR() & 0xF8) << 7 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
 		return (c.GetR() & 0xF8) << 8 | (c.GetG() & 0xFC) << 3 | (c.GetB() >> 3);
 	}
+	
+	inline double sqr(double value)
+    {
+        return value * value;
+    }
 
 	void find_nn(pnnbin* bins, int idx)
 	{
@@ -43,7 +48,7 @@ namespace PnnQuant
 		for (i = bin1.fw; i; i = bins[i].fw) {
 			double nerr, n2;
 
-			nerr = pow((bins[i].ac - wa), 2) + pow((bins[i].rc - wr), 2) + pow((bins[i].gc - wg), 2) + pow((bins[i].bc - wb), 2);
+			nerr = sqr(bins[i].ac - wa) + sqr(bins[i].rc - wr) + sqr(bins[i].gc - wg) + sqr(bins[i].bc - wb);
 			n2 = bins[i].cnt;
 			nerr *= (n1 * n2) / (n1 + n2);
 			if (nerr >= err)
@@ -55,11 +60,11 @@ namespace PnnQuant
 		bin1.nn = nn;
 	}
 
-	int pnnquan(const vector<ARGB>& pixels, pnnbin* bins, ColorPalette* pPalette, bool quan_sqrt)
+	int pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, bool quan_sqrt)
 	{
+		auto bins = make_unique<pnnbin[]>(65536);
 		int heap[65537] = { 0 };
 		double err, n1, n2;
-		int l, l2, h, b1, maxbins, extbins;
 
 		/* Build histogram */
 		for (const auto& pixel : pixels) {
@@ -76,7 +81,7 @@ namespace PnnQuant
 		}
 
 		/* Cluster nonempty bins at one end of array */
-		maxbins = 0;
+		int maxbins = 0;
 
 		for (int i = 0; i < 65536; ++i) {
 			if (!bins[i].cnt)
@@ -99,9 +104,10 @@ namespace PnnQuant
 		// !!! Already zeroed out by calloc()
 		//	bins[0].bk = bins[i].fw = 0;
 
+		int h, l, l2;
 		/* Initialize nearest neighbors and build heap of them */
 		for (int i = 0; i < maxbins; i++) {
-			find_nn(bins, i);
+			find_nn(bins.get(), i);
 			/* Push slot on heap */
 			err = bins[i].err;
 			for (l = ++heap[0]; l > 1; l = l2) {
@@ -114,8 +120,10 @@ namespace PnnQuant
 		}
 
 		/* Merge bins which increase error the least */
-		extbins = maxbins - pPalette->Count;
+		int extbins = maxbins - pPalette->Count;
 		for (int i = 0; i < extbins; ) {
+			int b1;
+			
 			/* Use heap to find which bins to merge */
 			for (;;) {
 				auto& tb = bins[b1 = heap[1]]; /* One with least error */
@@ -126,7 +134,7 @@ namespace PnnQuant
 					b1 = heap[1] = heap[heap[0]--];
 				else /* Too old error value */
 				{
-					find_nn(bins, b1);
+					find_nn(bins.get(), b1);
 					tb.tm = i;
 				}
 				/* Push slot down */
@@ -675,14 +683,13 @@ namespace PnnQuant
 			quantize_image(pixels.data(), qPixels.get(), bitmapWidth, bitmapHeight);
 			return ProcessImagePixels(pDest, qPixels.get());
 		}
-
-		auto bins = make_unique<pnnbin[]>(65536);
+		
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 		bool quan_sqrt = nMaxColors > BYTE_MAX;
 		if (nMaxColors > 2)
-			pnnquan(pixels, bins.get(), pPalette, quan_sqrt);
+			pnnquan(pixels, pPalette, quan_sqrt);
 		else {
 			if (hasTransparency) {
 				pPalette->Entries[0] = Color::Transparent;
@@ -693,7 +700,6 @@ namespace PnnQuant
 				pPalette->Entries[1] = Color::White;
 			}
 		}
-		bins.reset();
 
 		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
 		quantize_image(pixels.data(), pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither);

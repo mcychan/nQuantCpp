@@ -16,6 +16,12 @@ namespace PnnLABQuant
 	map<ARGB, CIELABConvertor::Lab> pixelMap;	
 	map<ARGB, vector<double> > closestMap;
 
+	struct pnnbin {
+		double ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
+		int cnt = 0;
+		int nn, fw, bk, tm, mtm;
+	};
+
 	inline int getARGBIndex(const Color& c)
 	{
 		if (hasSemiTransparency)
@@ -24,6 +30,11 @@ namespace PnnLABQuant
 			return (c.GetA() & 0x80) << 8 | (c.GetR() & 0xF8) << 7 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
 		return (c.GetR() & 0xF8) << 8 | (c.GetG() & 0xFC) << 3 | (c.GetB() >> 3);
 	}
+	
+	inline double sqr(double value)
+    {
+        return value * value;
+    }
 
 	void getLab(const Color& c, CIELABConvertor::Lab& lab1)
 	{
@@ -50,7 +61,7 @@ namespace PnnLABQuant
 		for (i = bin1.fw; i; i = bins[i].fw) {
 			double nerr, n2;
 
-			nerr = pow((bins[i].ac - wa), 2) + pow((bins[i].Lc - wL), 2) + pow((bins[i].Ac - wA), 2) + pow((bins[i].Bc - wB), 2);
+			nerr = sqr(bins[i].ac - wa) + sqr(bins[i].Lc - wL) + sqr(bins[i].Ac - wA) + sqr(bins[i].Bc - wB);
 			n2 = bins[i].cnt;
 			nerr *= (n1 * n2) / (n1 + n2);
 			if (nerr >= err)
@@ -62,11 +73,11 @@ namespace PnnLABQuant
 		bin1.nn = nn;
 	}
 
-	int PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, pnnbin* bins, ColorPalette* pPalette)
+	int PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette)
 	{
+		auto bins = make_unique<pnnbin[]>(65536);
 		int heap[65537] = { 0 };
 		double err, n1, n2;
-		int l, l2, h, b1, maxbins, extbins;
 
 		/* Build histogram */
 		for (const auto& pixel : pixels) {
@@ -86,7 +97,7 @@ namespace PnnLABQuant
 		}
 
 		/* Cluster nonempty bins at one end of array */
-		maxbins = 0;
+		int maxbins = 0;
 
 		for (int i = 0; i < 65536; ++i) {
 			if (!bins[i].cnt)
@@ -107,9 +118,10 @@ namespace PnnLABQuant
 		// !!! Already zeroed out by calloc()
 		//	bins[0].bk = bins[i].fw = 0;
 
+		int h, l, l2;
 		/* Initialize nearest neighbors and build heap of them */
 		for (int i = 0; i < maxbins; i++) {
-			find_nn(bins, i);
+			find_nn(bins.get(), i);
 			/* Push slot on heap */
 			err = bins[i].err;
 			for (l = ++heap[0]; l > 1; l = l2) {
@@ -122,8 +134,10 @@ namespace PnnLABQuant
 		}
 
 		/* Merge bins which increase error the least */
-		extbins = maxbins - pPalette->Count;
+		int extbins = maxbins - pPalette->Count;
 		for (int i = 0; i < extbins; ) {
+			int b1;
+			
 			/* Use heap to find which bins to merge */
 			for (;;) {
 				auto& tb = bins[b1 = heap[1]]; /* One with least error */
@@ -134,7 +148,7 @@ namespace PnnLABQuant
 					b1 = heap[1] = heap[heap[0]--];
 				else /* Too old error value */
 				{
-					find_nn(bins, b1);
+					find_nn(bins.get(), b1);
 					tb.tm = i;
 				}
 				/* Push slot down */
@@ -201,25 +215,25 @@ namespace PnnLABQuant
 			Color c2(pPalette->Entries[i]);
 			getLab(c2, lab2);
 
-			double curdist = pow(c2.GetA() - c.GetA(), 2.0);
+			double curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
 
 			if (pPalette->Count < 256) {
 				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
-				curdist += pow(deltaL_prime_div_k_L_S_L, 2.0);
+				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
 
 				double a1Prime, a2Prime, CPrime1, CPrime2;
 				double deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
-				curdist += pow(deltaC_prime_div_k_L_S_L, 2.0);
+				curdist += sqr(deltaC_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
 
 				double barCPrime, barhPrime;
 				double deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
-				curdist += pow(deltaH_prime_div_k_L_S_L, 2.0);
+				curdist += sqr(deltaH_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
 
@@ -228,15 +242,15 @@ namespace PnnLABQuant
 					continue;
 			}
 			else {
-				curdist += pow(lab2.L - lab1.L, 2.0);
+				curdist += sqr(lab2.L - lab1.L);
 				if (curdist > mindist)
 					continue;
 
-				curdist += pow(lab2.A - lab1.A, 2.0);
+				curdist += sqr(lab2.A - lab1.A);
 				if (curdist > mindist)
 					continue;
 
-				curdist += pow(lab2.B - lab1.B, 2.0);
+				curdist += sqr(lab2.B - lab1.B);
 				if (curdist > mindist)
 					continue;
 			}
@@ -262,7 +276,7 @@ namespace PnnLABQuant
 			for (; k < nMaxColors; k++) {
 				Color c2(pPalette->Entries[k]);
 				getLab(c2, lab2);
-				closest[4] = pow(lab2.alpha - lab1.alpha, 2) + CIELABConvertor::CIEDE2000(lab2, lab1);
+				closest[4] = sqr(lab2.alpha - lab1.alpha) + CIELABConvertor::CIEDE2000(lab2, lab1);
 				//closest[4] = abs(lab2.alpha - lab1.alpha) + abs(lab2.L - lab1.L) + abs(lab2.A - lab1.A) + abs(lab2.B - lab1.B);
 				if (closest[4] < closest[2]) {
 					closest[1] = closest[0];
@@ -553,13 +567,12 @@ namespace PnnLABQuant
 
 			pSource->UnlockBits(&data);
 		}
-
-		auto bins = make_unique<pnnbin[]>(65536);
+		
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 		if (nMaxColors > 2)
-			pnnquan(pixels, bins.get(), pPalette);
+			pnnquan(pixels, pPalette);
 		else {
 			if (hasTransparency) {
 				pPalette->Entries[0] = Color::Transparent;
@@ -570,7 +583,6 @@ namespace PnnLABQuant
 				pPalette->Entries[1] = Color::White;
 			}
 		}
-		bins.reset();
 
 		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
 		quantize_image(pixels.data(), pPalette, qPixels.get(), nMaxColors, bitmapWidth, bitmapHeight, dither);

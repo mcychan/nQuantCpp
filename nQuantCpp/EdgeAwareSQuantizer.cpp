@@ -225,6 +225,11 @@ namespace EdgeAwareSQuant
 
 		return result;
 	}
+	
+	inline double sqr(double value)
+    {
+        return value * value;
+    }
 
 	void sum_coarsen(array2d<vector_fixed<float, 3> >& fine, array2d<vector_fixed<float, 3> >& coarse)
 	{
@@ -445,7 +450,7 @@ namespace EdgeAwareSQuant
 				for (int l2 = l1; l2 < palette.size(); l2++) {
 					float curDist = 0.0;
 					for (int c = 0; c < 3; c++)
-						curDist += pow(palette[l1](c) - palette[l2](c), 2);
+						curDist += sqr(palette[l1](c) - palette[l2](c));
 
 					centroidDist[l1][l2] = pair<float, int>(curDist, l2);
 					centroidDist[l2][l1] = pair<float, int>(curDist, l1);
@@ -588,10 +593,10 @@ namespace EdgeAwareSQuant
 					for (int xx = xxMin; xx <= xxMax; xx++) {
 						if (xx < 0 || xx >= weightMaps.get_width())
 							continue;
-						float spaceD = pow(y - yy, 2) + pow(x - xx, 2);
+						float spaceD = sqr(y - yy) + sqr(x - xx);
 						Color pixelXY(img[y * weightMaps.get_width() + x]);
 						Color pixelXXYY(img[yy * weightMaps.get_width() + xx]);
-						float colorD = pow(pixelXY.GetR() - pixelXXYY.GetR(), 2) + pow(pixelXY.GetG() - pixelXXYY.GetG(), 2) + pow(pixelXY.GetB() - pixelXXYY.GetB(), 2);
+						float colorD = sqr(pixelXY.GetR() - pixelXXYY.GetR()) + sqr(pixelXY.GetG() - pixelXXYY.GetG()) + sqr(pixelXY.GetB() - pixelXXYY.GetB());
 						float tmpW = BYTE_MAX * exp(-spaceD / (2 * sigma_s * sigma_s) - colorD / (2 * sigma_r * sigma_r));
 
 						weightSum += tmpW;
@@ -765,12 +770,11 @@ namespace EdgeAwareSQuant
 		}
 
 		array2d<UINT> quantized_image(bitmapWidth, bitmapHeight);
-		auto bins = make_unique<PnnLABQuant::pnnbin[]>(65536);
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
-		pnnLABQuantizer.pnnquan(pixels, bins.get(), pPalette);
+		pnnLABQuantizer.pnnquan(pixels, pPalette);
 
 		// init
 		vector<vector_fixed<float, 3> > palette(nMaxColors);
