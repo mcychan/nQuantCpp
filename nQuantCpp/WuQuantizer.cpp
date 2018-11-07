@@ -51,40 +51,12 @@ namespace nQuant
 		long Size = 0;
 	};
 
-	struct LookupData {
-		vector<ARGB> lookups;
-		unique_ptr<UINT[]> tags;
-
-		LookupData(UINT sideSize) {
-			tags = make_unique<UINT[]>(TOTAL_SIDESIZE);
-		}
-	};
-
-	struct QuantizedPalette {
-	private:		
-		unique_ptr<byte[]> pPaletteBytes;
-		ColorPalette* pPalette = nullptr;
-
-	public:
-		unique_ptr<UINT[]> pixelIndex;
-		QuantizedPalette(UINT size, const int nMaxColors) {
-			pixelIndex = make_unique<UINT[]>(size);
-			pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
-			pPalette = (ColorPalette*) pPaletteBytes.get();
-			pPalette->Count = nMaxColors;
-		}
-
-		inline ColorPalette* GetPalette() const {
-			return pPalette;
-		}
-	};
-
 	struct CubeCut {
 		bool valid;
 		BYTE position;
-		double value;
+		float value;
 
-		CubeCut(bool isValid, BYTE cutPoint, double result) {
+		CubeCut(bool isValid, BYTE cutPoint, float result) {
 			valid = isValid;
 			position = cutPoint;
 			value = result;
@@ -97,10 +69,9 @@ namespace nQuant
 		unique_ptr<long[]> momentsRed;
 		unique_ptr<long[]> momentsGreen;
 		unique_ptr<long[]> momentsBlue;
-		unique_ptr<double[]> moments;
+		unique_ptr<float[]> moments;
 
 		unique_ptr<ARGB[]> pixels;
-		unique_ptr<ARGB[]> quantizedPixels;
 
 		UINT pixelsCount = 0;
 		UINT pixelFillingCounter = 0;
@@ -112,22 +83,25 @@ namespace nQuant
 			momentsRed = make_unique<long[]>(TOTAL_SIDESIZE);
 			momentsGreen = make_unique<long[]>(TOTAL_SIDESIZE);
 			momentsBlue = make_unique<long[]>(TOTAL_SIDESIZE);
-			moments = make_unique<double[]>(TOTAL_SIDESIZE);
+			moments = make_unique<float[]>(TOTAL_SIDESIZE);
 			pixelsCount = bitmapWidth * bitmapHeight;
 			pixels = make_unique<ARGB[]>(pixelsCount);
-			quantizedPixels = make_unique<ARGB[]>(pixelsCount);
 		}
 		
 		inline ARGB* GetPixels() {
 			return pixels.get();
 		}
 
-		void AddPixel(ARGB pixel, int quantizedPixel)
+		inline void AddPixel(ARGB pixel, int quantizedPixel)
 		{
-			pixels[pixelFillingCounter] = pixel;
-			quantizedPixels[pixelFillingCounter++] = quantizedPixel;
+			pixels[pixelFillingCounter++] = pixel;
 		}
 	};
+
+	inline double sqr(double value)
+	{
+		return value * value;
+	}
 
 	inline UINT Index(byte alpha, byte red, byte green, byte blue) {
 		return alpha + red * SIDESIZE + green * SIDESIZE * SIDESIZE + blue * SIDESIZE * SIDESIZE * SIDESIZE;
@@ -139,7 +113,7 @@ namespace nQuant
 			- (moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] - moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] - moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] + moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] - moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] + moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] + moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)] - moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 	}
 
-	inline double Volume(const Box& cube, double* moment)
+	inline float Volume(const Box& cube, float* moment)
 	{
 		return (moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] - moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] - moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] + moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)] - moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] + moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] + moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] - moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)])
 			- (moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] - moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] - moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] + moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] - moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] + moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] + moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)] - moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
@@ -304,7 +278,7 @@ namespace nQuant
 			UINT xareaRed[SIDESIZE][SIDESIZE][SIDESIZE] = { 0 };
 			UINT xareaGreen[SIDESIZE][SIDESIZE][SIDESIZE] = { 0 };
 			UINT xareaBlue[SIDESIZE][SIDESIZE][SIDESIZE] = { 0 };
-			double xarea2[SIDESIZE][SIDESIZE][SIDESIZE] = { 0.0 };
+			float xarea2[SIDESIZE][SIDESIZE][SIDESIZE] = { 0.0f };
 						
 			for (int redIndex = 1; redIndex <= MAXSIDEINDEX; ++redIndex)
 			{
@@ -313,7 +287,7 @@ namespace nQuant
 				UINT areaRed[SIDESIZE] = { 0 };
 				UINT areaGreen[SIDESIZE] = { 0 };
 				UINT areaBlue[SIDESIZE] = { 0 };
-				double area2[SIDESIZE] = { 0.0 };
+				float area2[SIDESIZE] = { 0.0f };
 
 				for (int greenIndex = 1; greenIndex <= MAXSIDEINDEX; ++greenIndex) {
 					volatile UINT line = 0;
@@ -321,7 +295,7 @@ namespace nQuant
 					volatile UINT lineRed = 0;
 					volatile UINT lineGreen = 0;
 					volatile UINT lineBlue = 0;
-					volatile double line2 = 0.0;
+					volatile float line2 = 0.0f;
 
 					for (int blueIndex = 1; blueIndex <= MAXSIDEINDEX; ++blueIndex) {
 						line += data.weights[Index(alphaIndex, redIndex, greenIndex, blueIndex)];
@@ -366,7 +340,7 @@ namespace nQuant
 		auto bottomWeight = Bottom(cube, direction, data.weights.get());
 
 		volatile bool valid = false;
-		volatile double result = 0.0;
+		volatile auto result = 0.0f;
 		volatile byte cutPoint = 0;
 
 		#pragma omp parallel for
@@ -382,7 +356,7 @@ namespace nQuant
 				continue;
 
 			long halfDistance = halfAlpha * halfAlpha + halfRed * halfRed + halfGreen * halfGreen + halfBlue * halfBlue;
-			double temp = halfDistance * 1.0 / halfWeight;
+			float temp = halfDistance * 1.0f / halfWeight;
 
 			halfAlpha = wholeAlpha - halfAlpha;
 			halfRed = wholeRed - halfRed;
@@ -406,8 +380,7 @@ namespace nQuant
 	}
 
 	bool Cut(ColorData& data, Box& first, Box& second)
-	{
-		Pixel direction = Blue;
+	{		
 		auto wholeAlpha = Volume(first, data.momentsAlpha.get());
 		auto wholeRed = Volume(first, data.momentsRed.get());
 		auto wholeGreen = Volume(first, data.momentsGreen.get());
@@ -417,13 +390,9 @@ namespace nQuant
 		auto maxAlpha = Maximize(data, first, Alpha, static_cast<byte>(first.AlphaMinimum + 1), first.AlphaMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
 		auto maxRed = Maximize(data, first, Red, static_cast<byte>(first.RedMinimum + 1), first.RedMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
 		auto maxGreen = Maximize(data, first, Green, static_cast<byte>(first.GreenMinimum + 1), first.GreenMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
-		auto maxBlue = Maximize(data, first, Blue, static_cast<byte>(first.BlueMinimum + 1), first.BlueMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
+		auto maxBlue = Maximize(data, first, Blue, static_cast<byte>(first.BlueMinimum + 1), first.BlueMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);		
 
-		second.AlphaMaximum = first.AlphaMaximum;
-		second.RedMaximum = first.RedMaximum;
-		second.GreenMaximum = first.GreenMaximum;
-		second.BlueMaximum = first.BlueMaximum;
-
+		Pixel direction = Blue;
 		if ((maxAlpha.value >= maxRed.value) && (maxAlpha.value >= maxGreen.value) && (maxAlpha.value >= maxBlue.value)) {
 			if (!maxAlpha.valid)
 				return false;
@@ -433,6 +402,11 @@ namespace nQuant
 			direction = Red;
 		else if ((maxGreen.value >= maxAlpha.value) && (maxGreen.value >= maxRed.value) && (maxGreen.value >= maxBlue.value))
 			direction = Green;
+		
+		second.AlphaMaximum = first.AlphaMaximum;
+		second.RedMaximum = first.RedMaximum;
+		second.GreenMaximum = first.GreenMaximum;
+		second.BlueMaximum = first.BlueMaximum;
 
 		switch (direction)
 		{
@@ -471,7 +445,7 @@ namespace nQuant
 		return true;
 	}
 
-	double CalculateVariance(ColorData& data, const Box& cube)
+	float CalculateVariance(ColorData& data, const Box& cube)
 	{
 		auto volumeAlpha = Volume(cube, data.momentsAlpha.get());
 		auto volumeRed = Volume(cube, data.momentsRed.get());
@@ -480,34 +454,34 @@ namespace nQuant
 		auto volumeMoment = Volume(cube, data.moments.get());
 		auto volumeWeight = Volume(cube, data.weights.get());
 
-		long distance = volumeAlpha * volumeAlpha + volumeRed * volumeRed + volumeGreen * volumeGreen + volumeBlue * volumeBlue;
+		float distance = volumeAlpha * volumeAlpha + volumeRed * volumeRed + volumeGreen * volumeGreen + volumeBlue * volumeBlue;
 
-		return volumeWeight != 0 ? (volumeMoment - distance / volumeWeight) : 0.0;
+		return volumeWeight != 0.0f ? (volumeMoment - distance / volumeWeight) : 0.0f;
 	}	
 
 	void SplitData(vector<Box>& boxList, UINT& colorCount, ColorData& data)
-	{
-		const int COLORSIZE = --colorCount;
+	{		
 		int next = 0;
-		auto volumeVariance = make_unique<double[]>(COLORSIZE);
-		boxList.resize(COLORSIZE);
+		auto volumeVariance = make_unique<float[]>(colorCount);
+		boxList.resize(colorCount);
 		boxList[0].AlphaMaximum = MAXSIDEINDEX;
 		boxList[0].RedMaximum = MAXSIDEINDEX;
 		boxList[0].GreenMaximum = MAXSIDEINDEX;
 		boxList[0].BlueMaximum = MAXSIDEINDEX;
 
+		const int COLORSIZE = --colorCount;
 		for (int cubeIndex = 1; cubeIndex < COLORSIZE; ++cubeIndex) {
 			if (Cut(data, boxList[next], boxList[cubeIndex])) {
-				volumeVariance[next] = boxList[next].Size > 1 ? CalculateVariance(data, boxList[next]) : 0.0;
-				volumeVariance[cubeIndex] = boxList[cubeIndex].Size > 1 ? CalculateVariance(data, boxList[cubeIndex]) : 0.0;
+				volumeVariance[next] = boxList[next].Size > 1 ? CalculateVariance(data, boxList[next]) : 0.0f;
+				volumeVariance[cubeIndex] = boxList[cubeIndex].Size > 1 ? CalculateVariance(data, boxList[cubeIndex]) : 0.0f;
 			}
 			else {
-				volumeVariance[next] = 0.0;
+				volumeVariance[next] = 0.0f;
 				cubeIndex--;
 			}
 
 			next = 0;
-			double temp = volumeVariance[0];
+			auto temp = volumeVariance[0];
 
 			for (int index = 1; index <= cubeIndex; ++index) {
 				if (volumeVariance[index] <= temp)
@@ -516,31 +490,19 @@ namespace nQuant
 				next = index;
 			}
 
-			if (temp > 0.0)
+			if (temp > 0.0f)
 				continue;
 
 			colorCount = cubeIndex + 1;
 			break;
 		}
+		boxList.resize(colorCount);
 	}
 
-	void BuildLookups(LookupData& lookupData, vector<Box>& cubes, const ColorData& data)
+	void BuildLookups(ColorPalette* pPalette, vector<Box>& cubes, const ColorData& data)
 	{
 		volatile UINT lookupsCount = 0;
 		for (auto const& cube : cubes) {
-			#pragma omp parallel for
-			for (int alphaIndex = cube.AlphaMinimum + 1; alphaIndex <= cube.AlphaMaximum; ++alphaIndex) {
-				for (int redIndex = cube.RedMinimum + 1; redIndex <= cube.RedMaximum; ++redIndex) {
-					for (int greenIndex = cube.GreenMinimum + 1; greenIndex <= cube.GreenMaximum; ++greenIndex) {
-						for (int blueIndex = cube.BlueMinimum + 1; blueIndex <= cube.BlueMaximum; ++blueIndex) {
-							const auto index = Index(alphaIndex, redIndex, greenIndex, blueIndex);
-							if (index < TOTAL_SIDESIZE)
-								lookupData.tags[index] = lookupsCount;
-						}
-					}
-				}
-			}
-
 			auto weight = Volume(cube, data.weights.get());
 
 			if (weight <= 0)
@@ -550,59 +512,23 @@ namespace nQuant
 			byte red = static_cast<byte>(Volume(cube, data.momentsRed.get()) / weight);
 			byte green = static_cast<byte>(Volume(cube, data.momentsGreen.get()) / weight);
 			byte blue = static_cast<byte>(Volume(cube, data.momentsBlue.get()) / weight);
-			lookupData.lookups.emplace_back(Color::MakeARGB(alpha, red, green, blue));
-			++lookupsCount;
+			pPalette->Entries[lookupsCount++] = Color::MakeARGB(alpha, red, green, blue);
 		}
 	}
 	
-	UINT bestcolor(const LookupData& lookupData, ARGB argb, int pixelIndex, byte alphaThreshold)
+	UINT closestColorIndex(const ColorPalette* pPalette, ARGB argb, int pixelIndex, byte alphaThreshold)
 	{
-		Color c(argb);
 		UINT k = 0;
-		if (c.GetA() <= alphaThreshold)			
-			return k;
-
-		if (hasTransparency) {
-			auto got = rightMatches.find(argb);
-			if (got == rightMatches.end()) {
-				int bestDistance = INT_MAX;
-				auto lookups = lookupData.lookups;
-				auto lookupsCount = lookups.size();
-
-				for (size_t lookupIndex = 0; lookupIndex < lookupsCount; lookupIndex++) {
-					Color lookup(lookups[lookupIndex]);
-					int deltaAlpha = abs(c.GetA() - lookup.GetA());
-					int deltaRed = abs(c.GetR() - lookup.GetR());
-					int deltaGreen = abs(c.GetG() - lookup.GetG());
-					int deltaBlue = abs(c.GetB() - lookup.GetB());
-
-					int distance = deltaAlpha + deltaRed + deltaGreen + deltaBlue;
-
-					if (distance >= bestDistance)
-						continue;
-
-					bestDistance = distance;
-					k = lookupIndex;
-				}
-
-				rightMatches[argb] = k;
-			}
-			else
-				k = got->second;
-
-			return k;
-		}
-
+		Color c(argb);
 		vector<short> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = SHORT_MAX;
 
-			auto lookups = lookupData.lookups;
-			auto lookupsCount = lookups.size();
+			UINT nMaxColors = pPalette->Count;
 
-			for (; k < lookupsCount; k++) {
-				Color c2(lookups[k]);
+			for (; k < nMaxColors; k++) {
+				Color c2(pPalette->Entries[k]);
 				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
 				if (closest[4] < closest[2]) {
 					closest[1] = closest[0];
@@ -616,7 +542,7 @@ namespace nQuant
 				}
 			}
 
-			if (closest[3] == 100000000)
+			if (closest[3] == SHORT_MAX)
 				closest[2] = 0;
 		}
 		else
@@ -631,7 +557,52 @@ namespace nQuant
 		return k;
 	}
 	
-	void GetQuantizedPalette(QuantizedPalette& qPalette, const ColorData& data, const LookupData& lookupData, UINT colorCount, byte alphaThreshold)
+	UINT nearestColorIndex(const ColorPalette* pPalette, ARGB argb, int pixelIndex, byte alphaThreshold)
+	{
+		Color c(argb);
+		UINT k = 0;
+		if (c.GetA() <= alphaThreshold)			
+			return k;
+
+		auto got = rightMatches.find(argb);
+		if (got == rightMatches.end()) {
+			UINT nMaxColors = pPalette->Count;
+			UINT curdist, mindist = SHORT_MAX;
+			for (UINT i = 0; i < nMaxColors; i++) {
+				Color c2(pPalette->Entries[i]);
+				double deltaAlpha = sqr(c2.GetA() - c.GetA());
+				curdist = deltaAlpha;
+				if (curdist > mindist)
+					continue;
+				
+				double deltaRed = sqr(c2.GetR() - c.GetR());
+				curdist += deltaRed;
+				if (curdist > mindist)
+					continue;
+			
+				double deltaGreen = sqr(c2.GetG() - c.GetG());
+				curdist += deltaGreen;
+				if (curdist > mindist)
+					continue;
+				
+				double deltaBlue = sqr(c2.GetB() - c.GetB());
+				curdist += deltaBlue;
+				if (curdist > mindist)
+					continue;
+
+				mindist = curdist;
+				k = i;
+			}
+
+			rightMatches[argb] = k;
+		}
+		else
+			k = got->second;
+
+		return k;		
+	}
+	
+	void GetQuantizedPalette(ColorPalette* pPalette, const ColorData& data, UINT colorCount, byte alphaThreshold)
 	{
 		const UINT COLOR_SIZE = colorCount + 1;
 		auto alphas = make_unique<UINT[]>(COLOR_SIZE);
@@ -643,32 +614,20 @@ namespace nQuant
 		int pixelsCount = data.pixelsCount;
 
 		for (int pixelIndex = 0; pixelIndex < pixelsCount; pixelIndex++) {
-			Color color(data.quantizedPixels[pixelIndex]);
-			data.quantizedPixels[pixelIndex] = lookupData.tags[Index(color.GetA(), color.GetR(), color.GetG(), color.GetB())];
-
 			auto argb = data.pixels[pixelIndex];			
 
-			UINT bestMatch = bestcolor(lookupData, argb, pixelIndex, alphaThreshold);
+			UINT bestMatch = nearestColorIndex(pPalette, argb, pixelIndex, alphaThreshold);
 
-			if (bestMatch < COLOR_SIZE) {
-				Color pixel(argb);
-				alphas[bestMatch] += pixel.GetA();
-				reds[bestMatch] += pixel.GetR();
-				greens[bestMatch] += pixel.GetG();
-				blues[bestMatch] += pixel.GetB();
-				sums[bestMatch]++;
-			}
-
-			qPalette.pixelIndex[pixelIndex] = bestMatch;
+			Color pixel(argb);
+			alphas[bestMatch] += pixel.GetA();
+			reds[bestMatch] += pixel.GetR();
+			greens[bestMatch] += pixel.GetG();
+			blues[bestMatch] += pixel.GetB();
+			sums[bestMatch]++;
 		}
+		rightMatches.clear();
 
-		UINT paletteIndex = 0;
-		if (hasTransparency) {
-			++paletteIndex;
-			--colorCount;
-		}
-
-		for (; paletteIndex < colorCount; paletteIndex++) {
+		for (UINT paletteIndex = 0; paletteIndex < colorCount; paletteIndex++) {
 			if (sums[paletteIndex] <= 0)
 				continue;
 
@@ -678,30 +637,29 @@ namespace nQuant
 			blues[paletteIndex] /= sums[paletteIndex];
 
 			auto color = Color::MakeARGB(alphas[paletteIndex], reds[paletteIndex], greens[paletteIndex], blues[paletteIndex]);
-			qPalette.GetPalette()->Entries[paletteIndex] = color;
+			pPalette->Entries[paletteIndex] = color;
+			
+			if (hasTransparency && color == m_transparentColor)
+				swap(pPalette->Entries[0], pPalette->Entries[paletteIndex]);
 		}
-
-		if(hasTransparency)
-			qPalette.GetPalette()->Entries[0] = m_transparentColor;
 	}
 
-	bool quantize_image(const ARGB* pixels, const LookupData& lookupData, UINT* qPixels, UINT nMaxColors, int width, int height, bool dither, byte alphaThreshold)
+	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, short* qPixels, int width, int height, bool dither, byte alphaThreshold)
 	{
 		if (dither) {
 			bool odd_scanline = false;
 			short *thisrowerr, *nextrowerr;
-			int j, a_pix, r_pix, g_pix, b_pix, dir, two_val;
 			const byte DJ = 4;
 			const byte DITHER_MAX = 20;
 			const int err_len = (width + 2) * DJ;
 			byte range_tbl[DJ * 256] = { 0 };
-			byte* range = &range_tbl[256];
-			unique_ptr<short[]> erowErr = make_unique<short[]>(err_len);
-			unique_ptr<short[]> orowErr = make_unique<short[]>(err_len);
+			auto range = &range_tbl[256];
+			auto erowErr = make_unique<short[]>(err_len);
+			auto orowErr = make_unique<short[]>(err_len);
 			char dith_max_tbl[512] = { 0 };
-			char* dith_max = &dith_max_tbl[256];
-			short* erowerr = erowErr.get();
-			short* orowerr = orowErr.get();
+			auto dith_max = &dith_max_tbl[256];
+			auto erowerr = erowErr.get();
+			auto orowerr = orowErr.get();
 
 			for (int i = 0; i < 256; i++) {
 				range_tbl[i] = 0;
@@ -719,6 +677,7 @@ namespace nQuant
 
 			UINT pixelIndex = 0;
 			for (int i = 0; i < height; i++) {
+				int dir;
 				if (odd_scanline) {
 					dir = -1;
 					pixelIndex += (width - 1);
@@ -731,25 +690,24 @@ namespace nQuant
 					nextrowerr = orowerr + width * DJ;
 				}
 				nextrowerr[0] = nextrowerr[1] = nextrowerr[2] = nextrowerr[3] = 0;
-				for (j = 0; j < width; j++) {
+				for (int j = 0; j < width; j++) {
 					Color c(pixels[pixelIndex]);
 
-					a_pix = range[((thisrowerr[0] + 8) >> 4) + c.GetA()];
-					r_pix = range[((thisrowerr[1] + 8) >> 4) + c.GetR()];
-					g_pix = range[((thisrowerr[2] + 8) >> 4) + c.GetG()];
-					b_pix = range[((thisrowerr[3] + 8) >> 4) + c.GetB()];
+					int a_pix = range[((thisrowerr[0] + 8) >> 4) + c.GetA()];
+					int r_pix = range[((thisrowerr[1] + 8) >> 4) + c.GetR()];
+					int g_pix = range[((thisrowerr[2] + 8) >> 4) + c.GetG()];
+					int b_pix = range[((thisrowerr[3] + 8) >> 4) + c.GetB()];
 
 					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);					
-					qPixels[pixelIndex] = bestcolor(lookupData, argb, i, alphaThreshold);
+					qPixels[pixelIndex] = nearestColorIndex(pPalette, argb, i, alphaThreshold);
 
-					auto lookups = lookupData.lookups;
-					Color c2(lookups[qPixels[pixelIndex]]);
+					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 					a_pix = dith_max[a_pix - c2.GetA()];
 					r_pix = dith_max[r_pix - c2.GetR()];
 					g_pix = dith_max[g_pix - c2.GetG()];
 					b_pix = dith_max[b_pix - c2.GetB()];
 
-					two_val = a_pix * 2;
+					int two_val = a_pix * 2;
 					nextrowerr[0 - DJ] = a_pix;
 					a_pix += two_val;
 					nextrowerr[0 + DJ] += a_pix;
@@ -794,19 +752,19 @@ namespace nQuant
 
 				odd_scanline = !odd_scanline;
 			}
+			return true;
 		}
-		else {
-			for (int i = 0; i < (width * height); i++)
-				qPixels[i] = bestcolor(lookupData, pixels[i], i, alphaThreshold);
-		}
+
+		for (int i = 0; i < (width * height); i++)
+			qPixels[i] = closestColorIndex(pPalette, pixels[i], i, alphaThreshold);
+
 		return true;
 	}
 
-	bool ProcessImagePixels(Bitmap* pDest, const QuantizedPalette& qPalette)
+	bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const short* qPixels)
 	{
-		auto palette = qPalette.GetPalette();
-		pDest->SetPalette(palette);
-		UINT nMaxColors = palette->Count;
+		pDest->SetPalette(pPalette);
+		UINT nMaxColors = pPalette->Count;
 
 		BitmapData targetData;
 		UINT w = pDest->GetWidth();
@@ -836,7 +794,7 @@ namespace nQuant
 		for (UINT y = 0; y < h; y++) {	// For each row...
 			for (UINT x = 0; x < w; x++) {	// ...for each pixel...
 				byte nibbles = 0;
-				byte index = static_cast<byte>(qPalette.pixelIndex[pixelIndex++]);
+				byte index = static_cast<byte>(qPixels[pixelIndex++]);
 
 				switch (bpp)
 				{
@@ -869,23 +827,29 @@ namespace nQuant
 
 	bool WuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither, byte alphaThreshold, byte alphaFader)
 	{
+		UINT bitmapWidth = pSource->GetWidth();
+		UINT bitmapHeight = pSource->GetHeight();
 		hasTransparency = false;
-		ColorData colorData(SIDESIZE, pSource->GetWidth(), pSource->GetHeight());
+		ColorData colorData(SIDESIZE, bitmapWidth, bitmapHeight);
 		BuildHistogram(colorData, pSource, alphaThreshold, alphaFader);
 		CalculateMoments(colorData);
 		vector<Box> cubes;
 		SplitData(cubes, nMaxColors, colorData);		
-		LookupData lookupData(SIDESIZE);
-		BuildLookups(lookupData, cubes, colorData);
-		cubes.clear();
-		QuantizedPalette qPalette(colorData.pixelsCount, nMaxColors);
-		GetQuantizedPalette(qPalette, colorData, lookupData, nMaxColors, alphaThreshold);
 		
-		quantize_image(colorData.GetPixels(), lookupData, qPalette.pixelIndex.get(), nMaxColors, pSource->GetWidth(), pSource->GetHeight(), dither, alphaThreshold);
+		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPalette = (ColorPalette*)pPaletteBytes.get();
+		pPalette->Count = nMaxColors;
+		BuildLookups(pPalette, cubes, colorData);
+		cubes.clear();
+		
+		GetQuantizedPalette(pPalette, colorData, nMaxColors, alphaThreshold);
+		
+		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
+		quantize_image(colorData.GetPixels(), pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither, alphaThreshold);
 		closestMap.clear();
 		rightMatches.clear();
 
-		return ProcessImagePixels(pDest, qPalette);
+		return ProcessImagePixels(pDest, pPalette, qPixels.get());
 	}
 
 }
