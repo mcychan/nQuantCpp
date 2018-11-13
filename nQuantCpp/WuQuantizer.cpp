@@ -92,7 +92,7 @@ namespace nQuant
 			return pixels.get();
 		}
 
-		inline void AddPixel(ARGB pixel, int quantizedPixel)
+		inline void AddPixel(ARGB pixel)
 		{
 			pixels[pixelFillingCounter++] = pixel;
 		}
@@ -199,9 +199,7 @@ namespace nQuant
 			}
 		}
 
-		ARGB pixel = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
-		ARGB qPixel = Color::MakeARGB(indexAlpha, indexRed, indexGreen, indexBlue);
-		colorData.AddPixel(pixel, qPixel);
+		colorData.AddPixel(Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue));
 	}
 
 	void BuildHistogram(ColorData& colorData, Bitmap* sourceImage, byte alphaThreshold, byte alphaFader)
@@ -613,7 +611,7 @@ namespace nQuant
 
 		int pixelsCount = data.pixelsCount;
 
-		for (int pixelIndex = 0; pixelIndex < pixelsCount; pixelIndex++) {
+		for (UINT pixelIndex = 0; pixelIndex < pixelsCount; pixelIndex++) {
 			auto argb = data.pixels[pixelIndex];			
 
 			UINT bestMatch = nearestColorIndex(pPalette, argb, pixelIndex, alphaThreshold);
@@ -627,14 +625,13 @@ namespace nQuant
 		}
 		rightMatches.clear();
 
-		for (UINT paletteIndex = 0; paletteIndex < colorCount; paletteIndex++) {
-			if (sums[paletteIndex] <= 0)
-				continue;
-
-			alphas[paletteIndex] /= sums[paletteIndex];
-			reds[paletteIndex] /= sums[paletteIndex];
-			greens[paletteIndex] /= sums[paletteIndex];
-			blues[paletteIndex] /= sums[paletteIndex];
+		for (short paletteIndex = 0; paletteIndex < colorCount; paletteIndex++) {
+			if (sums[paletteIndex] > 0) {
+				alphas[paletteIndex] /= sums[paletteIndex];
+				reds[paletteIndex] /= sums[paletteIndex];
+				greens[paletteIndex] /= sums[paletteIndex];
+				blues[paletteIndex] /= sums[paletteIndex];
+			}
 
 			auto color = Color::MakeARGB(alphas[paletteIndex], reds[paletteIndex], greens[paletteIndex], blues[paletteIndex]);
 			pPalette->Entries[paletteIndex] = color;
