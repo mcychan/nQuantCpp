@@ -234,6 +234,7 @@ void CQuantDlg::OnBnClickedFileOpen()
 		HBITMAP bitmap;
 		m_pImage->GetHBITMAP(NULL, &bitmap);
 		SetBackgroundImage(bitmap, CDialogEx::BACKGR_TOPLEFT);
+		GetDlgItem(IDRETRY)->EnableWindow(m_pImage->GetLastStatus() == Ok);
 	}
 }
 
@@ -246,7 +247,7 @@ void CQuantDlg::OnBnClickedRetry()
 	m_pTargetImage = make_unique<Bitmap>(w, h, PixelFormat8bppIndexed);
 
 	UINT nMaxColors = 256;
-	bool bSucceeded = pnnLABQuantizer.QuantizeImage(m_pImage.get(), m_pTargetImage.get(), nMaxColors);
+	bool bSucceeded = wuQuantizer.QuantizeImage(m_pImage.get(), m_pTargetImage.get(), nMaxColors);
 	//bool bSucceeded = easQuantizer.QuantizeImage(m_pImage.get(), m_pTargetImage.get(), nMaxColors);
 
 	HBITMAP bitmap;
