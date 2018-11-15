@@ -149,19 +149,19 @@ namespace nQuant
 		switch (direction)
 		{
 		case Alpha:
-			return -(moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] + moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] + moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] - moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)])
+			return (-moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] + moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] + moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] - moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)])
 				- (-moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] + moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] + moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] - moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 
 		case Red:
-			return -(moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] + moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)] + moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] - moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)])
+			return (-moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] + moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)] + moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] - moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)])
 				- (-moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] + moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)] + moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] - moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 
 		case Green:
-			return -(moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] + moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)] + moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] - moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)])
+			return (-moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] + moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)] + moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] - moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)])
 				- (-moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] + moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)] + moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] - moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 
 		case Blue:
-			return -(moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] + moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] + moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] - moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)])
+			return (-moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] + moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] + moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] - moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)])
 				- (-moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] + moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] + moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] - moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 
 		default:
@@ -213,10 +213,11 @@ namespace nQuant
 				for (UINT x = 0; x < bitmapWidth; x++) {
 					Color color;
 					sourceImage->GetPixel(x, y, &color);
-					if(color.GetA() < BYTE_MAX)
+					if(color.GetA() < BYTE_MAX) {
 						hasTransparency = true;
-					if(color.GetA() == 0)
-						m_transparentColor = color.GetValue();
+						if(color.GetA() == 0)
+							m_transparentColor = color.GetValue();
+					}
 					CompileColorData(colorData, color, alphaThreshold, alphaFader);
 				}
 			}
@@ -252,12 +253,13 @@ namespace nQuant
 				byte pixelGreen = *pPixelSource++;
 				byte pixelRed = *pPixelSource++;
 				byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
-				if (pixelAlpha < BYTE_MAX)
-					hasTransparency = true;
 				
 				Color color(Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue));
-				if(pixelAlpha == 0)
-					m_transparentColor = color.GetValue();
+				if (pixelAlpha < BYTE_MAX) {
+					hasTransparency = true;				
+					if(pixelAlpha == 0)
+						m_transparentColor = color.GetValue();
+				}
 				CompileColorData(colorData, color, alphaThreshold, alphaFader);
 			}
 
@@ -276,7 +278,7 @@ namespace nQuant
 			UINT xareaRed[SIDESIZE][SIDESIZE][SIDESIZE] = { 0 };
 			UINT xareaGreen[SIDESIZE][SIDESIZE][SIDESIZE] = { 0 };
 			UINT xareaBlue[SIDESIZE][SIDESIZE][SIDESIZE] = { 0 };
-			float xarea2[SIDESIZE][SIDESIZE][SIDESIZE] = { 0.0f };
+			float xarea2[SIDESIZE][SIDESIZE][SIDESIZE] = { 0 };
 						
 			for (int redIndex = 1; redIndex <= MAXSIDEINDEX; ++redIndex)
 			{
@@ -285,7 +287,7 @@ namespace nQuant
 				UINT areaRed[SIDESIZE] = { 0 };
 				UINT areaGreen[SIDESIZE] = { 0 };
 				UINT areaBlue[SIDESIZE] = { 0 };
-				float area2[SIDESIZE] = { 0.0f };
+				float area2[SIDESIZE] = { 0 };
 
 				for (int greenIndex = 1; greenIndex <= MAXSIDEINDEX; ++greenIndex) {
 					volatile UINT line = 0;
@@ -296,12 +298,13 @@ namespace nQuant
 					volatile float line2 = 0.0f;
 
 					for (int blueIndex = 1; blueIndex <= MAXSIDEINDEX; ++blueIndex) {
-						line += data.weights[Index(alphaIndex, redIndex, greenIndex, blueIndex)];
-						lineAlpha += data.momentsAlpha[Index(alphaIndex, redIndex, greenIndex, blueIndex)];
-						lineRed += data.momentsRed[Index(alphaIndex, redIndex, greenIndex, blueIndex)];
-						lineGreen += data.momentsGreen[Index(alphaIndex, redIndex, greenIndex, blueIndex)];
-						lineBlue += data.momentsBlue[Index(alphaIndex, redIndex, greenIndex, blueIndex)];
-						line2 += data.moments[Index(alphaIndex, redIndex, greenIndex, blueIndex)];
+						const int index = Index(alphaIndex, redIndex, greenIndex, blueIndex);
+						line += data.weights[index];
+						lineAlpha += data.momentsAlpha[index];
+						lineRed += data.momentsRed[index];
+						lineGreen += data.momentsGreen[index];
+						lineBlue += data.momentsBlue[index];
+						line2 += data.moments[index];
 
 						area[blueIndex] += line;
 						areaAlpha[blueIndex] += lineAlpha;
@@ -317,12 +320,13 @@ namespace nQuant
 						xareaBlue[redIndex][greenIndex][blueIndex] = xareaBlue[redIndex - 1][greenIndex][blueIndex] + areaBlue[blueIndex];
 						xarea2[redIndex][greenIndex][blueIndex] = xarea2[redIndex - 1][greenIndex][blueIndex] + area2[blueIndex];
 
-						data.weights[Index(alphaIndex, redIndex, greenIndex, blueIndex)] = data.weights[Index(alphaIndex - 1, redIndex, greenIndex, blueIndex)] + xarea[redIndex][greenIndex][blueIndex];
-						data.momentsAlpha[Index(alphaIndex, redIndex, greenIndex, blueIndex)] = data.momentsAlpha[Index(alphaIndex - 1, redIndex, greenIndex, blueIndex)] + xareaAlpha[redIndex][greenIndex][blueIndex];
-						data.momentsRed[Index(alphaIndex, redIndex, greenIndex, blueIndex)] = data.momentsRed[Index(alphaIndex - 1, redIndex, greenIndex, blueIndex)] + xareaRed[redIndex][greenIndex][blueIndex];
-						data.momentsGreen[Index(alphaIndex, redIndex, greenIndex, blueIndex)] = data.momentsGreen[Index(alphaIndex - 1, redIndex, greenIndex, blueIndex)] + xareaGreen[redIndex][greenIndex][blueIndex];
-						data.momentsBlue[Index(alphaIndex, redIndex, greenIndex, blueIndex)] = data.momentsBlue[Index(alphaIndex - 1, redIndex, greenIndex, blueIndex)] + xareaBlue[redIndex][greenIndex][blueIndex];
-						data.moments[Index(alphaIndex, redIndex, greenIndex, blueIndex)] = data.moments[Index(alphaIndex - 1, redIndex, greenIndex, blueIndex)] + xarea2[redIndex][greenIndex][blueIndex];
+						const int prevIndex = Index(alphaIndex - 1, redIndex, greenIndex, blueIndex);
+						data.weights[index] = data.weights[prevIndex] + xarea[redIndex][greenIndex][blueIndex];
+						data.momentsAlpha[index] = data.momentsAlpha[prevIndex] + xareaAlpha[redIndex][greenIndex][blueIndex];
+						data.momentsRed[index] = data.momentsRed[prevIndex] + xareaRed[redIndex][greenIndex][blueIndex];
+						data.momentsGreen[index] = data.momentsGreen[prevIndex] + xareaGreen[redIndex][greenIndex][blueIndex];
+						data.momentsBlue[index] = data.momentsBlue[prevIndex] + xareaBlue[redIndex][greenIndex][blueIndex];
+						data.moments[index] = data.moments[prevIndex] + xarea2[redIndex][greenIndex][blueIndex];
 					}
 				}
 			}
@@ -612,11 +616,13 @@ namespace nQuant
 		int pixelsCount = data.pixelsCount;
 
 		for (UINT pixelIndex = 0; pixelIndex < pixelsCount; pixelIndex++) {
-			auto argb = data.pixels[pixelIndex];			
+			auto argb = data.pixels[pixelIndex];
+			Color pixel(argb);
+			if (pixel.GetA() <= alphaThreshold)			
+				continue;			
 
 			UINT bestMatch = nearestColorIndex(pPalette, argb, pixelIndex, alphaThreshold);
-
-			Color pixel(argb);
+			
 			alphas[bestMatch] += pixel.GetA();
 			reds[bestMatch] += pixel.GetR();
 			greens[bestMatch] += pixel.GetG();
