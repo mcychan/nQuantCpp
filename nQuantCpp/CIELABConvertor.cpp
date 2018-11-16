@@ -49,7 +49,7 @@ ARGB CIELABConvertor::LAB2RGB(const Lab& lab){
 	g = (g > 0.0031308) ? (1.055 * pow(g, 1 / 2.4) - 0.055) : 12.92 * g;
 	b = (b > 0.0031308) ? (1.055 * pow(b, 1 / 2.4) - 0.055) : 12.92 * b;
 
-	return Color::MakeARGB(lab.alpha, max(0, min(1, r)) * BYTE_MAX, max(0, min(1, g)) * BYTE_MAX, max(0, min(1, b)) * BYTE_MAX);
+	return Color::MakeARGB(min(lab.alpha, BYTE_MAX), max(0, min(1, r)) * BYTE_MAX, max(0, min(1, g)) * BYTE_MAX, max(0, min(1, b)) * BYTE_MAX);
 }
 
 /*******************************************************************************
