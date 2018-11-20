@@ -774,7 +774,7 @@ namespace EdgeAwareSQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
-		pnnLABQuantizer.pnnquan(pixels, pPalette);
+		pnnLABQuantizer.pnnquan(pixels, pPalette, nMaxColors);
 
 		// init
 		vector<vector_fixed<float, 3> > palette(nMaxColors);

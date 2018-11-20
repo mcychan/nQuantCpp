@@ -73,7 +73,7 @@ namespace PnnLABQuant
 		bin1.nn = nn;
 	}
 
-	int PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette)
+	int PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors)
 	{
 		auto bins = make_unique<pnnbin[]>(65536);
 		int heap[65537] = { 0 };
@@ -134,7 +134,7 @@ namespace PnnLABQuant
 		}
 
 		/* Merge bins which increase error the least */
-		int extbins = maxbins - pPalette->Count;
+		int extbins = maxbins - nMaxColors;
 		for (int i = 0; i < extbins; ) {
 			int b1;
 			
@@ -305,7 +305,7 @@ namespace PnnLABQuant
 		return k;
 	}
 
-	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, short* qPixels, UINT nMaxColors, int width, int height, bool dither)
+	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, int width, int height, bool dither)
 	{
 		UINT pixelIndex = 0;
 
@@ -572,7 +572,7 @@ namespace PnnLABQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 		if (nMaxColors > 2)
-			pnnquan(pixels, pPalette);
+			pnnquan(pixels, pPalette, nMaxColors);
 		else {
 			if (hasTransparency) {
 				pPalette->Entries[0] = Color::Transparent;
@@ -585,7 +585,7 @@ namespace PnnLABQuant
 		}
 
 		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
-		quantize_image(pixels.data(), pPalette, qPixels.get(), nMaxColors, bitmapWidth, bitmapHeight, dither);
+		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		pixelMap.clear();
 		closestMap.clear();
 
