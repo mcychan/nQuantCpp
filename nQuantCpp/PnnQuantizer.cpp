@@ -183,12 +183,11 @@ namespace PnnQuant
 		return 0;
 	}
 
-	UINT nearestColorIndex(const ColorPalette* pPalette, const int* squares3, const ARGB argb)
+	UINT nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const int* squares3, const ARGB argb)
 	{
 		UINT k = 0;
 		Color c(argb);
 
-		UINT nMaxColors = pPalette->Count;
 		UINT curdist, mindist = SHORT_MAX;
 		for (short i = 0; i < nMaxColors; i++) {
 			Color c2(pPalette->Entries[i]);
@@ -218,7 +217,7 @@ namespace PnnQuant
 		return k;
 	}
 
-	UINT closestColorIndex(const ColorPalette* pPalette, const int* squares3, const ARGB argb)
+	UINT closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const int* squares3, const ARGB argb)
 	{
 		UINT k = 0;
 		Color c(argb);
@@ -227,7 +226,6 @@ namespace PnnQuant
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = SHORT_MAX;
 
-			UINT nMaxColors = pPalette->Count;
 			for (; k < nMaxColors; k++) {
 				Color c2(pPalette->Entries[k]);
 				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
@@ -321,7 +319,7 @@ namespace PnnQuant
 					Color c1(argb);
 					int offset = getARGBIndex(c1);
 					if (!lookup[offset])
-						lookup[offset] = nearestColorIndex(pPalette, squares3, argb) + 1;
+						lookup[offset] = nearestColorIndex(pPalette, nMaxColors, squares3, argb) + 1;
 					qPixels[pixelIndex] = lookup[offset] - 1;
 
 					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
@@ -367,10 +365,10 @@ namespace PnnQuant
 			return true;
 		}
 
-		UINT(*fcnPtr)(const ColorPalette*, const int*, const ARGB) = (hasTransparency || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
+		UINT(*fcnPtr)(const ColorPalette*, const UINT nMaxColors, const int* squares3, const ARGB) = (hasTransparency || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++)
-				qPixels[pixelIndex++] = (*fcnPtr)(pPalette, squares3, pixels[pixelIndex]);
+				qPixels[pixelIndex++] = (*fcnPtr)(pPalette, nMaxColors, squares3, pixels[pixelIndex]);
 		}
 
 		return true;
@@ -683,9 +681,10 @@ namespace PnnQuant
 			return ProcessImagePixels(pDest, qPixels.get());
 		}
 		
-		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
+
 		bool quan_sqrt = nMaxColors > BYTE_MAX;
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors, quan_sqrt);

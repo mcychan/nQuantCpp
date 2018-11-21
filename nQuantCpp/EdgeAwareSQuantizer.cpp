@@ -770,9 +770,10 @@ namespace EdgeAwareSQuant
 		}
 
 		array2d<UINT> quantized_image(bitmapWidth, bitmapHeight);
-		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
+
 		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
 		pnnLABQuantizer.pnnquan(pixels, pPalette, nMaxColors);
 

@@ -922,9 +922,10 @@ namespace nQuant
 		vector<Box> cubes;
 		SplitData(cubes, nMaxColors, colorData);		
 		
-		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
+
 		BuildLookups(pPalette, cubes, colorData);
 		cubes.clear();
 		

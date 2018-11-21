@@ -649,9 +649,10 @@ namespace NeuralNet
 		SetUpArrays();
 		Learn(dither ? 5 : 1);
 
-		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
+
 		Inxbuild(pPalette);
 
 		auto qPixels = make_unique<UINT[]>(bitmapWidth * bitmapHeight);

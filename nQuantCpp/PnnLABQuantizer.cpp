@@ -201,7 +201,7 @@ namespace PnnLABQuant
 		return 0;
 	}
 
-	short nearestColorIndex(const ColorPalette* pPalette, ARGB argb)
+	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, ARGB argb)
 	{
 		short k = 0;
 		Color c(argb);
@@ -211,7 +211,7 @@ namespace PnnLABQuant
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 
-		for (UINT i = 0; i < pPalette->Count; i++) {
+		for (UINT i = 0; i < nMaxColors; i++) {
 			Color c2(pPalette->Entries[i]);
 			getLab(c2, lab2);
 
@@ -219,7 +219,7 @@ namespace PnnLABQuant
 			if (curdist > mindist)
 				continue;
 
-			if (pPalette->Count < 256) {
+			if (nMaxColors < 256) {
 				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
@@ -261,7 +261,7 @@ namespace PnnLABQuant
 		return k;
 	}
 	
-	short closestColorIndex(const ColorPalette* pPalette, const ARGB argb)
+	short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
 		short k = 0;
 		Color c(argb);
@@ -272,7 +272,6 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab1, lab2;
 			getLab(c, lab1);
-			UINT nMaxColors = pPalette->Count;
 			for (; k < nMaxColors; k++) {
 				Color c2(pPalette->Entries[k]);
 				getLab(c2, lab2);
@@ -362,12 +361,12 @@ namespace PnnLABQuant
 					Color c1(argb);
 					int offset = getARGBIndex(c1);
 					if (!lookup[offset])
-						lookup[offset] = nearestColorIndex(pPalette, argb) + 1;
+						lookup[offset] = nearestColorIndex(pPalette, nMaxColors, argb) + 1;
 					qPixels[pixelIndex] = lookup[offset] - 1;
 
 					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 					if (c2.GetA() < BYTE_MAX && c.GetA() == BYTE_MAX) {
-						lookup[offset] = nearestColorIndex(pPalette, pixels[pixelIndex]) + 1;
+						lookup[offset] = nearestColorIndex(pPalette, nMaxColors, pixels[pixelIndex]) + 1;
 						qPixels[pixelIndex] = lookup[offset] - 1;
 					}
 
@@ -412,10 +411,10 @@ namespace PnnLABQuant
 			return true;
 		}
 
-		short(*fcnPtr)(const ColorPalette*, const ARGB) = (hasTransparency || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
+		short(*fcnPtr)(const ColorPalette*, const UINT nMaxColors, const ARGB) = (hasTransparency || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++)
-				qPixels[pixelIndex++] = (*fcnPtr)(pPalette, pixels[pixelIndex]);
+				qPixels[pixelIndex++] = (*fcnPtr)(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 		return true;
 	}
@@ -568,9 +567,10 @@ namespace PnnLABQuant
 			pSource->UnlockBits(&data);
 		}
 		
-		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
+
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors);
 		else {

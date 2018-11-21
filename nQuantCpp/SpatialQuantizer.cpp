@@ -1001,7 +1001,7 @@ namespace SpatialQuant
 		if (!spatial_color_quant(pixels, filter3_weights, quantized_image, palette))
 			return false;
 
-		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
