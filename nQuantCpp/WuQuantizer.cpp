@@ -371,14 +371,28 @@ namespace nQuant
 				float area2[SIDESIZE] = { 0 };
 
 				for (byte greenIndex = 1; greenIndex <= MAXSIDEINDEX; ++greenIndex) {
+					volatile UINT line = 0;
+					volatile UINT lineAlpha = 0;
+					volatile UINT lineRed = 0;
+					volatile UINT lineGreen = 0;
+					volatile UINT lineBlue = 0;
+					volatile float line2 = 0.0f;
+
 					for (byte blueIndex = 1; blueIndex <= MAXSIDEINDEX; ++blueIndex) {
 						const UINT index = Index(alphaIndex, redIndex, greenIndex, blueIndex);
-						area[blueIndex] += data.weights[index];
-						areaAlpha[blueIndex] += data.momentsAlpha[index];
-						areaRed[blueIndex] += data.momentsRed[index];
-						areaGreen[blueIndex] += data.momentsGreen[index];
-						areaBlue[blueIndex] += data.momentsBlue[index];
-						area2[blueIndex] += data.moments[index];
+						line += data.weights[index];
+						lineAlpha += data.momentsAlpha[index];
+						lineRed += data.momentsRed[index];
+						lineGreen += data.momentsGreen[index];
+						lineBlue += data.momentsBlue[index];
+						line2 += data.moments[index];
+
+						area[blueIndex] += line;
+						areaAlpha[blueIndex] += lineAlpha;
+						areaRed[blueIndex] += lineRed;
+						areaGreen[blueIndex] += lineGreen;
+						areaBlue[blueIndex] += lineBlue;
+						area2[blueIndex] += line2;
 
 						const UINT rgbIndex = Index(redIndex, greenIndex, blueIndex);
 						const UINT prevRgbIndex = Index(redIndex - 1, greenIndex, blueIndex);
@@ -530,19 +544,18 @@ namespace nQuant
 		return volumeWeight != 0.0f ? (volumeMoment - distance / volumeWeight) : 0.0f;
 	}
 
-	void SplitData(vector<Box>& boxList, const UINT nMaxColors, ColorData& data)
+	void SplitData(vector<Box>& boxList, UINT& colorCount, ColorData& data)
 	{
 		int next = 0;
-		auto volumeVariance = make_unique<float[]>(nMaxColors);
-		boxList.resize(nMaxColors);
+		auto volumeVariance = make_unique<float[]>(colorCount);
+		boxList.resize(colorCount);
 		boxList[0].AlphaMaximum = MAXSIDEINDEX;
 		boxList[0].RedMaximum = MAXSIDEINDEX;
 		boxList[0].GreenMaximum = MAXSIDEINDEX;
 		boxList[0].BlueMaximum = MAXSIDEINDEX;
 
-		const UINT COLORSIZE = nMaxColors - 1;
-		UINT colorCount = nMaxColors;
-		for (UINT cubeIndex = 1; cubeIndex < COLORSIZE; ++cubeIndex) {
+		const int COLORSIZE = --colorCount;
+		for (int cubeIndex = 1; cubeIndex < COLORSIZE; ++cubeIndex) {
 			if (Cut(data, boxList[next], boxList[cubeIndex])) {
 				volumeVariance[next] = boxList[next].Size > 1 ? CalculateVariance(data, boxList[next]) : 0.0f;
 				volumeVariance[cubeIndex] = boxList[cubeIndex].Size > 1 ? CalculateVariance(data, boxList[cubeIndex]) : 0.0f;
@@ -674,13 +687,14 @@ namespace nQuant
 		return k;
 	}
 
-	void GetQuantizedPalette(const ColorData& data, ColorPalette* pPalette, const UINT nMaxColors, byte alphaThreshold)
+	void GetQuantizedPalette(const ColorData& data, ColorPalette* pPalette, const UINT colorCount, const byte alphaThreshold)
 	{
-		auto alphas = make_unique<UINT[]>(nMaxColors);
-		auto reds = make_unique<UINT[]>(nMaxColors);
-		auto greens = make_unique<UINT[]>(nMaxColors);
-		auto blues = make_unique<UINT[]>(nMaxColors);
-		auto sums = make_unique<UINT[]>(nMaxColors);
+		const UINT COLOR_SIZE = colorCount + 1;
+		auto alphas = make_unique<UINT[]>(COLOR_SIZE);
+		auto reds = make_unique<UINT[]>(COLOR_SIZE);
+		auto greens = make_unique<UINT[]>(COLOR_SIZE);
+		auto blues = make_unique<UINT[]>(COLOR_SIZE);
+		auto sums = make_unique<UINT[]>(COLOR_SIZE);
 
 		int pixelsCount = data.pixelsCount;
 
@@ -700,7 +714,6 @@ namespace nQuant
 		}
 		rightMatches.clear();
 
-		const UINT colorCount = nMaxColors - 1;
 		for (short paletteIndex = 0; paletteIndex < colorCount; paletteIndex++) {
 			if (sums[paletteIndex] > 0) {
 				alphas[paletteIndex] /= sums[paletteIndex];
