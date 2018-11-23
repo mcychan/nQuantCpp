@@ -33,7 +33,7 @@ namespace nQuant
 	const byte MAXSIDEINDEX = 256 / (1 << SIDEPIXSHIFT);
 	const byte SIDESIZE = MAXSIDEINDEX + 1;
 	const UINT TOTAL_SIDESIZE = SIDESIZE * SIDESIZE * SIDESIZE * SIDESIZE;
-	
+
 	bool hasTransparency = false;
 	ARGB m_transparentColor;
 	map<ARGB, vector<short> > closestMap;
@@ -87,7 +87,7 @@ namespace nQuant
 			pixelsCount = bitmapWidth * bitmapHeight;
 			pixels = make_unique<ARGB[]>(pixelsCount);
 		}
-		
+
 		inline ARGB* GetPixels() {
 			return pixels.get();
 		}
@@ -102,7 +102,7 @@ namespace nQuant
 	{
 		return value * value;
 	}
-	
+
 	inline UINT Index(byte red, byte green, byte blue) {
 		return red + green * SIDESIZE + blue * SIDESIZE * SIDESIZE;
 	}
@@ -113,42 +113,42 @@ namespace nQuant
 
 	inline UINT Volume(const Box& cube, long* moment)
 	{
-		return (moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] - 
-		moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] - 
-		moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] + 
-		moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)] - 
-		moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] + 
-		moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] + 
-		moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] - 
-		moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)]) - 
-		(moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] - 
-		moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] - 
-		moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] + 
-		moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] - 
-		moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] + 
-		moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] + 
-		moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)] - 
-		moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
+		return (moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] -
+			moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] -
+			moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] +
+			moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)] -
+			moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] +
+			moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] +
+			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] -
+			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)]) -
+			(moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] -
+				moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] -
+				moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] +
+				moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] -
+				moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] +
+				moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] +
+				moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)] -
+				moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 	}
 
 	inline float Volume(const Box& cube, float* moment)
 	{
-		return (moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] - 
-		moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] - 
-		moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] + 
-		moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)] - 
-		moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] + 
-		moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] + 
-		moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] - 
-		moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)]) - 
-		(moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] - 
-		moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] - 
-		moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] + 
-		moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] - 
-		moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] + 
-		moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] + 
-		moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)] - 
-		moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
+		return (moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] -
+			moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] -
+			moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] +
+			moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)] -
+			moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] +
+			moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] +
+			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] -
+			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)]) -
+			(moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] -
+				moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] -
+				moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] +
+				moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] -
+				moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] +
+				moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] +
+				moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)] -
+				moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 	}
 
 	inline UINT Top(const Box& cube, Pixel direction, byte position, long* moment)
@@ -156,44 +156,44 @@ namespace nQuant
 		switch (direction)
 		{
 		case Alpha:
-			return (moment[Index(position, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] - 
-			moment[Index(position, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] - 
-			moment[Index(position, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] + 
-			moment[Index(position, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)]) - 
-			(moment[Index(position, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] - 
-			moment[Index(position, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] - 
-			moment[Index(position, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] + 
-			moment[Index(position, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
+			return (moment[Index(position, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] -
+				moment[Index(position, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] -
+				moment[Index(position, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] +
+				moment[Index(position, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)]) -
+				(moment[Index(position, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] -
+					moment[Index(position, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] -
+					moment[Index(position, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] +
+					moment[Index(position, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 
 		case Red:
-			return (moment[Index(cube.AlphaMaximum, position, cube.GreenMaximum, cube.BlueMaximum)] - 
-			moment[Index(cube.AlphaMaximum, position, cube.GreenMinimum, cube.BlueMaximum)] - 
-			moment[Index(cube.AlphaMinimum, position, cube.GreenMaximum, cube.BlueMaximum)] + 
-			moment[Index(cube.AlphaMinimum, position, cube.GreenMinimum, cube.BlueMaximum)]) - 
-			(moment[Index(cube.AlphaMaximum, position, cube.GreenMaximum, cube.BlueMinimum)] - 
-			moment[Index(cube.AlphaMaximum, position, cube.GreenMinimum, cube.BlueMinimum)] - 
-			moment[Index(cube.AlphaMinimum, position, cube.GreenMaximum, cube.BlueMinimum)] + 
-			moment[Index(cube.AlphaMinimum, position, cube.GreenMinimum, cube.BlueMinimum)]);
+			return (moment[Index(cube.AlphaMaximum, position, cube.GreenMaximum, cube.BlueMaximum)] -
+				moment[Index(cube.AlphaMaximum, position, cube.GreenMinimum, cube.BlueMaximum)] -
+				moment[Index(cube.AlphaMinimum, position, cube.GreenMaximum, cube.BlueMaximum)] +
+				moment[Index(cube.AlphaMinimum, position, cube.GreenMinimum, cube.BlueMaximum)]) -
+				(moment[Index(cube.AlphaMaximum, position, cube.GreenMaximum, cube.BlueMinimum)] -
+					moment[Index(cube.AlphaMaximum, position, cube.GreenMinimum, cube.BlueMinimum)] -
+					moment[Index(cube.AlphaMinimum, position, cube.GreenMaximum, cube.BlueMinimum)] +
+					moment[Index(cube.AlphaMinimum, position, cube.GreenMinimum, cube.BlueMinimum)]);
 
 		case Green:
-			return (moment[Index(cube.AlphaMaximum, cube.RedMaximum, position, cube.BlueMaximum)] - 
-			moment[Index(cube.AlphaMaximum, cube.RedMinimum, position, cube.BlueMaximum)] - 
-			moment[Index(cube.AlphaMinimum, cube.RedMaximum, position, cube.BlueMaximum)] + 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, position, cube.BlueMaximum)]) - 
-			(moment[Index(cube.AlphaMaximum, cube.RedMaximum, position, cube.BlueMinimum)] - 
-			moment[Index(cube.AlphaMaximum, cube.RedMinimum, position, cube.BlueMinimum)] - 
-			moment[Index(cube.AlphaMinimum, cube.RedMaximum, position, cube.BlueMinimum)] + 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, position, cube.BlueMinimum)]);
+			return (moment[Index(cube.AlphaMaximum, cube.RedMaximum, position, cube.BlueMaximum)] -
+				moment[Index(cube.AlphaMaximum, cube.RedMinimum, position, cube.BlueMaximum)] -
+				moment[Index(cube.AlphaMinimum, cube.RedMaximum, position, cube.BlueMaximum)] +
+				moment[Index(cube.AlphaMinimum, cube.RedMinimum, position, cube.BlueMaximum)]) -
+				(moment[Index(cube.AlphaMaximum, cube.RedMaximum, position, cube.BlueMinimum)] -
+					moment[Index(cube.AlphaMaximum, cube.RedMinimum, position, cube.BlueMinimum)] -
+					moment[Index(cube.AlphaMinimum, cube.RedMaximum, position, cube.BlueMinimum)] +
+					moment[Index(cube.AlphaMinimum, cube.RedMinimum, position, cube.BlueMinimum)]);
 
 		case Blue:
-			return (moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, position)] - 
-			moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, position)] - 
-			moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, position)] + 
-			moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, position)]) - 
-			(moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, position)] - 
-			moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, position)] - 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, position)] + 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, position)]);
+			return (moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, position)] -
+				moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, position)] -
+				moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, position)] +
+				moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, position)]) -
+				(moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, position)] -
+					moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, position)] -
+					moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, position)] +
+					moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, position)]);
 
 		default:
 			return 0;
@@ -205,49 +205,49 @@ namespace nQuant
 		switch (direction)
 		{
 		case Alpha:
-			return (-moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] + 
-			moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] + 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] - 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)]) - 
-			(-moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] + 
-			moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] + 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] - 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
+			return (-moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] +
+				moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] +
+				moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] -
+				moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)]) -
+				(-moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] +
+					moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] +
+					moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] -
+					moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 
 		case Red:
-			return (-moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] + 
-			moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)] + 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] - 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)]) - 
-			(-moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] + 
-			moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)] + 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] - 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
+			return (-moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] +
+				moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)] +
+				moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMaximum)] -
+				moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)]) -
+				(-moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] +
+					moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)] +
+					moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] -
+					moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 
 		case Green:
-			return (-moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] + 
-			moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)] + 
-			moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] - 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)]) - 
-			(-moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] + 
-			moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)] + 
-			moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] - 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
+			return (-moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] +
+				moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)] +
+				moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] -
+				moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMaximum)]) -
+				(-moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] +
+					moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)] +
+					moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] -
+					moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 
 		case Blue:
-			return (-moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] + 
-			moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] + 
-			moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] - 
-			moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]) - 
-			(-moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] + 
-			moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] + 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] - 
-			moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
+			return (-moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] +
+				moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] +
+				moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] -
+				moment[Index(cube.AlphaMaximum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]) -
+				(-moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMinimum)] +
+					moment[Index(cube.AlphaMinimum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMinimum)] +
+					moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMaximum, cube.BlueMinimum)] -
+					moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 
 		default:
 			return 0;
 		}
-	}	
+	}
 
 	void CompileColorData(ColorData& colorData, const Color& color, const byte alphaThreshold, const byte alphaFader)
 	{
@@ -293,9 +293,9 @@ namespace nQuant
 				for (UINT x = 0; x < bitmapWidth; x++) {
 					Color color;
 					sourceImage->GetPixel(x, y, &color);
-					if(color.GetA() < BYTE_MAX) {
+					if (color.GetA() < BYTE_MAX) {
 						hasTransparency = true;
-						if(color.GetA() == 0)
+						if (color.GetA() == 0)
 							m_transparentColor = color.GetValue();
 					}
 					CompileColorData(colorData, color, alphaThreshold, alphaFader);
@@ -307,9 +307,9 @@ namespace nQuant
 		BitmapData data;
 		Status status = sourceImage->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, sourceImage->GetPixelFormat(), &data);
 		if (status != Ok)
-			return;		
+			return;
 
-		auto pRowSource = (byte*) data.Scan0;
+		auto pRowSource = (byte*)data.Scan0;
 		UINT strideSource;
 
 		if (data.Stride > 0) strideSource = data.Stride;
@@ -333,11 +333,11 @@ namespace nQuant
 				byte pixelGreen = *pPixelSource++;
 				byte pixelRed = *pPixelSource++;
 				byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
-				
+
 				Color color(Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue));
 				if (pixelAlpha < BYTE_MAX) {
-					hasTransparency = true;				
-					if(pixelAlpha == 0)
+					hasTransparency = true;
+					if (pixelAlpha == 0)
 						m_transparentColor = color.GetValue();
 				}
 				CompileColorData(colorData, color, alphaThreshold, alphaFader);
@@ -360,7 +360,7 @@ namespace nQuant
 			UINT xareaGreen[SIDESIZE_3] = { 0 };
 			UINT xareaBlue[SIDESIZE_3] = { 0 };
 			float xarea2[SIDESIZE_3] = { 0 };
-						
+
 			for (byte redIndex = 1; redIndex <= MAXSIDEINDEX; ++redIndex)
 			{
 				UINT area[SIDESIZE] = { 0 };
@@ -371,28 +371,14 @@ namespace nQuant
 				float area2[SIDESIZE] = { 0 };
 
 				for (byte greenIndex = 1; greenIndex <= MAXSIDEINDEX; ++greenIndex) {
-					volatile UINT line = 0;
-					volatile UINT lineAlpha = 0;
-					volatile UINT lineRed = 0;
-					volatile UINT lineGreen = 0;
-					volatile UINT lineBlue = 0;
-					volatile float line2 = 0.0f;
-
 					for (byte blueIndex = 1; blueIndex <= MAXSIDEINDEX; ++blueIndex) {
 						const UINT index = Index(alphaIndex, redIndex, greenIndex, blueIndex);
-						line += data.weights[index];
-						lineAlpha += data.momentsAlpha[index];
-						lineRed += data.momentsRed[index];
-						lineGreen += data.momentsGreen[index];
-						lineBlue += data.momentsBlue[index];
-						line2 += data.moments[index];
-
-						area[blueIndex] += line;
-						areaAlpha[blueIndex] += lineAlpha;
-						areaRed[blueIndex] += lineRed;
-						areaGreen[blueIndex] += lineGreen;
-						areaBlue[blueIndex] += lineBlue;
-						area2[blueIndex] += line2;
+						area[blueIndex] += data.weights[index];
+						areaAlpha[blueIndex] += data.momentsAlpha[index];
+						areaRed[blueIndex] += data.momentsRed[index];
+						areaGreen[blueIndex] += data.momentsGreen[index];
+						areaBlue[blueIndex] += data.momentsBlue[index];
+						area2[blueIndex] += data.moments[index];
 
 						const UINT rgbIndex = Index(redIndex, greenIndex, blueIndex);
 						const UINT prevRgbIndex = Index(redIndex - 1, greenIndex, blueIndex);
@@ -414,9 +400,9 @@ namespace nQuant
 				}
 			}
 		}
-	}	
+	}
 
-	CubeCut Maximize(ColorData& data, const Box& cube, Pixel direction, byte first, byte last, UINT wholeAlpha, UINT wholeRed, UINT wholeGreen, UINT wholeBlue, UINT wholeWeight)
+	CubeCut Maximize(const ColorData& data, const Box& cube, Pixel direction, byte first, byte last, UINT wholeAlpha, UINT wholeRed, UINT wholeGreen, UINT wholeBlue, UINT wholeWeight)
 	{
 		auto bottomAlpha = Bottom(cube, direction, data.momentsAlpha.get());
 		auto bottomRed = Bottom(cube, direction, data.momentsRed.get());
@@ -428,7 +414,7 @@ namespace nQuant
 		volatile auto result = 0.0f;
 		volatile byte cutPoint = 0;
 
-		#pragma omp parallel for
+#pragma omp parallel for
 		for (int position = first; position < last; ++position)
 		{
 			UINT halfAlpha = bottomAlpha + Top(cube, direction, position, data.momentsAlpha.get());
@@ -464,8 +450,8 @@ namespace nQuant
 		return CubeCut(valid, cutPoint, result);
 	}
 
-	bool Cut(ColorData& data, Box& first, Box& second)
-	{		
+	bool Cut(const ColorData& data, Box& first, Box& second)
+	{
 		auto wholeAlpha = Volume(first, data.momentsAlpha.get());
 		auto wholeRed = Volume(first, data.momentsRed.get());
 		auto wholeGreen = Volume(first, data.momentsGreen.get());
@@ -475,7 +461,7 @@ namespace nQuant
 		auto maxAlpha = Maximize(data, first, Alpha, static_cast<byte>(first.AlphaMinimum + 1), first.AlphaMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
 		auto maxRed = Maximize(data, first, Red, static_cast<byte>(first.RedMinimum + 1), first.RedMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
 		auto maxGreen = Maximize(data, first, Green, static_cast<byte>(first.GreenMinimum + 1), first.GreenMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
-		auto maxBlue = Maximize(data, first, Blue, static_cast<byte>(first.BlueMinimum + 1), first.BlueMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);		
+		auto maxBlue = Maximize(data, first, Blue, static_cast<byte>(first.BlueMinimum + 1), first.BlueMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
 
 		Pixel direction = Blue;
 		if ((maxAlpha.value >= maxRed.value) && (maxAlpha.value >= maxGreen.value) && (maxAlpha.value >= maxBlue.value)) {
@@ -487,7 +473,7 @@ namespace nQuant
 			direction = Red;
 		else if ((maxGreen.value >= maxAlpha.value) && (maxGreen.value >= maxRed.value) && (maxGreen.value >= maxBlue.value))
 			direction = Green;
-		
+
 		second.AlphaMaximum = first.AlphaMaximum;
 		second.RedMaximum = first.RedMaximum;
 		second.GreenMaximum = first.GreenMaximum;
@@ -530,7 +516,7 @@ namespace nQuant
 		return true;
 	}
 
-	float CalculateVariance(ColorData& data, const Box& cube)
+	float CalculateVariance(const ColorData& data, const Box& cube)
 	{
 		auto volumeAlpha = Volume(cube, data.momentsAlpha.get());
 		auto volumeRed = Volume(cube, data.momentsRed.get());
@@ -542,20 +528,21 @@ namespace nQuant
 		float distance = sqr(volumeAlpha) + sqr(volumeRed) + sqr(volumeGreen) + sqr(volumeBlue);
 
 		return volumeWeight != 0.0f ? (volumeMoment - distance / volumeWeight) : 0.0f;
-	}	
+	}
 
-	void SplitData(vector<Box>& boxList, UINT& colorCount, ColorData& data)
-	{		
+	void SplitData(vector<Box>& boxList, const UINT nMaxColors, ColorData& data)
+	{
 		int next = 0;
-		auto volumeVariance = make_unique<float[]>(colorCount);
-		boxList.resize(colorCount);
+		auto volumeVariance = make_unique<float[]>(nMaxColors);
+		boxList.resize(nMaxColors);
 		boxList[0].AlphaMaximum = MAXSIDEINDEX;
 		boxList[0].RedMaximum = MAXSIDEINDEX;
 		boxList[0].GreenMaximum = MAXSIDEINDEX;
 		boxList[0].BlueMaximum = MAXSIDEINDEX;
 
-		const int COLORSIZE = --colorCount;
-		for (int cubeIndex = 1; cubeIndex < COLORSIZE; ++cubeIndex) {
+		const UINT COLORSIZE = nMaxColors - 1;
+		UINT colorCount = nMaxColors;
+		for (UINT cubeIndex = 1; cubeIndex < COLORSIZE; ++cubeIndex) {
 			if (Cut(data, boxList[next], boxList[cubeIndex])) {
 				volumeVariance[next] = boxList[next].Size > 1 ? CalculateVariance(data, boxList[next]) : 0.0f;
 				volumeVariance[cubeIndex] = boxList[cubeIndex].Size > 1 ? CalculateVariance(data, boxList[cubeIndex]) : 0.0f;
@@ -600,7 +587,7 @@ namespace nQuant
 			pPalette->Entries[lookupsCount++] = Color::MakeARGB(alpha, red, green, blue);
 		}
 	}
-	
+
 	UINT closestColorIndex(const ColorPalette* pPalette, ARGB argb, byte alphaThreshold)
 	{
 		UINT k = 0;
@@ -641,12 +628,12 @@ namespace nQuant
 		closestMap[argb] = closest;
 		return k;
 	}
-	
+
 	UINT nearestColorIndex(const ColorPalette* pPalette, ARGB argb, byte alphaThreshold)
 	{
 		Color c(argb);
 		UINT k = 0;
-		if (c.GetA() <= alphaThreshold)			
+		if (c.GetA() <= alphaThreshold)
 			return k;
 
 		auto got = rightMatches.find(argb);
@@ -659,17 +646,17 @@ namespace nQuant
 				curdist = deltaAlpha;
 				if (curdist > mindist)
 					continue;
-				
+
 				UINT deltaRed = sqr(c2.GetR() - c.GetR());
 				curdist += deltaRed;
 				if (curdist > mindist)
 					continue;
-			
+
 				UINT deltaGreen = sqr(c2.GetG() - c.GetG());
 				curdist += deltaGreen;
 				if (curdist > mindist)
 					continue;
-				
+
 				UINT deltaBlue = sqr(c2.GetB() - c.GetB());
 				curdist += deltaBlue;
 				if (curdist > mindist)
@@ -684,28 +671,27 @@ namespace nQuant
 		else
 			k = got->second;
 
-		return k;		
+		return k;
 	}
-	
-	void GetQuantizedPalette(const ColorData& data, ColorPalette* pPalette, UINT colorCount, byte alphaThreshold)
+
+	void GetQuantizedPalette(const ColorData& data, ColorPalette* pPalette, const UINT nMaxColors, byte alphaThreshold)
 	{
-		const UINT COLOR_SIZE = colorCount + 1;
-		auto alphas = make_unique<UINT[]>(COLOR_SIZE);
-		auto reds = make_unique<UINT[]>(COLOR_SIZE);
-		auto greens = make_unique<UINT[]>(COLOR_SIZE);
-		auto blues = make_unique<UINT[]>(COLOR_SIZE);
-		auto sums = make_unique<UINT[]>(COLOR_SIZE);
+		auto alphas = make_unique<UINT[]>(nMaxColors);
+		auto reds = make_unique<UINT[]>(nMaxColors);
+		auto greens = make_unique<UINT[]>(nMaxColors);
+		auto blues = make_unique<UINT[]>(nMaxColors);
+		auto sums = make_unique<UINT[]>(nMaxColors);
 
 		int pixelsCount = data.pixelsCount;
 
 		for (UINT pixelIndex = 0; pixelIndex < pixelsCount; pixelIndex++) {
 			auto argb = data.pixels[pixelIndex];
 			Color pixel(argb);
-			if (pixel.GetA() <= alphaThreshold)			
-				continue;			
+			if (pixel.GetA() <= alphaThreshold)
+				continue;
 
 			UINT bestMatch = nearestColorIndex(pPalette, argb, alphaThreshold);
-			
+
 			alphas[bestMatch] += pixel.GetA();
 			reds[bestMatch] += pixel.GetR();
 			greens[bestMatch] += pixel.GetG();
@@ -714,6 +700,7 @@ namespace nQuant
 		}
 		rightMatches.clear();
 
+		const UINT colorCount = nMaxColors - 1;
 		for (short paletteIndex = 0; paletteIndex < colorCount; paletteIndex++) {
 			if (sums[paletteIndex] > 0) {
 				alphas[paletteIndex] /= sums[paletteIndex];
@@ -724,7 +711,7 @@ namespace nQuant
 
 			auto color = Color::MakeARGB(alphas[paletteIndex], reds[paletteIndex], greens[paletteIndex], blues[paletteIndex]);
 			pPalette->Entries[paletteIndex] = color;
-			
+
 			if (hasTransparency && color == m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[paletteIndex]);
 		}
@@ -735,8 +722,8 @@ namespace nQuant
 		if (dither) {
 			bool odd_scanline = false;
 			short *thisrowerr, *nextrowerr;
-			const byte DJ = 4;
-			const byte DITHER_MAX = 20;
+			constexpr byte DJ = 4;
+			constexpr byte DITHER_MAX = 20;
 			const int err_len = (width + 2) * DJ;
 			byte range_tbl[DJ * 256] = { 0 };
 			auto range = &range_tbl[256];
@@ -784,7 +771,7 @@ namespace nQuant
 					int g_pix = range[((thisrowerr[2] + 8) >> 4) + c.GetG()];
 					int b_pix = range[((thisrowerr[3] + 8) >> 4) + c.GetB()];
 
-					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);					
+					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 					qPixels[pixelIndex] = nearestColorIndex(pPalette, argb, alphaThreshold);
 
 					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
@@ -801,7 +788,7 @@ namespace nQuant
 					nextrowerr[0] += a_pix;
 					a_pix += two_val;
 					thisrowerr[0 + DJ] += a_pix;
-					
+
 					two_val = r_pix * 2;
 					nextrowerr[1 - DJ] = r_pix;
 					r_pix += two_val;
@@ -810,7 +797,7 @@ namespace nQuant
 					nextrowerr[1] += r_pix;
 					r_pix += two_val;
 					thisrowerr[1 + DJ] += r_pix;
-					
+
 					two_val = g_pix * 2;
 					nextrowerr[2 - DJ] = g_pix;
 					g_pix += two_val;
@@ -819,7 +806,7 @@ namespace nQuant
 					nextrowerr[2] += g_pix;
 					g_pix += two_val;
 					thisrowerr[2 + DJ] += g_pix;
-					
+
 					two_val = b_pix * 2;
 					nextrowerr[3 - DJ] = b_pix;
 					b_pix += two_val;
@@ -920,17 +907,17 @@ namespace nQuant
 		BuildHistogram(colorData, pSource, alphaThreshold, alphaFader);
 		CalculateMoments(colorData);
 		vector<Box> cubes;
-		SplitData(cubes, nMaxColors, colorData);		
-		
+		SplitData(cubes, nMaxColors, colorData);
+
 		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
 		BuildLookups(pPalette, cubes, colorData);
 		cubes.clear();
-		
+
 		GetQuantizedPalette(colorData, pPalette, nMaxColors, alphaThreshold);
-		
+
 		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
 		quantize_image(colorData.GetPixels(), pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither, alphaThreshold);
 		closestMap.clear();
