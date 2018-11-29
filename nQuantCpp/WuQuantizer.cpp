@@ -98,7 +98,7 @@ namespace nQuant
 		}
 	};
 
-	inline double sqr(double value)
+	inline double sqr(float value)
 	{
 		return value * value;
 	}
@@ -111,7 +111,7 @@ namespace nQuant
 		return alpha + red * SIDESIZE + green * SIDESIZE * SIDESIZE + blue * SIDESIZE * SIDESIZE * SIDESIZE;
 	}
 
-	inline UINT Volume(const Box& cube, long* moment)
+	inline float Volume(const Box& cube, long* moment)
 	{
 		return (moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMaximum, cube.BlueMaximum)] -
 			moment[Index(cube.AlphaMaximum, cube.RedMaximum, cube.GreenMinimum, cube.BlueMaximum)] -
@@ -151,7 +151,7 @@ namespace nQuant
 				moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 	}
 
-	inline UINT Top(const Box& cube, Pixel direction, byte position, long* moment)
+	inline float Top(const Box& cube, Pixel direction, byte position, long* moment)
 	{
 		switch (direction)
 		{
@@ -200,7 +200,7 @@ namespace nQuant
 		}
 	}
 
-	inline UINT Bottom(const Box& cube, Pixel direction, long* moment)
+	inline float Bottom(const Box& cube, Pixel direction, long* moment)
 	{
 		switch (direction)
 		{
@@ -431,17 +431,17 @@ namespace nQuant
 #pragma omp parallel for
 		for (int position = first; position < last; ++position)
 		{
-			UINT halfAlpha = bottomAlpha + Top(cube, direction, position, data.momentsAlpha.get());
-			UINT halfRed = bottomRed + Top(cube, direction, position, data.momentsRed.get());
-			UINT halfGreen = bottomGreen + Top(cube, direction, position, data.momentsGreen.get());
-			UINT halfBlue = bottomBlue + Top(cube, direction, position, data.momentsBlue.get());
-			UINT halfWeight = bottomWeight + Top(cube, direction, position, data.weights.get());
+			auto halfAlpha = bottomAlpha + Top(cube, direction, position, data.momentsAlpha.get());
+			auto halfRed = bottomRed + Top(cube, direction, position, data.momentsRed.get());
+			auto halfGreen = bottomGreen + Top(cube, direction, position, data.momentsGreen.get());
+			auto halfBlue = bottomBlue + Top(cube, direction, position, data.momentsBlue.get());
+			auto halfWeight = bottomWeight + Top(cube, direction, position, data.weights.get());
 
 			if (halfWeight == 0)
 				continue;
 
-			UINT halfDistance = sqr(halfAlpha) + sqr(halfRed) + sqr(halfGreen) + sqr(halfBlue);
-			float temp = halfDistance * 1.0f / halfWeight;
+			auto halfDistance = sqr(halfAlpha) + sqr(halfRed) + sqr(halfGreen) + sqr(halfBlue);
+			auto temp = halfDistance / halfWeight;
 
 			halfAlpha = wholeAlpha - halfAlpha;
 			halfRed = wholeRed - halfRed;
