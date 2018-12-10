@@ -46,10 +46,8 @@ namespace PnnQuant
 		auto wg = bin1.gc;
 		auto wb = bin1.bc;
 		for (i = bin1.fw; i; i = bins[i].fw) {
-			double nerr, n2;
-
-			nerr = sqr(bins[i].ac - wa) + sqr(bins[i].rc - wr) + sqr(bins[i].gc - wg) + sqr(bins[i].bc - wb);
-			n2 = bins[i].cnt;
+			double nerr = sqr(bins[i].ac - wa) + sqr(bins[i].rc - wr) + sqr(bins[i].gc - wg) + sqr(bins[i].bc - wb);
+			double n2 = bins[i].cnt;
 			nerr *= (n1 * n2) / (n1 + n2);
 			if (nerr >= err)
 				continue;
@@ -183,7 +181,7 @@ namespace PnnQuant
 		return 0;
 	}
 
-	UINT nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const int* squares3, const ARGB argb)
+	UINT nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
 		UINT k = 0;
 		Color c(argb);
@@ -191,23 +189,23 @@ namespace PnnQuant
 		UINT curdist, mindist = SHORT_MAX;
 		for (short i = 0; i < nMaxColors; i++) {
 			Color c2(pPalette->Entries[i]);
-			int adist = c2.GetA() - c.GetA();
-			curdist = squares3[adist];
+			int adist = abs(c2.GetA() - c.GetA());
+			curdist = adist;
 			if (curdist > mindist)
 				continue;
 
-			int rdist = c2.GetR() - c.GetR();
-			curdist += squares3[rdist];
+			int rdist = abs(c2.GetR() - c.GetR());
+			curdist += rdist;
 			if (curdist > mindist)
 				continue;
 
-			int gdist = c2.GetG() - c.GetG();
-			curdist += squares3[gdist];
+			int gdist = abs(c2.GetG() - c.GetG());
+			curdist += gdist;
 			if (curdist > mindist)
 				continue;
 
-			int bdist = c2.GetB() - c.GetB();
-			curdist += squares3[bdist];
+			int bdist = abs(c2.GetB() - c.GetB());
+			curdist += bdist;
 			if (curdist > mindist)
 				continue;
 
@@ -217,7 +215,7 @@ namespace PnnQuant
 		return k;
 	}
 
-	UINT closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const int* squares3, const ARGB argb)
+	UINT closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
 		UINT k = 0;
 		Color c(argb);
@@ -319,7 +317,7 @@ namespace PnnQuant
 					Color c1(argb);
 					int offset = getARGBIndex(c1);
 					if (!lookup[offset])
-						lookup[offset] = nearestColorIndex(pPalette, nMaxColors, squares3, argb) + 1;
+						lookup[offset] = nearestColorIndex(pPalette, nMaxColors, c.GetA() ? argb : pixels[pixelIndex]) + 1;
 					qPixels[pixelIndex] = lookup[offset] - 1;
 
 					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
@@ -365,10 +363,10 @@ namespace PnnQuant
 			return true;
 		}
 
-		UINT(*fcnPtr)(const ColorPalette*, const UINT nMaxColors, const int* squares3, const ARGB) = (hasTransparency || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
+		UINT(*fcnPtr)(const ColorPalette*, const UINT nMaxColors, const ARGB) = (hasTransparency || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++)
-				qPixels[pixelIndex++] = (*fcnPtr)(pPalette, nMaxColors, squares3, pixels[pixelIndex]);
+				qPixels[pixelIndex++] = (*fcnPtr)(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 
 		return true;

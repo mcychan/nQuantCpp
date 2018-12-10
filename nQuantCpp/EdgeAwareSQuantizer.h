@@ -28,9 +28,14 @@ namespace EdgeAwareSQuant
 				data[i] = rhs.data[i];
 		}
 
-		inline T& operator()(int i)
+		inline T& operator[](int index)
 		{
-			return data[i];
+			return data[index];
+		}
+
+		inline const T& operator[](int index) const
+		{
+			return data[index];
 		}
 
 		inline int get_length() const { return length; }
@@ -54,7 +59,7 @@ namespace EdgeAwareSQuant
 		vector_fixed<T, length> direct_product(const vector_fixed<T, length>& rhs) {
 			vector_fixed<T, length> result;
 			for (int i = 0; i<length; i++)
-				result(i) = data[i] * rhs.data[i];
+				result[i] = data[i] * rhs.data[i];
 
 			return result;
 		}
@@ -144,6 +149,11 @@ namespace EdgeAwareSQuant
 		{
 			return data[row * width + col];
 		}
+		
+		inline const T& operator()(int col, int row) const
+		{
+			return data[row * width + col];
+		}
 
 		inline int get_width() const { return width; }
 		inline int get_height() const { return height; }
@@ -199,7 +209,7 @@ namespace EdgeAwareSQuant
 		// the matrices will be K x K, where K = number of palette entries.
 		array2d<T> matrix_inverse() {
 			array2d<T> result(get_width(), get_height());
-			array2d<T>& a = *this;
+			auto& a = *this;
 
 			// Set result to identity matrix
 			for (int i = 0; i<get_width(); i++)
@@ -265,8 +275,18 @@ namespace EdgeAwareSQuant
 		{
 			return data[row * width + col];
 		}
+		
+		inline const T& at(int row, int col) const
+		{
+			return data[row * width + col];
+		}
 
 		inline T& operator()(int row, int col)
+		{
+			return data[row * width + col];
+		}
+		
+		inline const T& operator()(int row, int col) const
 		{
 			return data[row * width + col];
 		}

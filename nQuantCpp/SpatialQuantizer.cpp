@@ -31,7 +31,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <math.h>
 #include <time.h>
 #include <limits>
-#include <map>
 
 namespace SpatialQuant
 {
@@ -60,9 +59,14 @@ namespace SpatialQuant
 				data[i] = rhs.data[i];
 		}
 
-		inline T& operator()(int i)
+		inline T& operator[](int index)
 		{
-			return data[i];
+			return data[index];
+		}
+
+		inline const T& operator[](int index) const
+		{
+			return data[index];
 		}
 
 		inline int get_length() const { return length; }
@@ -86,7 +90,7 @@ namespace SpatialQuant
 		vector_fixed<T, length> direct_product(const vector_fixed<T, length>& rhs) {
 			vector_fixed<T, length> result;
 			for (int i = 0; i<length; i++)
-				result(i) = data[i] * rhs.data[i];
+				result[i] = data[i] * rhs.data[i];
 
 			return result;
 		}
@@ -173,6 +177,11 @@ namespace SpatialQuant
 			return data[row * width + col];
 		}
 
+		inline const T& operator()(int col, int row) const
+		{
+			return data[row * width + col];
+		}
+
 		inline int get_width() const { return width; }
 		inline int get_height() const { return height; }
 
@@ -218,7 +227,7 @@ namespace SpatialQuant
 		// the matrices will be K x K, where K = number of palette entries.
 		array2d<T> matrix_inverse() {
 			array2d<T> result(get_width(), get_height());
-			array2d<T>& a = *this;
+			auto& a = *this;
 
 			// Set result to identity matrix
 			for (int i = 0; i<get_width(); i++)
@@ -278,6 +287,11 @@ namespace SpatialQuant
 		}
 
 		inline T& operator()(int col, int row, int layer)
+		{
+			return data[row * width * depth + col * depth + layer];
+		}
+
+		inline const T& operator()(int col, int row, int layer) const
 		{
 			return data[row * width * depth + col * depth + layer];
 		}
@@ -350,7 +364,7 @@ namespace SpatialQuant
 		}
 	}
 
-	vector_fixed<double, 3> b_value(array2d<vector_fixed<double, 3> >& b, int i_x, int i_y, int j_x, int j_y)
+	vector_fixed<double, 3> b_value(array2d<vector_fixed<double, 3> >& b, const int i_x, const int i_y, const int j_x, const int j_y)
 	{
 		int radius_width = (b.get_width() - 1) / 2, radius_height = (b.get_height() - 1) / 2;
 		int k_x = j_x - i_x + radius_width;
@@ -360,7 +374,7 @@ namespace SpatialQuant
 		return b(k_x, k_y);
 	}
 
-	void compute_a_image(array2d<vector_fixed<double, 3> >& image, array2d<vector_fixed<double, 3> >& b, array2d<vector_fixed<double, 3> >& a)
+	void compute_a_image(const array2d<vector_fixed<double, 3> >& image, array2d<vector_fixed<double, 3> >& b, array2d<vector_fixed<double, 3> >& a)
 	{
 		int radius_width = (b.get_width() - 1) / 2, radius_height = (b.get_height() - 1) / 2;
 		for (int i_y = 0; i_y < a.get_height(); i_y++) {
@@ -385,7 +399,7 @@ namespace SpatialQuant
 		}
 	}
 
-	void sum_coarsen(array2d<vector_fixed<double, 3> >& fine, array2d<vector_fixed<double, 3> >& coarse)
+	void sum_coarsen(const array2d<vector_fixed<double, 3> >& fine, array2d<vector_fixed<double, 3> >& coarse)
 	{
 		for (int y = 0; y<coarse.get_height(); y++) {
 			for (int x = 0; x<coarse.get_width(); x++) {
@@ -403,41 +417,44 @@ namespace SpatialQuant
 	}
 
 	template <typename T, int length>
-	array2d<T> extract_vector_layer_2d(array2d<vector_fixed<T, length> >& s, int k)
+	array2d<T> extract_vector_layer_2d(const array2d<vector_fixed<T, length> >& s, int k)
 	{
 		array2d<T> result(s.get_width(), s.get_height());
 		for (int i = 0; i < s.get_width(); i++) {
 			for (int j = 0; j < s.get_height(); j++)
-				result(i, j) = s(i, j)(k);
+				result(i, j) = s(i, j)[k];
 		}
 		return result;
 	}
 
 	template <typename T, int length>
-	vector<T> extract_vector_layer_1d(vector<vector_fixed<T, length> >& s, int k)
+	vector<T> extract_vector_layer_1d(const vector<vector_fixed<T, length> >& s, int k)
 	{
 		vector<T> result(s.size());
 		for (UINT i = 0; i < s.size(); i++)
-			result[i] = s[i](k);
+			result[i] = s[i][k];
 
 		return result;
 	}
 
-	UINT best_match_color(array3d<double>& vars, const int i_x, const int i_y, const UINT nMaxColor)
+	UINT best_match_color(const array3d<double>& vars, const int i_x, const int i_y, const UINT nMaxColor)
 	{
 		UINT max_v = 0;
-		double max_weight = vars(i_x, i_y, max_v);
+		UINT index = i_y * vars.get_width() + i_x;
+
+		auto max_weight = vars(i_x, i_y, max_v);
 		for (UINT v = 1; v < nMaxColor; v++) {
-			const double weight = vars(i_x, i_y, v);
+			const auto& weight = vars(i_x, i_y, v);
 			if (weight > max_weight) {
 				max_v = v;
 				max_weight = weight;
 			}
 		}
+
 		return max_v;
 	}
 
-	void zoom_double(array3d<double>& smallVal, array3d<double>& big)
+	void zoom_double(const array3d<double>& smallVal, array3d<double>& big)
 	{
 		// Simple scaling of the weights array based on mixing the four
 		// pixels falling under each fine pixel, weighted by area.
@@ -474,7 +491,7 @@ namespace SpatialQuant
 		}
 	}
 
-	void compute_initial_s(array2d<vector_fixed<double, 3> >& s, array3d<double>& coarse_variables, array2d<vector_fixed<double, 3> >& b)
+	void compute_initial_s(array2d<vector_fixed<double, 3> >& s, const array3d<double>& coarse_variables, array2d<vector_fixed<double, 3> >& b)
 	{
 		int palette_size = s.get_width();
 		int coarse_width = coarse_variables.get_width();
@@ -496,12 +513,12 @@ namespace SpatialQuant
 							continue;
 						auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 						for (int v = 0; v<palette_size; v++) {
-							double v1 = coarse_variables(i_x, i_y, v);
+							auto v1 = coarse_variables(i_x, i_y, v);
 							for (int alpha = v; alpha<palette_size; alpha++) {
-								double mult = v1 * coarse_variables(j_x, j_y, alpha);
-								s(v, alpha)(0) += mult * b_ij(0);
-								s(v, alpha)(1) += mult * b_ij(1);
-								s(v, alpha)(2) += mult * b_ij(2);
+								auto mult = v1 * coarse_variables(j_x, j_y, alpha);
+								s(v, alpha)[0] += mult * b_ij[0];
+								s(v, alpha)[1] += mult * b_ij[1];
+								s(v, alpha)[2] += mult * b_ij[2];
 							}
 						}
 					}
@@ -512,39 +529,39 @@ namespace SpatialQuant
 		}
 	}
 
-	void update_s(array2d<vector_fixed<double, 3> >& s, array3d<double>& coarse_variables, array2d<vector_fixed<double, 3> >& b,
-		int j_x, int j_y, int alpha, double delta)
+	void update_s(array2d<vector_fixed<double, 3> >& s, const array3d<double>& coarse_variables, array2d<vector_fixed<double, 3> >& b,
+		const int j_x, const int j_y, const int alpha, const double delta)
 	{
 		int palette_size = s.get_width();
-		int coarse_width = coarse_variables.get_width();
-		int coarse_height = coarse_variables.get_height();
+		auto coarse_width = coarse_variables.get_width();
+		auto coarse_height = coarse_variables.get_height();
 		int center_x = (b.get_width() - 1) / 2, center_y = (b.get_height() - 1) / 2;
 		int max_i_x = min(coarse_width, j_x + center_x + 1);
 		int max_i_y = min(coarse_height, j_y + center_y + 1);
 		for (int i_y = max(0, j_y - center_y); i_y < max_i_y; i_y++) {
 			for (int i_x = max(0, j_x - center_x); i_x < max_i_x; i_x++) {
-				vector_fixed<double, 3> delta_b_ij = delta * b_value(b, i_x, i_y, j_x, j_y);
+				auto delta_b_ij = delta * b_value(b, i_x, i_y, j_x, j_y);
 				if (i_x == j_x && i_y == j_y)
 					continue;
 				for (int v = 0; v <= alpha; v++) {
-					double mult = coarse_variables(i_x, i_y, v);
-					s(v, alpha)(0) += mult * delta_b_ij(0);
-					s(v, alpha)(1) += mult * delta_b_ij(1);
-					s(v, alpha)(2) += mult * delta_b_ij(2);
+					auto mult = coarse_variables(i_x, i_y, v);
+					s(v, alpha)[0] += mult * delta_b_ij[0];
+					s(v, alpha)[1] += mult * delta_b_ij[1];
+					s(v, alpha)[2] += mult * delta_b_ij[2];
 				}
 				for (int v = alpha; v<palette_size; v++) {
-					double mult = coarse_variables(i_x, i_y, v);
-					s(alpha, v)(0) += mult * delta_b_ij(0);
-					s(alpha, v)(1) += mult * delta_b_ij(1);
-					s(alpha, v)(2) += mult * delta_b_ij(2);
+					auto mult = coarse_variables(i_x, i_y, v);
+					s(alpha, v)[0] += mult * delta_b_ij[0];
+					s(alpha, v)[1] += mult * delta_b_ij[1];
+					s(alpha, v)[2] += mult * delta_b_ij[2];
 				}
 			}
 		}
 		s(alpha, alpha) += delta * b_value(b, 0, 0, 0, 0);
 	}
 
-	void refine_palette(array2d<vector_fixed<double, 3> >& s, array3d<double>& coarse_variables,
-		array2d<vector_fixed<double, 3> >& a, vector<vector_fixed<double, 3> >& palette)
+	void refine_palette(array2d<vector_fixed<double, 3> >& s, const array3d<double>& coarse_variables,
+		const array2d<vector_fixed<double, 3> >& a, vector<vector_fixed<double, 3> >& palette)
 	{
 		// We only computed the half of S above the diagonal - reflect it
 		for (int v = 0; v<s.get_width(); v++) {
@@ -575,14 +592,14 @@ namespace SpatialQuant
 
 				if (val != 0)
 					isBlack = false;
-				palette[v](k) = val;
+				palette[v][k] = val;
 			}
 			if (isBlack)
 				swap(palette[v], palette[0]);
 		}
 	}
 
-	void compute_initial_j_palette_sum(array2d<vector_fixed<double, 3> >& j_palette_sum, array3d<double>& coarse_variables, const vector<vector_fixed<double, 3> >& palette)
+	void compute_initial_j_palette_sum(array2d<vector_fixed<double, 3> >& j_palette_sum, const array3d<double>& coarse_variables, const vector<vector_fixed<double, 3> >& palette)
 	{
 		for (int j_y = 0; j_y<coarse_variables.get_height(); j_y++) {
 			for (int j_x = 0; j_x<coarse_variables.get_width(); j_x++) {
@@ -594,7 +611,7 @@ namespace SpatialQuant
 		}
 	}
 
-	bool spatial_color_quant(array2d<vector_fixed<double, 3> >& image, array2d<vector_fixed<double, 3> >& filter_weights,
+	bool spatial_color_quant(const array2d<vector_fixed<double, 3> >& image, array2d<vector_fixed<double, 3> >& filter_weights,
 		array2d<UINT>& quantized_image, vector<vector_fixed<double, 3> >& palette,
 		const double initial_temperature = 1.0, const double final_temperature = 0.001, const int temps_per_level = 3, const int repeats_per_temp = 1)
 	{
@@ -663,6 +680,7 @@ namespace SpatialQuant
 		auto p_palette_sum = make_unique<array2d< vector_fixed<double, 3> > >(coarse_variables.get_width(), coarse_variables.get_height());
 		auto j_palette_sum = p_palette_sum.get();
 		compute_initial_j_palette_sum(*j_palette_sum, coarse_variables, palette);
+
 		while (coarse_level >= 0 || temperature > final_temperature) {
 			// Need to reseat this reference in case we changed p_coarse_variables
 			auto& coarse_variables = *p_coarse_variables;
@@ -681,7 +699,7 @@ namespace SpatialQuant
 
 				while (!visit_queue.empty()) {
 					// If we get to 10% above initial size, just revisit them all
-					if ((int)visit_queue.size() > coarse_variables.get_width() * coarse_variables.get_height() * 11 / 10) {
+					if ((int)visit_queue.size() > coarse_variables.get_width() * coarse_variables.get_height() * 1.1) {
 						visit_queue.clear();
 						random_permutation_2d(coarse_variables.get_width(), coarse_variables.get_height(), visit_queue);
 					}
@@ -703,9 +721,9 @@ namespace SpatialQuant
 								continue;
 							auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 							auto& j_pal = (*j_palette_sum)(j_x, j_y);
-							p_i(0) += b_ij(0) * j_pal(0);
-							p_i(1) += b_ij(1) * j_pal(1);
-							p_i(2) += b_ij(2) * j_pal(2);
+							p_i[0] += b_ij[0] * j_pal[0];
+							p_i[1] += b_ij[1] * j_pal[1];
+							p_i[2] += b_ij[2] * j_pal[2];
 						}
 					}
 					p_i *= 2.0;
@@ -740,10 +758,12 @@ namespace SpatialQuant
 						if (new_val >= 1)
 							new_val = 1 - 1e-10;
 						double delta_m_iv = new_val - coarse_variables(i_x, i_y, v);
+						UINT index = i_y * coarse_variables.get_width() + i_x;
+
 						coarse_variables(i_x, i_y, v) = new_val;
-						j_pal(0) += delta_m_iv * palette[v](0);
-						j_pal(1) += delta_m_iv * palette[v](1);
-						j_pal(2) += delta_m_iv * palette[v](2);
+						j_pal[0] += delta_m_iv * palette[v][0];
+						j_pal[1] += delta_m_iv * palette[v][1];
+						j_pal[2] += delta_m_iv * palette[v][2];
 
 						if (abs(delta_m_iv) > 0.001 && !skip_palette_maintenance)
 							update_s(s, coarse_variables, b, i_x, i_y, v, delta_m_iv);
@@ -788,8 +808,7 @@ namespace SpatialQuant
 			iters_at_current_level++;
 			skip_palette_maintenance = false;
 			if ((temperature <= final_temperature || coarse_level > 0) && iters_at_current_level >= iters_per_level) {
-				coarse_level--;
-				if (coarse_level < 0)
+				if (--coarse_level < 0)
 					break;
 				auto p_new_coarse_variables = new array3d<double>(image.get_width() >> coarse_level, image.get_height() >> coarse_level, palette.size());
 				zoom_double(coarse_variables, *p_new_coarse_variables);
@@ -803,15 +822,6 @@ namespace SpatialQuant
 			}
 			if (temperature > final_temperature)
 				temperature *= temperature_multiplier;
-		}
-
-		// This is normally not used, but is handy sometimes for debugging
-		while (coarse_level > 0) {
-			coarse_level--;
-			auto p_new_coarse_variables = new array3d<double>(image.get_width() >> coarse_level, image.get_height() >> coarse_level, palette.size());
-			zoom_double(*p_coarse_variables, *p_new_coarse_variables);
-			pp_coarse_variables.reset(p_new_coarse_variables);
-			p_coarse_variables = pp_coarse_variables.get();
 		}
 
 		for (int i_x = 0; i_x < image.get_width(); i_x++) {
@@ -909,9 +919,9 @@ namespace SpatialQuant
 				for (UINT x = 0; x < bitmapWidth; x++) {
 					Color color;
 					pSource->GetPixel(x, y, &color);
-					pixels(x, y)(0) = color.GetR() / ((double)BYTE_MAX);
-					pixels(x, y)(1) = color.GetG() / ((double)BYTE_MAX);
-					pixels(x, y)(2) = color.GetB() / ((double)BYTE_MAX);
+					pixels(x, y)[0] = color.GetR() / ((double)BYTE_MAX);
+					pixels(x, y)[1] = color.GetG() / ((double)BYTE_MAX);
+					pixels(x, y)[2] = color.GetB() / ((double)BYTE_MAX);
 
 					if (color.GetA() < BYTE_MAX) {
 						hasTransparency = true;
@@ -955,9 +965,9 @@ namespace SpatialQuant
 					byte pixelRed = *pPixelSource++;
 					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
 
-					pixels(x, y)(0) = pixelRed / ((double)BYTE_MAX);
-					pixels(x, y)(1) = pixelGreen / ((double)BYTE_MAX);
-					pixels(x, y)(2) = pixelBlue / ((double)BYTE_MAX);
+					pixels(x, y)[0] = pixelRed / ((double)BYTE_MAX);
+					pixels(x, y)[1] = pixelGreen / ((double)BYTE_MAX);
+					pixels(x, y)[2] = pixelBlue / ((double)BYTE_MAX);
 
 					if (pixelAlpha < BYTE_MAX) {
 						hasTransparency = true;
@@ -979,23 +989,23 @@ namespace SpatialQuant
 			for (int j = 0; j<3; j++) {
 				double value = exp(-sqrt((double)((i - 2)*(i - 2) + (j - 2)*(j - 2))) / (dithering_level * dithering_level));
 				for (int k = 0; k<3; k++)
-					sum += filter3_weights(i, j)(k) = value;
+					sum += filter3_weights(i, j)[k] = value;
 			}
 		}
 		sum /= 3.0;
 		for (int i = 0; i<3; i++) {
 			for (int j = 0; j<3; j++) {
 				for (int k = 0; k<3; k++)
-					filter3_weights(i, j)(k) /= sum;
+					filter3_weights(i, j)[k] /= sum;
 			}
 		}
 
 		array2d<UINT> quantized_image(bitmapWidth, bitmapHeight);
 		vector<vector_fixed<double, 3> > palette(nMaxColors);
 		for (UINT i = 0; i<nMaxColors; i++) {
-			palette[i](0) = ((double)rand()) / RAND_MAX;
-			palette[i](1) = ((double)rand()) / RAND_MAX;
-			palette[i](2) = ((double)rand()) / RAND_MAX;
+			palette[i][0] = ((double)rand()) / RAND_MAX;
+			palette[i][1] = ((double)rand()) / RAND_MAX;
+			palette[i][2] = ((double)rand()) / RAND_MAX;
 		}
 
 		if (!spatial_color_quant(pixels, filter3_weights, quantized_image, palette))
@@ -1008,7 +1018,7 @@ namespace SpatialQuant
 		if (nMaxColors > 2) {
 			/* Fill palette */
 			for (UINT k = 0; k<nMaxColors; ++k) {
-				pPalette->Entries[k] = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[k](0)), static_cast<byte>(BYTE_MAX * palette[k](1)), static_cast<byte>(BYTE_MAX * palette[k](2)));
+				pPalette->Entries[k] = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[k][0]), static_cast<byte>(BYTE_MAX * palette[k][1]), static_cast<byte>(BYTE_MAX * palette[k][2]));
 				if (hasTransparency && pPalette->Entries[k] == m_transparentColor)
 					swap(pPalette->Entries[0], pPalette->Entries[k]);
 			}
