@@ -95,7 +95,7 @@ namespace SpatialQuant
 			return result;
 		}
 
-		double dot_product(const vector_fixed<T, length>& rhs) {
+		T dot_product(const vector_fixed<T, length>& rhs) {
 			T result = 0;
 			for (int i = 0; i<length; i++) {
 				result += data[i] * rhs.data[i];
@@ -209,14 +209,14 @@ namespace SpatialQuant
 			return result;
 		}
 
-		array2d<T>& multiply_row_scalar(int row, double mult) {
+		array2d<T>& multiply_row_scalar(int row, T mult) {
 			for (int i = 0; i<get_width(); i++)
 				(*this)(i, row) *= mult;
 
 			return *this;
 		}
 
-		array2d<T>& add_row_multiple(int from_row, int to_row, double mult) {
+		array2d<T>& add_row_multiple(int from_row, int to_row, T mult) {
 			for (int i = 0; i<get_width(); i++)
 				(*this)(i, to_row) += mult * (*this)(i, from_row);
 
@@ -578,7 +578,6 @@ namespace SpatialQuant
 		}
 
 		for (int k = 0; k<3; k++) {
-			bool isBlack = true;
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
 			auto& palette_channel = -1.0 * ((2.0 * S_k).matrix_inverse()) * R_k;
@@ -590,12 +589,14 @@ namespace SpatialQuant
 				else if (val > 1.0)
 					val = 1.0;
 
-				if (val != 0)
-					isBlack = false;
 				palette[v][k] = val;
-			}
-			if (isBlack)
-				swap(palette[v], palette[0]);
+				
+				if(hasTransparency && k > 1) {
+					auto argb = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[v][0]), static_cast<byte>(BYTE_MAX * palette[v][1]), static_cast<byte>(BYTE_MAX * palette[v][2]));
+					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
+						swap(palette[0], palette[v]);
+				}
+			}			
 		}
 	}
 
@@ -1017,15 +1018,21 @@ namespace SpatialQuant
 
 		if (nMaxColors > 2) {
 			/* Fill palette */
-			for (UINT k = 0; k<nMaxColors; ++k) {
+			for (UINT k = 0; k<nMaxColors; ++k)
 				pPalette->Entries[k] = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[k][0]), static_cast<byte>(BYTE_MAX * palette[k][1]), static_cast<byte>(BYTE_MAX * palette[k][2]));
-				if (hasTransparency && pPalette->Entries[k] == m_transparentColor)
-					swap(pPalette->Entries[0], pPalette->Entries[k]);
-			}
+			
+			if (hasTransparency && Color(pPalette->Entries[0]).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
+				pPalette->Entries[0] = m_transparentColor;
 		}
 		else {
-			pPalette->Entries[1] = Color::Black;
-			pPalette->Entries[0] = Color::White;
+			if (hasTransparency) {
+				pPalette->Entries[0] = Color::Transparent;
+				pPalette->Entries[1] = Color::Black;
+			}
+			else {
+				pPalette->Entries[1] = Color::Black;
+				pPalette->Entries[0] = Color::White;
+			}
 		}
 
 		return ProcessImagePixels(pDest, pPalette, quantized_image);

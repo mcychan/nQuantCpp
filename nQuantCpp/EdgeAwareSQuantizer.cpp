@@ -160,7 +160,7 @@ namespace EdgeAwareSQuant
 						}
 
 						if (b_yx(j_y - j_y_min, j_x - j_x_min) == 0)
-							b_yx(j_y - j_y_min, j_x - j_x_min) = 1e-10;
+							b_yx(j_y - j_y_min, j_x - j_x_min) = 1e-10f;
 					}
 				}
 			}
@@ -198,13 +198,13 @@ namespace EdgeAwareSQuant
 						float tmpBvalue = b_value_ea(b, i_x, i_y, j_x, j_y);
 						if (tmpBvalue != 0) {
 							Color jPixel(image[j_y * a.get_width() + j_x]);
-							a(i_x, i_y)[0] += tmpBvalue * jPixel.GetR() / 255.0;
-							a(i_x, i_y)[1] += tmpBvalue * jPixel.GetG() / 255.0;
-							a(i_x, i_y)[2] += tmpBvalue * jPixel.GetB() / 255.0;
+							a(i_x, i_y)[0] += tmpBvalue * jPixel.GetR() / 255.0f;
+							a(i_x, i_y)[1] += tmpBvalue * jPixel.GetG() / 255.0f;
+							a(i_x, i_y)[2] += tmpBvalue * jPixel.GetB() / 255.0f;
 						}
 					}
 				}
-				a(i_x, i_y) *= -2.0;
+				a(i_x, i_y) *= -2.0f;
 			}
 		}
 	}
@@ -326,7 +326,6 @@ namespace EdgeAwareSQuant
 
 		float max_palette_delta = 0.0f, min_palette_delta = 1.0f;
 		for (UINT k = 0; k < 3; k++) {
-			bool isBlack = true;
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
 			auto& palette_channel = -1.0f * ((2.0f * S_k).matrix_inverse()) * R_k;
@@ -337,19 +336,22 @@ namespace EdgeAwareSQuant
 					val = 0.0;
 				if (val > 1.0)
 					val = 1.0;
-				if (val != 0)
-					isBlack = false;
+
 				float palette_delta = abs(palette[v][k] - val);
 				if (palette_delta > max_palette_delta)
 					max_palette_delta = palette_delta;
 				if (palette_delta > min_palette_delta)
 					min_palette_delta = palette_delta;
-				if (palette_delta > 1.0 / 255.0)
+				if (palette_delta > 1.0f / 255.0f)
 					palatte_changed++;
 				palette[v][k] = val;
-			}
-			if (isBlack)
-				swap(palette[v], palette[0]);
+				
+				if(hasTransparency && k > 1) {
+					auto argb = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[v][0]), static_cast<byte>(BYTE_MAX * palette[v][1]), static_cast<byte>(BYTE_MAX * palette[v][2]));
+					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
+						swap(palette[0], palette[v]);
+				}
+			}			
 		}
 	}
 
@@ -423,7 +425,7 @@ namespace EdgeAwareSQuant
 							}
 
 							if (bi_yx(J_y - J_y_min, J_x - J_x_min) == 0)
-								bi_yx(J_y - J_y_min, J_x - J_x_min) = 1e-10;
+								bi_yx(J_y - J_y_min, J_x - J_x_min) = 1e-10f;
 
 						}
 					}
@@ -439,13 +441,13 @@ namespace EdgeAwareSQuant
 		array2d<vector_fixed<float, 3> > s(palette.size(), palette.size());
 		compute_initial_s_ea_icm(s, *pIndexImg8, b_array[coarse_level]);
 
-		float paletteSize = palette.size() * 1.0;
+		float paletteSize = palette.size() * 1.0f;
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
 			vector<vector<pair<float, int> > > centroidDist(paletteSize, vector<pair<float, int> >(paletteSize, pair<float, int>(0.0f, -1)));
 			for (int l1 = 0; l1 < palette.size(); l1++) {
 				for (int l2 = l1; l2 < palette.size(); l2++) {
-					float curDist = 0.0;
+					float curDist = 0.0f;
 					for (int c = 0; c < 3; c++)
 						curDist += sqr(palette[l1][c] - palette[l2][c]);
 
@@ -498,7 +500,7 @@ namespace EdgeAwareSQuant
 									continue;
 								if (j_x < 0 || j_x >= pIndexImg8->get_width())
 									continue;
-								float b_ij = b_value_ea(b, i_x, i_y, j_x, j_y);
+								auto b_ij = b_value_ea(b, i_x, i_y, j_x, j_y);
 								auto& pixelIndex = pIndexImg8->at(j_y, j_x);
 								p_i[0] += b_ij * palette[pixelIndex][0];
 								p_i[1] += b_ij * palette[pixelIndex][1];
@@ -511,8 +513,7 @@ namespace EdgeAwareSQuant
 
 						int old_max_v = pIndexImg8->at(i_y, i_x);
 
-						vector<float> meanfields;
-						float min_meanfield = (numeric_limits<float>::max)();
+						auto min_meanfield = (numeric_limits<float>::max)();
 						auto middle_b = b_value_ea(b, i_x, i_y, i_x, i_y);
 						int bestLabel = old_max_v;
 
@@ -532,7 +533,7 @@ namespace EdgeAwareSQuant
 								neiSize = palette.size();
 							for (int v = 0; v < neiSize; ++v) {
 								int tryLabel = centroidDist[old_max_v][v].second;
-								float mf_val = palette[tryLabel].dot_product(p_i + palette[tryLabel] * middle_b);
+								auto mf_val = palette[tryLabel].dot_product(p_i + palette[tryLabel] * middle_b);
 								if (mf_val < min_meanfield) {
 									min_meanfield = mf_val;
 									bestLabel = tryLabel;
@@ -571,7 +572,7 @@ namespace EdgeAwareSQuant
 		}
 	}
 
-	void filter_bila(const vector<ARGB>& img, Mat<Mat<float> >& weightMaps, const float sigma_s = 1.0f, const float sigma_r = 2.0f, const int iteration = 4)
+	void filter_bila(const vector<ARGB>& img, Mat<Mat<float> >& weightMaps, const float sigma_s = 1.0f, const float sigma_r = 2.0f)
 	{
 		// pixel-wise filter		
 		int radius = 1;
@@ -763,7 +764,7 @@ namespace EdgeAwareSQuant
 		float saliencyBase = 0.1;
 		for (int y = 0; y < saliencyMap.get_height(); y++) {
 			for (int x = 0; x < saliencyMap.get_width(); x++)
-				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) / 255.0;
+				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) / 255.0f;
 		}
 
 		array2d<UINT> quantized_image(bitmapWidth, bitmapHeight);
@@ -778,9 +779,9 @@ namespace EdgeAwareSQuant
 		vector<vector_fixed<float, 3> > palette(nMaxColors);
 		for (int k = 0; k < nMaxColors; k++) {
 			Color c(pPalette->Entries[k]);
-			palette[k][0] = c.GetR() / 255.0;
-			palette[k][1] = c.GetG() / 255.0;
-			palette[k][2] = c.GetB() / 255.0;
+			palette[k][0] = c.GetR() / 255.0f;
+			palette[k][1] = c.GetG() / 255.0f;
+			palette[k][2] = c.GetB() / 255.0f;
 		}
 
 		Mat<Mat<float> > weightMaps(bitmapHeight, bitmapWidth);
@@ -789,11 +790,11 @@ namespace EdgeAwareSQuant
 
 		if (nMaxColors > 2) {
 			/* Fill palette */
-			for (UINT k = 0; k<nMaxColors; ++k) {
+			for (UINT k = 0; k<nMaxColors; ++k)
 				pPalette->Entries[k] = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[k][0]), static_cast<byte>(BYTE_MAX * palette[k][1]), static_cast<byte>(BYTE_MAX * palette[k][2]));
-				if (hasTransparency && pPalette->Entries[k] == m_transparentColor)
-					swap(pPalette->Entries[0], pPalette->Entries[k]);
-			}
+			
+			if (hasTransparency && Color(pPalette->Entries[0]).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
+				pPalette->Entries[0] = m_transparentColor;
 		}
 		else {
 			if (hasTransparency) {

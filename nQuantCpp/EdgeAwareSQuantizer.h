@@ -189,14 +189,14 @@ namespace EdgeAwareSQuant
 			return result;
 		}
 
-		array2d<T>& multiply_row_scalar(int row, double mult) {
+		array2d<T>& multiply_row_scalar(int row, T mult) {
 			for (int i = 0; i<get_width(); i++)
 				(*this)(i, row) *= mult;
 
 			return *this;
 		}
 
-		array2d<T>& add_row_multiple(int from_row, int to_row, double mult) {
+		array2d<T>& add_row_multiple(int from_row, int to_row, T mult) {
 			if (mult != 0) {
 				for (int i = 0; i<get_width(); i++)
 					(*this)(i, to_row) += mult * (*this)(i, from_row);
@@ -217,8 +217,8 @@ namespace EdgeAwareSQuant
 
 			// Reduce to echelon form, mirroring in result
 			for (int i = 0; i<get_width(); i++) {
-				double detA = a(i, i);
-				double val = (detA != 0) ? 1 / detA : 0;
+				auto detA = a(i, i);
+				float val = (detA != 0.0f) ? 1.0f / detA : 0.0f;
 				result.multiply_row_scalar(i, val);
 				multiply_row_scalar(i, val);
 				for (int j = i + 1; j<get_height(); j++) {
