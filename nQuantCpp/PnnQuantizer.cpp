@@ -256,13 +256,6 @@ namespace PnnQuant
 
 	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
-		int sqr_tbl[BYTE_MAX + BYTE_MAX + 1];
-
-		for (int i = (-BYTE_MAX); i <= BYTE_MAX; i++)
-			sqr_tbl[i + BYTE_MAX] = i * i;
-
-		auto squares3 = &sqr_tbl[BYTE_MAX];
-
 		UINT pixelIndex = 0;
 		if (dither) {
 			bool odd_scanline = false;
