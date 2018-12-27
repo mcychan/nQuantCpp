@@ -8,7 +8,7 @@ using namespace std;
 #include "../nQuantCpp/PnnQuantizer.h"
 #include "../nQuantCpp/PnnLABQuantizer.h"
 #include "../nQuantCpp/EdgeAwareSQuantizer.h"
-#include "../nQuantCpp/NeuQuantizer.h"
+#include "../nQuantCpp/WuQuantizer.h"
 
 // CQuantDlg dialog
 class CQuantDlg : public CDialogEx
@@ -37,20 +37,24 @@ protected:
 	CString m_PathName, m_FileTypes;
 	unique_ptr<Bitmap> m_pImage;
 	unique_ptr<Bitmap> m_pTargetImage;
+	CWinThread* m_lpActionThread;
 
 	PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
 	PnnQuant::PnnQuantizer pnnQuantizer;
-	NeuralNet::NeuQuantizer neuQuantizer;
+	nQuant::WuQuantizer wuQuantizer;
 	EdgeAwareSQuant::EdgeAwareSQuantizer easQuantizer;
 
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
-	afx_msg HCURSOR OnQueryDragIcon();
+	afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 	DECLARE_MESSAGE_MAP()
 public:
+	virtual ~CQuantDlg();
 	afx_msg void OnBnClickedFileOpen();
-	afx_msg void OnBnClickedRetry();	
+	afx_msg void OnBnClickedRetry();
+	static UINT DoConvert(LPVOID pParam);
+	LRESULT OnFinished(WPARAM wParam, LPARAM lParam);
 	
 };

@@ -10,6 +10,7 @@
 #define new DEBUG_NEW
 #endif
 
+#define WM_USER_THREAD_FINISHED (WM_USER+0x101)
 
 // CAboutDlg dialog used for App About
 class CAboutDlg : public CDialogEx
@@ -58,9 +59,10 @@ void CQuantDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CQuantDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
-	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDRETRY, &CQuantDlg::OnBnClickedRetry)
-	ON_BN_CLICKED(ID_FILE_OPEN, &CQuantDlg::OnBnClickedFileOpen)
+	ON_WM_SETCURSOR()
+	ON_BN_CLICKED(IDRETRY, OnBnClickedRetry)
+	ON_BN_CLICKED(ID_FILE_OPEN, OnBnClickedFileOpen)
+	ON_MESSAGE(WM_USER_THREAD_FINISHED, OnFinished)
 END_MESSAGE_MAP()
 
 
@@ -142,11 +144,26 @@ void CQuantDlg::OnPaint()
 	}
 }
 
-// The system calls this function to obtain the cursor to display while the user drags
-//  the minimized window.
-HCURSOR CQuantDlg::OnQueryDragIcon()
+BOOL CQuantDlg::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 {
-	return static_cast<HCURSOR>(m_hIcon);
+	if (m_lpActionThread) {
+		::SetCursor(AfxGetApp()->LoadStandardCursor(IDC_WAIT));
+		return TRUE;
+	}
+
+	return CDialog::OnSetCursor(pWnd, nHitTest, message);
+}
+
+CQuantDlg::~CQuantDlg()
+{
+	if (m_lpActionThread) {
+		DWORD exit_code = NULL;
+		GetExitCodeThread(m_lpActionThread->m_hThread, &exit_code);
+		if (exit_code == STILL_ACTIVE) {
+			TerminateThread(m_lpActionThread->m_hThread, 0);
+			CloseHandle(m_lpActionThread->m_hThread);
+		}
+	}
 }
 
 LPCTSTR CQuantDlg::GetInitialDir()
@@ -240,38 +257,59 @@ void CQuantDlg::OnBnClickedFileOpen()
 
 void CQuantDlg::OnBnClickedRetry()
 {
-	theApp.DoWaitCursor(1); // 1->>display the hourglass cursor
-	UINT w = m_pImage->GetWidth();
-	UINT h = m_pImage->GetHeight();
+	if (!m_lpActionThread) {
+		GetDlgItem(ID_FILE_OPEN)->EnableWindow(FALSE);
+		GetDlgItem(IDRETRY)->EnableWindow(FALSE);
+		m_lpActionThread = AfxBeginThread(DoConvert, this, THREAD_PRIORITY_HIGHEST, 0, 0);
+	}
+}
 
-	m_pTargetImage = make_unique<Bitmap>(w, h, PixelFormat8bppIndexed);
+/////////////////////////////////////////////////////////////////////////////
+// Handle Background Task Threading
 
-	UINT nMaxColors = 256;
-	bool bSucceeded = wuQuantizer.QuantizeImage(m_pImage.get(), m_pTargetImage.get(), nMaxColors);
-	//bool bSucceeded = easQuantizer.QuantizeImage(m_pImage.get(), m_pTargetImage.get(), nMaxColors);
+LRESULT CQuantDlg::OnFinished(WPARAM wParam, LPARAM lParam)
+{
+	m_lpActionThread = NULL;
+	bool bSucceeded = (bool) wParam;
 
-	HBITMAP bitmap;
-	m_pTargetImage->GetHBITMAP(NULL, &bitmap);
-	
-	TCHAR path[MAX_PATH];
-	GetTempPath(MAX_PATH, path);
-	CString pathName;
-	pathName.Format(_T("%s%s_new.png"), path, PathFindFileName(m_PathName));
-
-	// image/png  : {557cf406-1a04-11d3-9a73-0000f81ef32e}
-	const CLSID pngEncoderClsId = { 0x557cf406, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };
-	Status status = m_pTargetImage->Save(pathName, &pngEncoderClsId);
-	if(bSucceeded && status != Status::Ok)
-		SetBackgroundImage(bitmap, CDialogEx::BACKGR_TOPLEFT);
-	theApp.DoWaitCursor(-1); // -1->>remove the hourglass cursor
 	if (bSucceeded) {
-		CString msg = _T("Converted to 256 colors successfully");
-		if (status == Status::Ok) {
-			msg += _T(" [") + pathName + _T("]");
-			/*HINSTANCE hInst = */ShellExecute(GetSafeHwnd(), _T("open"), pathName, NULL, NULL, SW_SHOWNORMAL);
-		}
+		CString pathName = (LPCTSTR) lParam;
+		CString msg = _T("Converted to 256 colors successfully [") + pathName + _T("]");
+		/*HINSTANCE hInst = */ShellExecute(AfxGetMainWnd()->GetSafeHwnd(), _T("open"), pathName, NULL, NULL, SW_SHOWNORMAL);
+
 		AfxMessageBox(msg, MB_ICONINFORMATION);
 	}
 	else
 		AfxMessageBox(_T("Failed to convert to 256 colors"));
+
+	GetDlgItem(ID_FILE_OPEN)->EnableWindow(TRUE);
+	GetDlgItem(IDRETRY)->EnableWindow(m_pImage->GetLastStatus() == Ok);
+	return 0;
+}
+
+UINT CQuantDlg::DoConvert(LPVOID pParam)
+{
+	auto bt_dlg = (CQuantDlg*)pParam;
+	UINT w = bt_dlg->m_pImage->GetWidth();
+	UINT h = bt_dlg->m_pImage->GetHeight();
+
+	bt_dlg->m_pTargetImage = make_unique<Bitmap>(w, h, PixelFormat8bppIndexed);
+
+	UINT nMaxColors = 256;
+	bool bSucceeded = bt_dlg->pnnLABQuantizer.QuantizeImage(bt_dlg->m_pImage.get(), bt_dlg->m_pTargetImage.get(), nMaxColors);
+	//bool bSucceeded = bt_dlg->easQuantizer.QuantizeImage(bt_dlg->m_pImage.get(), bt_dlg->m_pTargetImage.get(), nMaxColors);
+
+	TCHAR path[MAX_PATH];
+	GetTempPath(MAX_PATH, path);
+	CString pathName;
+	pathName.Format(_T("%s%s_new.png"), path, PathFindFileName(bt_dlg->m_PathName));
+
+	// image/png  : {557cf406-1a04-11d3-9a73-0000f81ef32e}
+	const CLSID pngEncoderClsId = { 0x557cf406, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };
+	Status status = bt_dlg->m_pTargetImage->Save(pathName, &pngEncoderClsId);
+	if (bSucceeded && status != Status::Ok)
+		bSucceeded = false;		
+
+	bt_dlg->SendMessage(WM_USER_THREAD_FINISHED, (WPARAM)bSucceeded, (LPARAM) (LPCTSTR) pathName);
+	return bSucceeded;
 }
