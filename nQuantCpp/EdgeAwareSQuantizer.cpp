@@ -36,8 +36,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace EdgeAwareSQuant
 {
-	bool hasTransparency = false;
-	ARGB m_transparentColor = Color::Transparent;
+	int m_transparentPixelIndex = -1;
+	ARGB m_transparentColor = Color::Transparent;	
 
 	const int DECOMP_SVD = 1;
 
@@ -346,7 +346,7 @@ namespace EdgeAwareSQuant
 					palatte_changed++;
 				palette[v][k] = val;
 				
-				if(hasTransparency && k > 1) {
+				if(m_transparentPixelIndex >= 0 && k > 1) {
 					auto argb = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[v][0]), static_cast<byte>(BYTE_MAX * palette[v][1]), static_cast<byte>(BYTE_MAX * palette[v][2]));
 					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
 						swap(palette[0], palette[v]);
@@ -692,7 +692,7 @@ namespace EdgeAwareSQuant
 		UINT bitmapWidth = pSource->GetWidth();
 		UINT bitmapHeight = pSource->GetHeight();
 
-		hasTransparency = false;
+		m_transparentPixelIndex = -1;
 		bool r = true;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
@@ -703,7 +703,7 @@ namespace EdgeAwareSQuant
 					pSource->GetPixel(x, y, &color);
 
 					if (color.GetA() < BYTE_MAX) {
-						hasTransparency = true;
+						m_transparentPixelIndex = pixelIndex;
 						if (color.GetA() == 0)
 							m_transparentColor = color.GetValue();
 					}
@@ -746,7 +746,7 @@ namespace EdgeAwareSQuant
 
 					auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
 					if (pixelAlpha < BYTE_MAX) {
-						hasTransparency = true;
+						m_transparentPixelIndex = pixelIndex;
 						if (pixelAlpha == 0)
 							m_transparentColor = argb;
 					}
@@ -793,11 +793,13 @@ namespace EdgeAwareSQuant
 			for (UINT k = 0; k<nMaxColors; ++k)
 				pPalette->Entries[k] = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[k][0]), static_cast<byte>(BYTE_MAX * palette[k][1]), static_cast<byte>(BYTE_MAX * palette[k][2]));
 			
-			if (hasTransparency && Color(pPalette->Entries[0]).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
-				pPalette->Entries[0] = m_transparentColor;
+			if (m_transparentPixelIndex >= 0) {
+				UINT k = quantized_image[m_transparentPixelIndex];
+				pPalette->Entries[k] = m_transparentColor;
+			}
 		}
 		else {
-			if (hasTransparency) {
+			if (m_transparentPixelIndex >= 0) {
 				pPalette->Entries[1] = Color::Transparent;
 				pPalette->Entries[0] = Color::Black;
 			}

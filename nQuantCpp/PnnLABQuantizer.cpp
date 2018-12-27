@@ -11,7 +11,8 @@ Copyright (c) 2018 Miller Cy Chan
 
 namespace PnnLABQuant
 {
-	bool hasTransparency = false, hasSemiTransparency = false;
+	bool hasSemiTransparency = false;
+	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
 	map<ARGB, CIELABConvertor::Lab> pixelMap;	
 	map<ARGB, vector<double> > closestMap;
@@ -26,7 +27,7 @@ namespace PnnLABQuant
 	{
 		if (hasSemiTransparency)
 			return (c.GetA() & 0xF0) << 8 | (c.GetR() & 0xF0) << 4 | (c.GetG() & 0xF0) | (c.GetB() >> 4);
-		if (hasTransparency)
+		if (m_transparentPixelIndex >= 0)
 			return (c.GetA() & 0x80) << 8 | (c.GetR() & 0xF8) << 7 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
 		return (c.GetR() & 0xF8) << 8 | (c.GetG() & 0xFC) << 3 | (c.GetB() >> 3);
 	}
@@ -184,14 +185,13 @@ namespace PnnLABQuant
 
 		/* Fill palette */
 		short k = 0;
-		if (hasTransparency)
-			++k;
+
 		for (int i = 0;; k++) {			
 			CIELABConvertor::Lab lab1;
 			lab1.alpha = rint(bins[i].ac);
 			lab1.L = bins[i].Lc, lab1.A = bins[i].Ac, lab1.B = bins[i].Bc;
 			pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
-			if (hasTransparency && pPalette->Entries[k] == m_transparentColor)
+			if (m_transparentPixelIndex >= 0 && pPalette->Entries[k] == m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[k]);
 
 			if (!(i = bins[i].fw))
@@ -412,7 +412,7 @@ namespace PnnLABQuant
 			return true;
 		}
 
-		short(*fcnPtr)(const ColorPalette*, const UINT nMaxColors, const ARGB) = (hasTransparency || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
+		short(*fcnPtr)(const ColorPalette*, const UINT nMaxColors, const ARGB) = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++)
 				qPixels[pixelIndex++] = (*fcnPtr)(pPalette, nMaxColors, pixels[pixelIndex]);
@@ -500,7 +500,8 @@ namespace PnnLABQuant
 		UINT bitmapWidth = pSource->GetWidth();
 		UINT bitmapHeight = pSource->GetHeight();
 
-		hasTransparency = hasSemiTransparency = false;
+		hasSemiTransparency = false;
+		m_transparentPixelIndex = -1;
 		bool r = true;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
@@ -512,7 +513,7 @@ namespace PnnLABQuant
 					if (color.GetA() < BYTE_MAX) {
 						hasSemiTransparency = true;
 						if (color.GetA() == 0) {
-							hasTransparency = true;
+							m_transparentPixelIndex = pixelIndex;
 							m_transparentColor = color.GetValue();
 						}
 					}
@@ -555,7 +556,7 @@ namespace PnnLABQuant
 
 					auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
 					if (pixelAlpha < BYTE_MAX) {
-						hasTransparency = true;
+						m_transparentPixelIndex = pixelIndex;
 						if (pixelAlpha == 0)
 							m_transparentColor = argb;
 					}
@@ -575,7 +576,7 @@ namespace PnnLABQuant
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors);
 		else {
-			if (hasTransparency) {
+			if (m_transparentPixelIndex >= 0) {
 				pPalette->Entries[0] = Color::Transparent;
 				pPalette->Entries[1] = Color::Black;
 			}
@@ -587,6 +588,10 @@ namespace PnnLABQuant
 
 		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+		if (m_transparentPixelIndex >= 0) {
+			UINT k = qPixels[m_transparentPixelIndex];
+			pPalette->Entries[k] = m_transparentColor;
+		}
 		pixelMap.clear();
 		closestMap.clear();
 

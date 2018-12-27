@@ -155,6 +155,11 @@ namespace EdgeAwareSQuant
 			return data[row * width + col];
 		}
 
+		inline const T& operator[](int index) const
+		{
+			return data[index];
+		}
+
 		inline int get_width() const { return width; }
 		inline int get_height() const { return height; }
 

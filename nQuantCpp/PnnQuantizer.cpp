@@ -10,7 +10,8 @@ Copyright (c) 2018 Miller Cy Chan
 
 namespace PnnQuant
 {
-	bool hasTransparency = false, hasSemiTransparency = false;
+	bool hasSemiTransparency = false;
+	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
 	map<ARGB, vector<short> > closestMap;
 
@@ -24,7 +25,7 @@ namespace PnnQuant
 	{
 		if(hasSemiTransparency)
 			return (c.GetA() & 0xF0) << 8 | (c.GetR() & 0xF0) << 4 | (c.GetG() & 0xF0) | (c.GetB() >> 4);
-		if (hasTransparency)
+		if (m_transparentPixelIndex >= 0)
 			return (c.GetA() & 0x80) << 8 | (c.GetR() & 0xF8) << 7 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
 		return (c.GetR() & 0xF8) << 8 | (c.GetG() & 0xFC) << 3 | (c.GetB() >> 3);
 	}
@@ -171,7 +172,7 @@ namespace PnnQuant
 		for (int i = 0;; ++k) {
 			auto alpha = rint(bins[i].ac);
 			pPalette->Entries[k] = Color::MakeARGB(alpha, rint(bins[i].rc), rint(bins[i].gc), rint(bins[i].bc));
-			if (hasTransparency && pPalette->Entries[k] == m_transparentColor)
+			if (m_transparentPixelIndex >= 0 && pPalette->Entries[k] == m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[k]);
 
 			if (!(i = bins[i].fw))
@@ -356,7 +357,7 @@ namespace PnnQuant
 			return true;
 		}
 
-		UINT(*fcnPtr)(const ColorPalette*, const UINT nMaxColors, const ARGB) = (hasTransparency || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
+		UINT(*fcnPtr)(const ColorPalette*, const UINT nMaxColors, const ARGB) = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++)
 				qPixels[pixelIndex++] = (*fcnPtr)(pPalette, nMaxColors, pixels[pixelIndex]);
@@ -425,7 +426,7 @@ namespace PnnQuant
 					auto argb1 = Color::MakeARGB(BYTE_MAX, (c1.GetR() & 0xF8), (c1.GetG() & 0xFC), (c1.GetB() & 0xF8));
 					if (hasSemiTransparency)
 						argb1 = Color::MakeARGB((c1.GetA() & 0xF0), (c1.GetR() & 0xF0), (c1.GetG() & 0xF0), (c1.GetB() & 0xF0));
-					else if (hasTransparency)
+					else if (m_transparentPixelIndex >= 0)
 						argb1 = Color::MakeARGB((c1.GetA() < BYTE_MAX) ? 0 : BYTE_MAX, (c1.GetR() & 0xF8), (c1.GetG() & 0xF8), (c1.GetB() & 0xF8));
 					lookup[offset] = argb1 + 1;
 				}
@@ -595,7 +596,8 @@ namespace PnnQuant
 		UINT bitmapWidth = pSource->GetWidth();
 		UINT bitmapHeight = pSource->GetHeight();
 
-		hasTransparency = hasSemiTransparency = false;
+		hasSemiTransparency = false;
+		m_transparentPixelIndex = -1;
 		bool r = true;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
@@ -607,7 +609,7 @@ namespace PnnQuant
 					if (color.GetA() < BYTE_MAX) {
 						hasSemiTransparency = true;
 						if (color.GetA() == 0) {
-							hasTransparency = true;
+							m_transparentPixelIndex = pixelIndex;
 							m_transparentColor = color.GetValue();
 						}
 					}
@@ -652,7 +654,7 @@ namespace PnnQuant
 					if (pixelAlpha < BYTE_MAX) {
 						hasSemiTransparency = true;
 						if (pixelAlpha == 0) {
-							hasTransparency = true;
+							m_transparentPixelIndex = pixelIndex;
 							m_transparentColor = argb;
 						}
 					}
@@ -680,7 +682,7 @@ namespace PnnQuant
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors, quan_sqrt);
 		else {
-			if (hasTransparency) {
+			if (m_transparentPixelIndex >= 0) {
 				pPalette->Entries[0] = Color::Transparent;
 				pPalette->Entries[1] = Color::Black;
 			}
@@ -692,6 +694,10 @@ namespace PnnQuant
 
 		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+		if (m_transparentPixelIndex >= 0) {
+			UINT k = qPixels[m_transparentPixelIndex];
+			pPalette->Entries[k] = m_transparentColor;
+		}
 		closestMap.clear();
 
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
