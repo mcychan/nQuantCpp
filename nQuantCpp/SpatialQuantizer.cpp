@@ -1028,12 +1028,15 @@ namespace SpatialQuant
 			
 			if (m_transparentPixelIndex >= 0) {
 				UINT k = quantized_image[m_transparentPixelIndex];
-				pPalette->Entries[k] = m_transparentColor;
+				if (nMaxColors > 2)
+					pPalette->Entries[k] = m_transparentColor;
+				else if (pPalette->Entries[k] != m_transparentColor)
+					swap(pPalette->Entries[0], pPalette->Entries[1]);
 			}
 		}
 		else {
 			if (m_transparentPixelIndex >= 0) {
-				pPalette->Entries[0] = Color::Transparent;
+				pPalette->Entries[0] = m_transparentColor;
 				pPalette->Entries[1] = Color::Black;
 			}
 			else {

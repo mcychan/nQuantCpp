@@ -577,7 +577,7 @@ namespace PnnLABQuant
 			pnnquan(pixels, pPalette, nMaxColors);
 		else {
 			if (m_transparentPixelIndex >= 0) {
-				pPalette->Entries[0] = Color::Transparent;
+				pPalette->Entries[0] = m_transparentColor;
 				pPalette->Entries[1] = Color::Black;
 			}
 			else {
@@ -590,7 +590,10 @@ namespace PnnLABQuant
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
-			pPalette->Entries[k] = m_transparentColor;
+			if (nMaxColors > 2)
+				pPalette->Entries[k] = m_transparentColor;
+			else if (pPalette->Entries[k] != m_transparentColor)
+				swap(pPalette->Entries[0], pPalette->Entries[1]);
 		}
 		pixelMap.clear();
 		closestMap.clear();
