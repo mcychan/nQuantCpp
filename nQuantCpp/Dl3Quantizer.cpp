@@ -433,10 +433,8 @@ namespace Dl3Quant
 		UINT h = pDest->GetHeight();
 
 		Status status = pDest->LockBits(&Gdiplus::Rect(0, 0, w, h), ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
-		if (status != Ok) {
-			AfxMessageBox(_T("Cannot write image"));
+		if (status != Ok)
 			return false;
-		}
 
 		int pixelIndex = 0;
 
