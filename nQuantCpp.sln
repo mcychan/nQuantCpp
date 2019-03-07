@@ -1,10 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.438
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nQuant.cpp", "nQuant.cpp\nQuant.cpp.vcxproj", "{02BE4EDF-E8C1-492B-BD60-AA7A246E236D}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nQuantCpp", "nQuantCpp\nQuantCpp.vcxproj", "{D9959AF4-B098-4444-AD33-B377E98A187C}"
 EndProject
 Global
@@ -15,14 +13,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{02BE4EDF-E8C1-492B-BD60-AA7A246E236D}.Debug|x64.ActiveCfg = Debug|x64
-		{02BE4EDF-E8C1-492B-BD60-AA7A246E236D}.Debug|x64.Build.0 = Debug|x64
-		{02BE4EDF-E8C1-492B-BD60-AA7A246E236D}.Debug|x86.ActiveCfg = Debug|Win32
-		{02BE4EDF-E8C1-492B-BD60-AA7A246E236D}.Debug|x86.Build.0 = Debug|Win32
-		{02BE4EDF-E8C1-492B-BD60-AA7A246E236D}.Release|x64.ActiveCfg = Release|x64
-		{02BE4EDF-E8C1-492B-BD60-AA7A246E236D}.Release|x64.Build.0 = Release|x64
-		{02BE4EDF-E8C1-492B-BD60-AA7A246E236D}.Release|x86.ActiveCfg = Release|Win32
-		{02BE4EDF-E8C1-492B-BD60-AA7A246E236D}.Release|x86.Build.0 = Release|Win32
 		{D9959AF4-B098-4444-AD33-B377E98A187C}.Debug|x64.ActiveCfg = Debug|x64
 		{D9959AF4-B098-4444-AD33-B377E98A187C}.Debug|x64.Build.0 = Debug|x64
 		{D9959AF4-B098-4444-AD33-B377E98A187C}.Debug|x86.ActiveCfg = Debug|Win32
@@ -34,5 +24,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8CD6CB65-BE9A-4992-AA9F-F6046A35955E}
 	EndGlobalSection
 EndGlobal
