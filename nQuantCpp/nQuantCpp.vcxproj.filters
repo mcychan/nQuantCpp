@@ -39,6 +39,24 @@
     <ClInclude Include="SpatialQuantizer.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
+    <ClInclude Include="EdgeAwareSQuantizer.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="MoDEQuantizer.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="CIELABConvertor.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="Dl3Quantizer.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="PnnLABQuantizer.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="WuQuantizer.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -54,6 +72,24 @@
       <Filter>原始程式檔</Filter>
     </ClCompile>
     <ClCompile Include="SpatialQuantizer.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="MoDEQuantizer.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="CIELABConvertor.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="Dl3Quantizer.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="EdgeAwareSQuantizer.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="PnnLABQuantizer.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="WuQuantizer.cpp">
       <Filter>原始程式檔</Filter>
     </ClCompile>
   </ItemGroup>
