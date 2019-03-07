@@ -33,6 +33,10 @@ Higher quality for 32 or less colors but slower<br>
 Higher quality for 32 or less colors but the slowest<br>
 <img src="https://i.stack.imgur.com/lVoHK.png" alt="Spatial color quantization with 16 colors"></p>
 
+If you are using the command line. Assuming you are in the same directory as nQuantCpp.exe, you would enter: nQuantCpp yourImage.jpg /m 16
+
+nQuantCpp will quantize yourImage.jpg and create yourImage-PNNLABquant16.png in the same directory.
+
 The readers can see coding of the error diffusion and dithering are quite similar among the above quantization algorithms. 
 Each algorithm has its own advantages. I share the source of color quantization to invite further discussion and improvements.
 Such source code are written in C++ to gain best performance. It is readable and convertible to c#, java, or javascript.
