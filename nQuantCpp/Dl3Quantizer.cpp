@@ -433,8 +433,10 @@ namespace Dl3Quant
 		UINT h = pDest->GetHeight();
 
 		Status status = pDest->LockBits(&Gdiplus::Rect(0, 0, w, h), ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
-		if (status != Ok)
+		if (status != Ok) {
+			cerr << "Cannot write image" << endl;
 			return false;
+		}
 
 		int pixelIndex = 0;
 

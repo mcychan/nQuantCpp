@@ -848,7 +848,7 @@ namespace SpatialQuant
 
 		Status status = pDest->LockBits(&Gdiplus::Rect(0, 0, w, h), ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
 		if (status != Ok) {
-			AfxMessageBox(_T("Cannot write image"));
+			cerr << "Cannot write image" << endl;
 			return false;
 		}
 
