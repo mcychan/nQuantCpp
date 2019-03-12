@@ -24,6 +24,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "stdafx.h"
 #include "SpatialQuantizer.h"
+#include "bitmapUtilities.h"
 
 #include <deque>
 #include <algorithm>
@@ -912,12 +913,12 @@ namespace SpatialQuant
 	{
 		if (nMaxColors > 256)
 			nMaxColors = 256;
-		UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
-		UINT bitmapWidth = pSource->GetWidth();
-		UINT bitmapHeight = pSource->GetHeight();
+		
+		const UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
+		const UINT bitmapWidth = pSource->GetWidth();
+		const UINT bitmapHeight = pSource->GetHeight();
 
 		m_transparentPixelIndex = -1;
-		bool r = true;
 		int pixelIndex = 0;
 		array2d<vector_fixed<double, 3> > pixels(bitmapWidth, bitmapHeight);
 		if (bitDepth <= 16) {

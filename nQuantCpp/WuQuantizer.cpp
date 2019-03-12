@@ -20,6 +20,7 @@
 
 #include "stdafx.h"
 #include "WuQuantizer.h"
+#include "bitmapUtilities.h"
 #include <map>
 
 namespace nQuant
@@ -34,8 +35,9 @@ namespace nQuant
 	const byte SIDESIZE = MAXSIDEINDEX + 1;
 	const UINT TOTAL_SIDESIZE = SIDESIZE * SIDESIZE * SIDESIZE * SIDESIZE;
 
-	bool hasTransparency = false;
-	ARGB m_transparentColor;
+	bool hasSemiTransparency = false;
+	int m_transparentPixelIndex = -1;
+	ARGB m_transparentColor = Color::Transparent;
 	map<ARGB, vector<short> > closestMap;
 	map<ARGB, UINT> rightMatches;
 
@@ -97,11 +99,6 @@ namespace nQuant
 			pixels[pixelFillingCounter++] = pixel;
 		}
 	};
-
-	inline double sqr(float value)
-	{
-		return value * value;
-	}
 
 	inline UINT Index(byte red, byte green, byte blue) {
 		return red + green * SIDESIZE + blue * SIDESIZE * SIDESIZE;
@@ -284,9 +281,9 @@ namespace nQuant
 
 	void BuildHistogram(ColorData& colorData, Bitmap* sourceImage, byte alphaThreshold, byte alphaFader)
 	{
-		UINT bitDepth = GetPixelFormatSize(sourceImage->GetPixelFormat());
-		UINT bitmapWidth = sourceImage->GetWidth();
-		UINT bitmapHeight = sourceImage->GetHeight();
+		const UINT bitDepth = GetPixelFormatSize(sourceImage->GetPixelFormat());
+		const UINT bitmapWidth = sourceImage->GetWidth();
+		const UINT bitmapHeight = sourceImage->GetHeight();
 
 		if (bitDepth <= 16) {
 			for (UINT y = 0; y < bitmapHeight; y++) {
@@ -294,7 +291,7 @@ namespace nQuant
 					Color color;
 					sourceImage->GetPixel(x, y, &color);
 					if (color.GetA() < BYTE_MAX) {
-						hasTransparency = true;
+						hasSemiTransparency = true;
 						if (color.GetA() == 0)
 							m_transparentColor = color.GetValue();
 					}
@@ -336,7 +333,7 @@ namespace nQuant
 
 				Color color(Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue));
 				if (pixelAlpha < BYTE_MAX) {
-					hasTransparency = true;
+					hasSemiTransparency = true;
 					if (pixelAlpha == 0)
 						m_transparentColor = color.GetValue();
 				}
@@ -601,9 +598,9 @@ namespace nQuant
 		}
 	}
 
-	UINT closestColorIndex(const ColorPalette* pPalette, ARGB argb, byte alphaThreshold)
+	short closestColorIndex(const ColorPalette* pPalette, ARGB argb, byte alphaThreshold)
 	{
-		UINT k = 0;
+		short k = 0;
 		Color c(argb);
 		vector<short> closest(5);
 		auto got = closestMap.find(argb);
@@ -642,10 +639,10 @@ namespace nQuant
 		return k;
 	}
 
-	UINT nearestColorIndex(const ColorPalette* pPalette, ARGB argb, byte alphaThreshold)
+	short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, byte alphaThreshold)
 	{
 		Color c(argb);
-		UINT k = 0;
+		short k = 0;
 		if (c.GetA() <= alphaThreshold)
 			return k;
 
@@ -725,7 +722,7 @@ namespace nQuant
 			auto color = Color::MakeARGB(alphas[paletteIndex], reds[paletteIndex], greens[paletteIndex], blues[paletteIndex]);
 			pPalette->Entries[paletteIndex] = color;
 
-			if (hasTransparency && color == m_transparentColor)
+			if (m_transparentPixelIndex >= 0 && color == m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[paletteIndex]);
 		}
 	}
@@ -846,76 +843,13 @@ namespace nQuant
 
 		return true;
 	}
-
-	bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const short* qPixels)
-	{
-		pDest->SetPalette(pPalette);
-		UINT nMaxColors = pPalette->Count;
-
-		BitmapData targetData;
-		UINT w = pDest->GetWidth();
-		UINT h = pDest->GetHeight();
-
-		Status status = pDest->LockBits(&Gdiplus::Rect(0, 0, w, h), ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
-		if (status != Ok) {
-			cerr << "Cannot write image" << endl;
-			return false;
-		}
-
-		int pixelIndex = 0;
-
-		auto pRowDest = (byte*)targetData.Scan0;
-		UINT strideDest;
-
-		// Compensate for possible negative stride
-		if (targetData.Stride > 0)
-			strideDest = targetData.Stride;
-		else {
-			pRowDest += h * targetData.Stride;
-			strideDest = -targetData.Stride;
-		}
-
-		UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
-		// Second loop: fill indexed bitmap
-		for (UINT y = 0; y < h; y++) {	// For each row...
-			for (UINT x = 0; x < w; x++) {	// ...for each pixel...
-				byte nibbles = 0;
-				byte index = static_cast<byte>(qPixels[pixelIndex++]);
-
-				switch (bpp)
-				{
-				case 8:
-					pRowDest[x] = index;
-					break;
-				case 4:
-					// First pixel is the high nibble. From and To indices are 0..16
-					nibbles = pRowDest[x / 2];
-					if ((x & 1) == 0) {
-						nibbles &= 0x0F;
-						nibbles |= (byte)(index << 4);
-					}
-					else {
-						nibbles &= 0xF0;
-						nibbles |= index;
-					}
-
-					pRowDest[x / 2] = nibbles;
-					break;
-				}
-			}
-
-			pRowDest += strideDest;
-		}
-
-		status = pDest->UnlockBits(&targetData);
-		return pDest->GetLastStatus() == Ok;
-	}
-
+	
 	bool WuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither, byte alphaThreshold, byte alphaFader)
 	{
-		UINT bitmapWidth = pSource->GetWidth();
-		UINT bitmapHeight = pSource->GetHeight();
-		hasTransparency = false;
+		const UINT bitmapWidth = pSource->GetWidth();
+		const UINT bitmapHeight = pSource->GetHeight();
+		hasSemiTransparency = false;
+		m_transparentPixelIndex = -1;
 		ColorData colorData(SIDESIZE, bitmapWidth, bitmapHeight);
 		BuildHistogram(colorData, pSource, alphaThreshold, alphaFader);
 		CalculateMoments(colorData);

@@ -152,6 +152,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bitmapUtilities.h" />
     <ClInclude Include="CIELABConvertor.h" />
     <ClInclude Include="Dl3Quantizer.h" />
     <ClInclude Include="EdgeAwareSQuantizer.h" />
@@ -167,6 +168,7 @@
     <ClInclude Include="WuQuantizer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="bitmapUtilities.cpp" />
     <ClCompile Include="CIELABConvertor.cpp" />
     <ClCompile Include="Dl3Quantizer.cpp" />
     <ClCompile Include="EdgeAwareSQuantizer.cpp" />

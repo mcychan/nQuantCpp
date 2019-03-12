@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "NeuQuantizer.h"
+#include "bitmapUtilities.h"
 #include <map>
 
 namespace NeuralNet
@@ -77,8 +78,9 @@ namespace NeuralNet
 	const int primes[] = { 499, 491, 487, 503 };
 	double gamma_correction = 1.0;         // 1.0/2.2 usually
 
-	bool hasTransparency = false;
-	ARGB m_transparentColor;
+	bool hasSemiTransparency = false;
+	int m_transparentPixelIndex = -1;
+	ARGB m_transparentColor = Color::Transparent;
 	vector<ARGB> pixels;
 	map<ARGB, vector<short> > closestMap;
 
@@ -286,7 +288,7 @@ namespace NeuralNet
 
 	void Inxbuild(ColorPalette* pPalette) {
 		int k = 0;
-		if(hasTransparency)
+		if (m_transparentPixelIndex >= 0)
 			++k;
 		
 		for (; k < netsize; k++) {
@@ -294,7 +296,7 @@ namespace NeuralNet
 			auto argb = Color::MakeARGB(alpha, biasvalue(unbiasvalue(network[k].r)), biasvalue(unbiasvalue(network[k].g)), biasvalue(unbiasvalue(network[k].b)));
 			pPalette->Entries[k] = argb;
 		}
-		if(hasTransparency)
+		if(m_transparentPixelIndex >= 0)
 			pPalette->Entries[0] = m_transparentColor;
 
 		int previouscol = 0;
@@ -369,7 +371,7 @@ namespace NeuralNet
 		return k;
 	}
 
-	bool quantize_image(const vector<ARGB>& pixels, const ColorPalette* pPalette, UINT* qPixels, int width, int height, bool dither)
+	bool quantize_image(const vector<ARGB>& pixels, const ColorPalette* pPalette, short* qPixels, int width, int height, bool dither)
 	{		
 		if (dither) {
 			bool odd_scanline = false;
@@ -423,7 +425,7 @@ namespace NeuralNet
 					g_pix = range[((thisrowerr[2] + 8) >> 4) + c.GetG()];
 					b_pix = range[((thisrowerr[3] + 8) >> 4) + c.GetB()];
 
-					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);					
+					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 					qPixels[pixelIndex] = Inxsearch(pPalette, argb);
 
 					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
@@ -440,7 +442,7 @@ namespace NeuralNet
 					nextrowerr[0] += a_pix;
 					a_pix += two_val;
 					thisrowerr[0 + DJ] += a_pix;
-					
+
 					two_val = r_pix * 2;
 					nextrowerr[1 - DJ] = r_pix;
 					r_pix += two_val;
@@ -449,7 +451,7 @@ namespace NeuralNet
 					nextrowerr[1] += r_pix;
 					r_pix += two_val;
 					thisrowerr[1 + DJ] += r_pix;
-					
+
 					two_val = g_pix * 2;
 					nextrowerr[2 - DJ] = g_pix;
 					g_pix += two_val;
@@ -458,7 +460,7 @@ namespace NeuralNet
 					nextrowerr[2] += g_pix;
 					g_pix += two_val;
 					thisrowerr[2 + DJ] += g_pix;
-					
+
 					two_val = b_pix * 2;
 					nextrowerr[3 - DJ] = b_pix;
 					b_pix += two_val;
@@ -476,18 +478,20 @@ namespace NeuralNet
 					pixelIndex += (width + 1);
 
 				odd_scanline = !odd_scanline;
-			}			
+			}
+			return true;
 		}
-		else {
-			for (int i = 0; i < (width * height); i++)
-				qPixels[i] = Inxsearch(pPalette, pixels[i]);
-		}
+
+		for (int i = 0; i < (width * height); i++)
+			qPixels[i] = Inxsearch(pPalette, pixels[i]);
+
 		return true;
 	}
 
 	void NeuQuantizer::Clear() {
 		memset((void*) network, 0, sizeof(network));
-		hasTransparency = false;
+		hasSemiTransparency = false;
+		m_transparentPixelIndex = -1;
 
 		for (int i = 0; i < 32; ++i)
 			radpower[i] = 0.0;
@@ -503,148 +507,17 @@ namespace NeuralNet
 		closestMap.clear();
 	}
 
-	bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const UINT* qPixels)
-	{
-		pDest->SetPalette(pPalette);
-
-		BitmapData targetData;
-		UINT w = pDest->GetWidth();
-		UINT h = pDest->GetHeight();
-
-		Status status = pDest->LockBits(&Gdiplus::Rect(0, 0, w, h), ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
-		if (status != Ok) {
-			cerr << "Cannot write image" << endl;
-			return false;
-		}
-
-		int pixelIndex = 0;
-
-		auto pRowDest = (byte*)targetData.Scan0;
-		UINT strideDest;
-
-		// Compensate for possible negative stride
-		if (targetData.Stride > 0)
-			strideDest = targetData.Stride;
-		else {
-			pRowDest += h * targetData.Stride;
-			strideDest = -targetData.Stride;
-		}
-
-		UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
-		// Second loop: fill indexed bitmap
-		for (UINT y = 0; y < h; y++) {	// For each row...
-			for (UINT x = 0; x < w; x++) {	// ...for each pixel...
-				byte nibbles = 0;
-				byte index = static_cast<byte>(qPixels[pixelIndex++]);
-
-				switch (bpp)
-				{
-				case 8:
-					pRowDest[x] = index;
-					break;
-				case 4:
-					// First pixel is the high nibble. From and To indices are 0..16
-					nibbles = pRowDest[x / 2];
-					if ((x & 1) == 0) {
-						nibbles &= 0x0F;
-						nibbles |= (byte)(index << 4);
-					}
-					else {
-						nibbles &= 0xF0;
-						nibbles |= index;
-					}
-
-					pRowDest[x / 2] = nibbles;
-					break;
-				case 1:
-					// First pixel is MSB. From and To are 0 or 1.
-					int pos = x / 8;
-					byte mask = (byte)(128 >> (x & 7));
-					if (index == 0)
-						pRowDest[pos] &= (byte)~mask;
-					else
-						pRowDest[pos] |= mask;
-					break;
-				}
-			}
-
-			pRowDest += strideDest;
-		}
-
-		status = pDest->UnlockBits(&targetData);
-		return pDest->GetLastStatus() == Ok;
-	}
-
 	// The work horse for NeuralNet color quantizing.
 	bool NeuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
 	{
-		if (nMaxColors != 256)
+		if (nMaxColors > 256)
 			nMaxColors = 256;
-		UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
-		UINT bitmapWidth = pSource->GetWidth();
-		UINT bitmapHeight = pSource->GetHeight();
 
-		bool r = true;
-		int pixelIndex = 0;
+		const UINT bitmapWidth = pSource->GetWidth();
+		const UINT bitmapHeight = pSource->GetHeight();
+
 		pixels.resize(bitmapWidth * bitmapHeight);
-		if (bitDepth <= 16) {
-			for (UINT y = 0; y < bitmapHeight; y++) {
-				for (UINT x = 0; x < bitmapWidth; x++) {
-					Color color;
-					pSource->GetPixel(x, y, &color);
-					if(color.GetA() < BYTE_MAX)
-						hasTransparency = true;
-					if(color.GetA() == 0)
-						m_transparentColor = color.GetValue();
-					pixels[pixelIndex++] = color.GetValue();
-				}
-			}
-		}
-
-		// Lock bits on 3x8 source bitmap
-		else {
-			BitmapData data;
-			Status status = pSource->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, pSource->GetPixelFormat(), &data);
-			if (status != Ok)
-				return false;
-
-			auto pRowSource = (byte*)data.Scan0;
-			UINT strideSource;
-
-			if (data.Stride > 0) strideSource = data.Stride;
-			else
-			{
-				// Compensate for possible negative stride
-				// (not needed for first loop, but we have to do it
-				// for second loop anyway)
-				pRowSource += bitmapHeight * data.Stride;
-				strideSource = -data.Stride;
-			}
-
-			int pixelIndex = 0;			
-			// First loop: gather color information
-			for (UINT y = 0; y < bitmapHeight; y++) {	// For each row...
-				auto pPixelSource = pRowSource;
-
-				for (UINT x = 0; x < bitmapWidth; x++) {	// ...for each pixel...
-					byte pixelBlue = *pPixelSource++;
-					byte pixelGreen = *pPixelSource++;
-					byte pixelRed = *pPixelSource++;
-					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
-					if (pixelAlpha < BYTE_MAX)
-						hasTransparency = true;
-					
-					auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
-					if (pixelAlpha == 0)
-						m_transparentColor = argb;
-					pixels[pixelIndex++] = argb;
-				}
-
-				pRowSource += strideSource;
-			}
-
-			pSource->UnlockBits(&data);
-		}
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
 		SetUpArrays();
 		Learn(dither ? 5 : 1);
@@ -655,7 +528,7 @@ namespace NeuralNet
 
 		Inxbuild(pPalette);
 
-		auto qPixels = make_unique<UINT[]>(bitmapWidth * bitmapHeight);
+		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
 		quantize_image(pixels, pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
 	}

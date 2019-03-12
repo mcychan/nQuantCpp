@@ -26,6 +26,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "stdafx.h"
 #include "EdgeAwareSQuantizer.h"
 #include "PnnLABQuantizer.h"
+#include "bitmapUtilities.h"
 
 #include <deque>
 #include <algorithm>
@@ -36,6 +37,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace EdgeAwareSQuant
 {
+	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;	
 
@@ -229,11 +231,6 @@ namespace EdgeAwareSQuant
 
 		return result;
 	}
-	
-	inline double sqr(double value)
-    {
-        return value * value;
-    }
 
 	void sum_coarsen(const array2d<vector_fixed<float, 3> >& fine, array2d<vector_fixed<float, 3> >& coarse)
 	{
@@ -688,76 +685,15 @@ namespace EdgeAwareSQuant
 	{
 		if (nMaxColors > 256)
 			nMaxColors = 256;
-		UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
-		UINT bitmapWidth = pSource->GetWidth();
-		UINT bitmapHeight = pSource->GetHeight();
+		
+		const UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
+		const UINT bitmapWidth = pSource->GetWidth();
+		const UINT bitmapHeight = pSource->GetHeight();
 
 		m_transparentPixelIndex = -1;
-		bool r = true;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		if (bitDepth <= 16) {
-			for (UINT y = 0; y < bitmapHeight; y++) {
-				for (UINT x = 0; x < bitmapWidth; x++) {
-					Color color;
-					pSource->GetPixel(x, y, &color);
-
-					if (color.GetA() < BYTE_MAX) {
-						m_transparentPixelIndex = pixelIndex;
-						if (color.GetA() == 0)
-							m_transparentColor = color.GetValue();
-					}
-					pixels[pixelIndex++] = color.GetValue();
-				}
-			}
-		}
-
-		// Lock bits on 3x8 source bitmap
-		else {
-			BitmapData data;
-			Status status = pSource->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, pSource->GetPixelFormat(), &data);
-			if (status != Ok)
-				return false;
-
-			auto pRowSource = (byte*)data.Scan0;
-			UINT strideSource;
-
-			if (data.Stride > 0) strideSource = data.Stride;
-			else
-			{
-				// Compensate for possible negative stride
-				// (not needed for first loop, but we have to do it
-				// for second loop anyway)
-				pRowSource += bitmapHeight * data.Stride;
-				strideSource = -data.Stride;
-			}
-
-			int pixelIndex = 0;
-
-			// First loop: gather color information
-			for (UINT y = 0; y < bitmapHeight; y++) {	// For each row...
-				auto pPixelSource = pRowSource;
-
-				for (UINT x = 0; x < bitmapWidth; x++) {	// ...for each pixel...
-					byte pixelBlue = *pPixelSource++;
-					byte pixelGreen = *pPixelSource++;
-					byte pixelRed = *pPixelSource++;
-					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
-
-					auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
-					if (pixelAlpha < BYTE_MAX) {
-						m_transparentPixelIndex = pixelIndex;
-						if (pixelAlpha == 0)
-							m_transparentColor = argb;
-					}
-					pixels[pixelIndex++] = argb;
-				}
-
-				pRowSource += strideSource;
-			}
-
-			pSource->UnlockBits(&data);
-		}
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
 		// see equation (7) in the paper
 		Mat<float> saliencyMap(bitmapHeight, bitmapWidth);

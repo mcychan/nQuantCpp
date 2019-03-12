@@ -6,6 +6,7 @@ Copyright (c) 2018 Miller Cy Chan
 
 #include "stdafx.h"
 #include "PnnQuantizer.h"
+#include "bitmapUtilities.h"
 #include <map>
 
 namespace PnnQuant
@@ -20,20 +21,6 @@ namespace PnnQuant
 		int cnt = 0;
 		int nn, fw, bk, tm, mtm;
 	};
-
-	inline int getARGBIndex(const Color& c)
-	{
-		if(hasSemiTransparency)
-			return (c.GetA() & 0xF0) << 8 | (c.GetR() & 0xF0) << 4 | (c.GetG() & 0xF0) | (c.GetB() >> 4);
-		if (m_transparentPixelIndex >= 0)
-			return (c.GetA() & 0x80) << 8 | (c.GetR() & 0xF8) << 7 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
-		return (c.GetR() & 0xF8) << 8 | (c.GetG() & 0xFC) << 3 | (c.GetB() >> 3);
-	}
-	
-	inline double sqr(double value)
-    {
-        return value * value;
-    }
 
 	void find_nn(pnnbin* bins, int idx)
 	{
@@ -70,7 +57,7 @@ namespace PnnQuant
 			// !!! Can throw gamma correction in here, but what to do about perceptual
 			// !!! nonuniformity then?
 			Color c(pixel);
-			int index = getARGBIndex(c);
+			int index = getARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex);
 			auto& tb = bins[index];
 			tb.ac += c.GetA();
 			tb.rc += c.GetR();
@@ -182,9 +169,9 @@ namespace PnnQuant
 		return 0;
 	}
 
-	UINT nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		UINT k = 0;
+		short k = 0;
 		Color c(argb);
 
 		UINT curdist, mindist = SHORT_MAX;
@@ -216,9 +203,9 @@ namespace PnnQuant
 		return k;
 	}
 
-	UINT closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		UINT k = 0;
+		short k = 0;
 		Color c(argb);
 		vector<short> closest(5);
 		auto got = closestMap.find(argb);
@@ -256,421 +243,35 @@ namespace PnnQuant
 	}
 
 	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
-	{
+	{		
+		if (dither) 
+			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
+
+		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		UINT pixelIndex = 0;
-		if (dither) {
-			bool odd_scanline = false;
-			short *row0, *row1;
-			int a_pix, r_pix, g_pix, b_pix, dir, k;
-			const int DJ = 4;
-			const int DITHER_MAX = 20;
-			const int err_len = (width + 2) * DJ;
-			byte clamp[DJ * 256] = { 0 };
-			auto erowErr = make_unique<short[]>(err_len);
-			auto orowErr = make_unique<short[]>(err_len);
-			char limtb[512] = { 0 };
-			auto lim = &limtb[256];
-			auto erowerr = erowErr.get();
-			auto orowerr = orowErr.get();
-			short lookup[65536] = { 0 };
-
-			for (int i = 0; i < 256; i++) {
-				clamp[i] = 0;
-				clamp[i + 256] = static_cast<byte>(i);
-				clamp[i + 512] = BYTE_MAX;
-				clamp[i + 768] = BYTE_MAX;
-
-				limtb[i] = -DITHER_MAX;
-				limtb[i + 256] = DITHER_MAX;
-			}
-			for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
-				limtb[i + 256] = i;
-
-			for (UINT i = 0; i < height; i++) {
-				if (odd_scanline) {
-					dir = -1;
-					pixelIndex += (width - 1);
-					row0 = &orowerr[DJ];
-					row1 = &erowerr[width * DJ];
-				}
-				else {
-					dir = 1;
-					row0 = &erowerr[DJ];
-					row1 = &orowerr[width * DJ];
-				}
-				row1[0] = row1[1] = row1[2] = row1[3] = 0;
-				for (UINT j = 0; j < width; j++) {
-					Color c(pixels[pixelIndex]);
-
-					r_pix = clamp[((row0[0] + 0x1008) >> 4) + c.GetR()];
-					g_pix = clamp[((row0[1] + 0x1008) >> 4) + c.GetG()];
-					b_pix = clamp[((row0[2] + 0x1008) >> 4) + c.GetB()];
-					a_pix = clamp[((row0[3] + 0x1008) >> 4) + c.GetA()];
-
-					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-					Color c1(argb);
-					int offset = getARGBIndex(c1);
-					if (!lookup[offset])
-						lookup[offset] = nearestColorIndex(pPalette, nMaxColors, c.GetA() ? argb : pixels[pixelIndex]) + 1;
-					qPixels[pixelIndex] = lookup[offset] - 1;
-
-					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
-
-					r_pix = lim[r_pix - c2.GetR()];
-					g_pix = lim[g_pix - c2.GetG()];
-					b_pix = lim[b_pix - c2.GetB()];
-					a_pix = lim[a_pix - c2.GetA()];
-
-					k = r_pix * 2;
-					row1[0 - DJ] = r_pix;
-					row1[0 + DJ] += (r_pix += k);
-					row1[0] += (r_pix += k);
-					row0[0 + DJ] += (r_pix += k);
-
-					k = g_pix * 2;
-					row1[1 - DJ] = g_pix;
-					row1[1 + DJ] += (g_pix += k);
-					row1[1] += (g_pix += k);
-					row0[1 + DJ] += (g_pix += k);
-
-					k = b_pix * 2;
-					row1[2 - DJ] = b_pix;
-					row1[2 + DJ] += (b_pix += k);
-					row1[2] += (b_pix += k);
-					row0[2 + DJ] += (b_pix += k);
-
-					k = a_pix * 2;
-					row1[3 - DJ] = a_pix;
-					row1[3 + DJ] += (a_pix += k);
-					row1[3] += (a_pix += k);
-					row0[3 + DJ] += (a_pix += k);
-
-					row0 += DJ;
-					row1 -= DJ;
-					pixelIndex += dir;
-				}
-				if ((i % 2) == 1)
-					pixelIndex += (width + 1);
-
-				odd_scanline = !odd_scanline;
-			}
-			return true;
-		}
-
-		UINT(*fcnPtr)(const ColorPalette*, const UINT nMaxColors, const ARGB) = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++)
-				qPixels[pixelIndex++] = (*fcnPtr)(pPalette, nMaxColors, pixels[pixelIndex]);
+				qPixels[pixelIndex++] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 
 		return true;
-	}
-
-	bool quantize_image(const ARGB* pixels, short* qPixels, UINT width, UINT height)
-	{
-		UINT nMaxColors = 65536;
-
-		UINT pixelIndex = 0;
-		bool odd_scanline = false;
-		short *row0, *row1;
-		int a_pix, r_pix, g_pix, b_pix, dir, k;
-		const int DJ = 4;
-		const int DITHER_MAX = 20;
-		const int err_len = (width + 2) * DJ;
-		byte clamp[DJ * 256] = { 0 };
-		auto erowErr = make_unique<short[]>(err_len);
-		auto orowErr = make_unique<short[]>(err_len);
-		char limtb[512] = { 0 };
-		auto lim = &limtb[256];
-		auto erowerr = erowErr.get();
-		auto orowerr = orowErr.get();
-		int lookup[65536] = { 0 };
-
-		for (int i = 0; i < 256; i++) {
-			clamp[i] = 0;
-			clamp[i + 256] = static_cast<byte>(i);
-			clamp[i + 512] = BYTE_MAX;
-			clamp[i + 768] = BYTE_MAX;
-
-			limtb[i] = -DITHER_MAX;
-			limtb[i + 256] = DITHER_MAX;
-		}
-		for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
-			limtb[i + 256] = i;
-
-		for (int i = 0; i < height; i++) {
-			if (odd_scanline) {
-				dir = -1;
-				pixelIndex += (width - 1);
-				row0 = &orowerr[DJ];
-				row1 = &erowerr[width * DJ];
-			}
-			else {
-				dir = 1;
-				row0 = &erowerr[DJ];
-				row1 = &orowerr[width * DJ];
-			}
-			row1[0] = row1[1] = row1[2] = row1[3] = 0;
-			for (UINT j = 0; j < width; j++) {
-				Color c(pixels[pixelIndex]);
-
-				r_pix = clamp[((row0[0] + 0x1008) >> 4) + c.GetR()];
-				g_pix = clamp[((row0[1] + 0x1008) >> 4) + c.GetG()];
-				b_pix = clamp[((row0[2] + 0x1008) >> 4) + c.GetB()];
-				a_pix = clamp[((row0[3] + 0x1008) >> 4) + c.GetA()];
-
-				ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-				Color c1(argb);
-				int offset = getARGBIndex(c1);
-				if (!lookup[offset]) {
-					auto argb1 = Color::MakeARGB(BYTE_MAX, (c1.GetR() & 0xF8), (c1.GetG() & 0xFC), (c1.GetB() & 0xF8));
-					if (hasSemiTransparency)
-						argb1 = Color::MakeARGB((c1.GetA() & 0xF0), (c1.GetR() & 0xF0), (c1.GetG() & 0xF0), (c1.GetB() & 0xF0));
-					else if (m_transparentPixelIndex >= 0)
-						argb1 = Color::MakeARGB((c1.GetA() < BYTE_MAX) ? 0 : BYTE_MAX, (c1.GetR() & 0xF8), (c1.GetG() & 0xF8), (c1.GetB() & 0xF8));
-					lookup[offset] = argb1 + 1;
-				}
-				qPixels[pixelIndex] = static_cast<short>(offset);
-
-				Color c2(static_cast<ARGB>(lookup[offset] - 1));
-
-				r_pix = lim[r_pix - c2.GetR()];
-				g_pix = lim[g_pix - c2.GetG()];
-				b_pix = lim[b_pix - c2.GetB()];
-				a_pix = lim[a_pix - c2.GetA()];
-
-				k = r_pix * 2;
-				row1[0 - DJ] = r_pix;
-				row1[0 + DJ] += (r_pix += k);
-				row1[0] += (r_pix += k);
-				row0[0 + DJ] += (r_pix += k);
-
-				k = g_pix * 2;
-				row1[1 - DJ] = g_pix;
-				row1[1 + DJ] += (g_pix += k);
-				row1[1] += (g_pix += k);
-				row0[1 + DJ] += (g_pix += k);
-
-				k = b_pix * 2;
-				row1[2 - DJ] = b_pix;
-				row1[2 + DJ] += (b_pix += k);
-				row1[2] += (b_pix += k);
-				row0[2 + DJ] += (b_pix += k);
-
-				k = a_pix * 2;
-				row1[3 - DJ] = a_pix;
-				row1[3 + DJ] += (a_pix += k);
-				row1[3] += (a_pix += k);
-				row0[3 + DJ] += (a_pix += k);
-
-				row0 += DJ;
-				row1 -= DJ;
-				pixelIndex += dir;
-			}
-			if ((i % 2) == 1)
-				pixelIndex += (width + 1);
-
-			odd_scanline = !odd_scanline;
-		}
-		return true;
-	}
-
-	bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const short* qPixels)
-	{
-		pDest->SetPalette(pPalette);
-
-		BitmapData targetData;
-		UINT w = pDest->GetWidth();
-		UINT h = pDest->GetHeight();
-
-		Status status = pDest->LockBits(&Gdiplus::Rect(0, 0, w, h), ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
-		if (status != Ok) {
-			cerr << "Cannot write image" << endl;
-			return false;
-		}
-
-		int pixelIndex = 0;
-
-		auto pRowDest = (byte*)targetData.Scan0;
-		UINT strideDest;
-
-		// Compensate for possible negative stride
-		if (targetData.Stride > 0)
-			strideDest = targetData.Stride;
-		else {
-			pRowDest += h * targetData.Stride;
-			strideDest = -targetData.Stride;
-		}
-
-		UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
-		// Second loop: fill indexed bitmap
-		for (UINT y = 0; y < h; y++) {	// For each row...
-			for (UINT x = 0; x < w; x++) {	// ...for each pixel...
-				byte nibbles = 0;
-				byte index = static_cast<byte>(qPixels[pixelIndex++]);
-
-				switch (bpp)
-				{
-				case 8:
-					pRowDest[x] = index;
-					break;
-				case 4:
-					// First pixel is the high nibble. From and To indices are 0..16
-					nibbles = pRowDest[x / 2];
-					if ((x & 1) == 0) {
-						nibbles &= 0x0F;
-						nibbles |= (byte)(index << 4);
-					}
-					else {
-						nibbles &= 0xF0;
-						nibbles |= index;
-					}
-
-					pRowDest[x / 2] = nibbles;
-					break;
-				case 1:
-					// First pixel is MSB. From and To are 0 or 1.
-					int pos = x / 8;
-					byte mask = (byte)(128 >> (x & 7));
-					if (index == 0)
-						pRowDest[pos] &= (byte)~mask;
-					else
-						pRowDest[pos] |= mask;
-					break;
-				}
-			}
-
-			pRowDest += strideDest;
-		}
-
-		status = pDest->UnlockBits(&targetData);
-		return pDest->GetLastStatus() == Ok;
-	}
-
-	bool ProcessImagePixels(Bitmap* pDest, const short* qPixels)
-	{
-		UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
-		if (bpp < 16)
-			return false;
-
-		BitmapData targetData;
-		UINT w = pDest->GetWidth();
-		UINT h = pDest->GetHeight();
-
-		Status status = pDest->LockBits(&Gdiplus::Rect(0, 0, w, h), ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
-		if (status != Ok) {
-			cerr << "Cannot write image" << endl;
-			return false;
-		}
-
-		int pixelIndex = 0;
-
-		auto pRowDest = (byte*)targetData.Scan0;
-		UINT strideDest;
-
-		// Compensate for possible negative stride
-		if (targetData.Stride > 0)
-			strideDest = targetData.Stride;
-		else {
-			pRowDest += h * targetData.Stride;
-			strideDest = -targetData.Stride;
-		}
-
-		// Second loop: fill indexed bitmap
-		for (UINT y = 0; y < h; y++) {	// For each row...
-			for (UINT x = 0; x < w * 2;) {
-				auto argb = static_cast<unsigned short>(qPixels[pixelIndex++]);
-				pRowDest[x++] = static_cast<byte>(argb & 0xFF);
-				pRowDest[x++] = static_cast<byte>(argb >> 8);				
-			}
-			pRowDest += strideDest;
-		}
-
-		status = pDest->UnlockBits(&targetData);
-		return pDest->GetLastStatus() == Ok;
-	}
+	}	
 
 	bool PnnQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
 	{
-		UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
-		UINT bitmapWidth = pSource->GetWidth();
-		UINT bitmapHeight = pSource->GetHeight();
+		const UINT bitmapWidth = pSource->GetWidth();
+		const UINT bitmapHeight = pSource->GetHeight();
 
 		hasSemiTransparency = false;
 		m_transparentPixelIndex = -1;
-		bool r = true;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		if (bitDepth <= 16) {
-			for (UINT y = 0; y < bitmapHeight; y++) {
-				for (UINT x = 0; x < bitmapWidth; x++) {
-					Color color;
-					pSource->GetPixel(x, y, &color);
-					if (color.GetA() < BYTE_MAX) {
-						hasSemiTransparency = true;
-						if (color.GetA() == 0) {
-							m_transparentPixelIndex = pixelIndex;
-							m_transparentColor = color.GetValue();
-						}
-					}
-					pixels[pixelIndex++] = color.GetValue();
-				}
-			}
-		}
-
-		// Lock bits on 3x8 source bitmap
-		else {
-			BitmapData data;
-			Status status = pSource->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, pSource->GetPixelFormat(), &data);
-			if (status != Ok)
-				return false;
-
-			auto pRowSource = (byte*)data.Scan0;
-			UINT strideSource;
-
-			if (data.Stride > 0) strideSource = data.Stride;
-			else
-			{
-				// Compensate for possible negative stride
-				// (not needed for first loop, but we have to do it
-				// for second loop anyway)
-				pRowSource += bitmapHeight * data.Stride;
-				strideSource = -data.Stride;
-			}
-
-			int pixelIndex = 0;
-
-			// First loop: gather color information
-			for (UINT y = 0; y < bitmapHeight; y++) {	// For each row...
-				auto pPixelSource = pRowSource;
-
-				for (UINT x = 0; x < bitmapWidth; x++) {	// ...for each pixel...
-					byte pixelBlue = *pPixelSource++;
-					byte pixelGreen = *pPixelSource++;
-					byte pixelRed = *pPixelSource++;
-					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
-
-					auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
-					if (pixelAlpha < BYTE_MAX) {
-						hasSemiTransparency = true;
-						if (pixelAlpha == 0) {
-							m_transparentPixelIndex = pixelIndex;
-							m_transparentColor = argb;
-						}
-					}
-					pixels[pixelIndex++] = argb;
-				}
-
-				pRowSource += strideSource;
-			}
-
-			pSource->UnlockBits(&data);
-		}
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
 		if (nMaxColors > 256) {
 			hasSemiTransparency = false;
 			auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
-			quantize_image(pixels.data(), qPixels.get(), bitmapWidth, bitmapHeight);
+			dither_image(pixels.data(), nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
 			return ProcessImagePixels(pDest, qPixels.get());
 		}
 		

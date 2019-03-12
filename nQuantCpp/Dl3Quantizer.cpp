@@ -43,12 +43,14 @@
 
 #include "stdafx.h"
 #include "Dl3Quantizer.h"
+#include "bitmapUtilities.h"
 #include <map>
 
 namespace Dl3Quant
 {
-	bool hasTransparency = false;
-	ARGB m_transparentColor;
+	bool hasSemiTransparency = false;
+	int m_transparentPixelIndex = -1;
+	ARGB m_transparentColor = Color::Transparent;
 	map<ARGB, vector<short> > closestMap;
 	map<ARGB, UINT> rightMatches;
 
@@ -105,9 +107,7 @@ namespace Dl3Quant
 	void build_table3(CUBE3* rgb_table3, ARGB argb)
 	{
 		Color c(argb);
-		int index = (c.GetR() & 0xFC) << 8 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
-		if (hasTransparency)
-			index = (c.GetA() & 0xF0) << 8 | (c.GetR() & 0xF0) << 4 | (c.GetG() & 0xF0) | (c.GetB() >> 4);
+		int index = getARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex);
 
 		rgb_table3[index].a += c.GetA();
 		rgb_table3[index].r += c.GetR();
@@ -293,9 +293,9 @@ namespace Dl3Quant
 		return k;
 	}
 	
-	bool quantize_image3(const ARGB* pixels, CUBE3* rgb_table3, UINT* qPixels, int* squares3, UINT nMaxColors, int width, int height, bool dither)
+	bool quantize_image3(const ARGB* pixels, CUBE3* rgb_table3, short* qPixels, int* squares3, UINT nMaxColors, int width, int height, bool dither)
 	{			
-		if (dither) {		
+		if (dither) {
 			bool odd_scanline = false;
 			short *thisrowerr, *nextrowerr;
 			int j, a_pix, r_pix, g_pix, b_pix, dir, two_val;
@@ -303,13 +303,13 @@ namespace Dl3Quant
 			const byte DITHER_MAX = 20;
 			const int err_len = (width + 2) * DJ;
 			byte range_tbl[DJ * 256] = { 0 };
-			byte* range = &range_tbl[256];
+			auto range = &range_tbl[256];
 			unique_ptr<short[]> erowErr = make_unique<short[]>(err_len);
 			unique_ptr<short[]> orowErr = make_unique<short[]>(err_len);
 			char dith_max_tbl[512] = { 0 };
-			char* dith_max = &dith_max_tbl[256];
-			short* erowerr = erowErr.get();
-			short* orowerr = orowErr.get();
+			auto dith_max = &dith_max_tbl[256];
+			auto erowerr = erowErr.get();
+			auto orowerr = orowErr.get();
 
 			for (int i = 0; i < 256; i++) {
 				range_tbl[i] = 0;
@@ -347,7 +347,7 @@ namespace Dl3Quant
 					g_pix = range[((thisrowerr[2] + 8) >> 4) + c.GetG()];
 					b_pix = range[((thisrowerr[3] + 8) >> 4) + c.GetB()];
 
-					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);					
+					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 					qPixels[pixelIndex] = bestcolor3(rgb_table3, squares3, nMaxColors, argb);
 
 					Color c2(qPixels[pixelIndex]);
@@ -364,7 +364,7 @@ namespace Dl3Quant
 					nextrowerr[0] += a_pix;
 					a_pix += two_val;
 					thisrowerr[0 + DJ] += a_pix;
-					
+
 					two_val = r_pix * 2;
 					nextrowerr[1 - DJ] = r_pix;
 					r_pix += two_val;
@@ -373,7 +373,7 @@ namespace Dl3Quant
 					nextrowerr[1] += r_pix;
 					r_pix += two_val;
 					thisrowerr[1 + DJ] += r_pix;
-					
+
 					two_val = g_pix * 2;
 					nextrowerr[2 - DJ] = g_pix;
 					g_pix += two_val;
@@ -382,7 +382,7 @@ namespace Dl3Quant
 					nextrowerr[2] += g_pix;
 					g_pix += two_val;
 					thisrowerr[2 + DJ] += g_pix;
-					
+
 					two_val = b_pix * 2;
 					nextrowerr[3 - DJ] = b_pix;
 					b_pix += two_val;
@@ -401,11 +401,11 @@ namespace Dl3Quant
 
 				odd_scanline = !odd_scanline;
 			}
+			return true;
 		}
-		else {
-			for (int i = 0; i < (width * height); i++)
-				qPixels[i] = bestcolor3(rgb_table3, squares3, nMaxColors, pixels[i]);
-		}
+
+		for (int i = 0; i < (width * height); ++i)
+			qPixels[i] = bestcolor3(rgb_table3, squares3, nMaxColors, pixels[i]);
 		return true;
 	}
 
@@ -419,156 +419,18 @@ namespace Dl3Quant
 
 			auto alpha = rgb_table3[paletteIndex].aa;
 			pPalette->Entries[paletteIndex] = Color::MakeARGB(alpha, rgb_table3[paletteIndex].rr, rgb_table3[paletteIndex].gg, rgb_table3[paletteIndex].bb);
-			if (hasTransparency && pPalette->Entries[paletteIndex] == m_transparentColor)
-				swap(pPalette->Entries[0], pPalette->Entries[paletteIndex]);
 		}
 	}
-
-	bool ProcessImagePixels(Bitmap* pDest, ColorPalette* pPalette, const UINT* qPixels)
-	{
-		pDest->SetPalette(pPalette);
-
-		BitmapData targetData;
-		UINT w = pDest->GetWidth();
-		UINT h = pDest->GetHeight();
-
-		Status status = pDest->LockBits(&Gdiplus::Rect(0, 0, w, h), ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
-		if (status != Ok) {
-			cerr << "Cannot write image" << endl;
-			return false;
-		}
-
-		int pixelIndex = 0;
-
-		auto pRowDest = (byte*)targetData.Scan0;
-		UINT strideDest;
-
-		// Compensate for possible negative stride
-		if (targetData.Stride > 0)
-			strideDest = targetData.Stride;
-		else {
-			pRowDest += h * targetData.Stride;
-			strideDest = -targetData.Stride;
-		}
-
-		UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
-		// Second loop: fill indexed bitmap
-		for (UINT y = 0; y < h; y++) {	// For each row...
-			for (UINT x = 0; x < w; x++) {	// ...for each pixel...
-				byte nibbles = 0;
-				byte index = static_cast<byte>(qPixels[pixelIndex++]);
-
-				switch (bpp)
-				{
-				case 8:
-					pRowDest[x] = index;
-					break;
-				case 4:
-					// First pixel is the high nibble. From and To indices are 0..16
-					nibbles = pRowDest[x / 2];
-					if ((x & 1) == 0) {
-						nibbles &= 0x0F;
-						nibbles |= (byte)(index << 4);
-					}
-					else {
-						nibbles &= 0xF0;
-						nibbles |= index;
-					}
-
-					pRowDest[x / 2] = nibbles;
-					break;
-				case 1:
-					// First pixel is MSB. From and To are 0 or 1.
-					int pos = x / 8;
-					byte mask = (byte)(128 >> (x & 7));
-					if (index == 0)
-						pRowDest[pos] &= (byte)~mask;
-					else
-						pRowDest[pos] |= mask;
-					break;
-				}
-			}
-
-			pRowDest += strideDest;
-		}
-
-		status = pDest->UnlockBits(&targetData);
-		return pDest->GetLastStatus() == Ok;
-	}
-	
 
 	bool Dl3Quantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
 	{
 		auto rgb_table3 = make_unique<CUBE3[]>(65536);
-		
-		UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
-		UINT bitmapWidth = pSource->GetWidth();
-		UINT bitmapHeight = pSource->GetHeight();
 
-		bool r = true;
-		int pixelIndex = 0;
-		auto pixels = make_unique<ARGB[]>(bitmapWidth * bitmapHeight);
-		if (bitDepth <= 16) {
-			for (UINT y = 0; y < bitmapHeight; y++) {
-				for (UINT x = 0; x < bitmapWidth; x++) {
-					Color color;
-					pSource->GetPixel(x, y, &color);
-					if (color.GetA() < BYTE_MAX)
-						hasTransparency = true;
-					if (color.GetA() == 0)
-						m_transparentColor = color.GetValue();
-					pixels[pixelIndex++] = color.GetValue();
-					build_table3(&rgb_table3[0], color.GetValue());
-				}
-			}
-		}
-	
-		// Lock bits on 3x8 source bitmap
-		else {
-			BitmapData data;
-			Status status = pSource->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, pSource->GetPixelFormat(), &data);
-			if (status != Ok)
-				return false;
+		const UINT bitmapWidth = pSource->GetWidth();
+		const UINT bitmapHeight = pSource->GetHeight();
 
-			auto pRowSource = (byte*)data.Scan0;
-			UINT strideSource;
-
-			if (data.Stride > 0) strideSource = data.Stride;
-			else
-			{
-				// Compensate for possible negative stride
-				// (not needed for first loop, but we have to do it
-				// for second loop anyway)
-				pRowSource += bitmapHeight * data.Stride;
-				strideSource = -data.Stride;
-			}
-
-			int pixelIndex = 0;
-
-			// First loop: gather color information
-			for (UINT y = 0; y < bitmapHeight; y++) {	// For each row...
-				auto pPixelSource = pRowSource;
-
-				for (UINT x = 0; x < bitmapWidth; x++) {	// ...for each pixel...
-					byte pixelBlue = *pPixelSource++;
-					byte pixelGreen = *pPixelSource++;
-					byte pixelRed = *pPixelSource++;
-					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
-					if (pixelAlpha < BYTE_MAX)
-						hasTransparency = true;
-
-					auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
-					if (pixelAlpha == 0)
-						m_transparentColor = argb;
-					pixels[pixelIndex++] = argb;
-					build_table3(&rgb_table3[0], argb);
-				}
-
-				pRowSource += strideSource;
-			}
-
-			pSource->UnlockBits(&data);
-		}
+		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 		
 		UINT tot_colors = build_table3(&rgb_table3[0]);
 		int sqr_tbl[BYTE_MAX + BYTE_MAX + 1];
@@ -578,18 +440,26 @@ namespace Dl3Quant
 
 		int* squares3 = &sqr_tbl[BYTE_MAX];
 
-		reduce_table3(&rgb_table3[0], squares3, tot_colors, nMaxColors);
+		reduce_table3(rgb_table3.get(), squares3, tot_colors, nMaxColors);
 	
-		auto qPixels = make_unique<UINT[]>(bitmapWidth * bitmapHeight);
-		quantize_image3(pixels.get(), &rgb_table3[0], qPixels.get(), squares3, nMaxColors, bitmapWidth, bitmapHeight, nMaxColors < 256);
+		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
+		quantize_image3(pixels.data(), rgb_table3.get(), qPixels.get(), squares3, nMaxColors, bitmapWidth, bitmapHeight, dither);
 		closestMap.clear();
 		rightMatches.clear();
 
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
-		GetQuantizedPalette(pPalette, &rgb_table3[0]);
+		GetQuantizedPalette(pPalette, rgb_table3.get());
 		rgb_table3.reset();
+		
+		if (m_transparentPixelIndex >= 0) {
+			UINT k = qPixels[m_transparentPixelIndex];
+			if(nMaxColors > 2)
+				pPalette->Entries[k] = m_transparentColor;
+			else if (pPalette->Entries[k] != m_transparentColor)
+				swap(pPalette->Entries[0], pPalette->Entries[1]);
+		}
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
 	}
 
