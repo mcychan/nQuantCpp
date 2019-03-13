@@ -7,7 +7,6 @@
 #include <atlstr.h>
 #include <tchar.h>
 #include <intsafe.h>
-#include <iostream>
 
 #define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS      // some CString constructors will be explicit
 
