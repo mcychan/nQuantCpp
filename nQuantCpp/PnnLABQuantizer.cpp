@@ -188,9 +188,9 @@ namespace PnnLABQuant
 		return 0;
 	}
 
-	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	UINT nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		short k = 0;
+		UINT k = 0;
 		Color c(argb);
 
 		unsigned short index = getARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex);
@@ -248,9 +248,9 @@ namespace PnnLABQuant
 		return k;
 	}
 	
-	short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	UINT closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		short k = 0;
+		UINT k = 0;
 		Color c(argb);
 		vector<double> closest(5);
 		auto got = closestMap.find(argb);

@@ -895,9 +895,9 @@ namespace DivQuant
 			DivQuantCluster<UINT>(numPixels, inputPixels.get(), tmpPixels.get(), weightUniform, weightsPtr.get(), num_bits, max_iters, pPalette, nMaxColors);
 	}
 	
-	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	UINT nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		short k = 0;
+		UINT k = 0;
 		Color c(argb);
 
 		UINT curdist, mindist = SHORT_MAX;
@@ -931,15 +931,81 @@ namespace DivQuant
 
 	bool DivQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
 	{
-		const UINT bitmapWidth = pSource->GetWidth();
-		const UINT bitmapHeight = pSource->GetHeight();
+		UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
+		UINT bitmapWidth = pSource->GetWidth();
+		UINT bitmapHeight = pSource->GetHeight();
 
 		hasSemiTransparency = false;
 		m_transparentPixelIndex = -1;
+		bool r = true;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
-		
+		if (bitDepth <= 16) {
+			for (UINT y = 0; y < bitmapHeight; y++) {
+				for (UINT x = 0; x < bitmapWidth; x++) {
+					Color color;
+					pSource->GetPixel(x, y, &color);
+					if (color.GetA() < BYTE_MAX) {
+						hasSemiTransparency = true;
+						if (color.GetA() == 0) {
+							m_transparentPixelIndex = pixelIndex;
+							m_transparentColor = color.GetValue();
+						}
+					}
+					pixels[pixelIndex++] = color.GetValue();
+				}
+			}
+		}
+
+		// Lock bits on 3x8 source bitmap
+		else {
+			BitmapData data;
+			Status status = pSource->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, pSource->GetPixelFormat(), &data);
+			if (status != Ok)
+				return false;
+
+			auto pRowSource = (byte*)data.Scan0;
+			UINT strideSource;
+
+			if (data.Stride > 0) strideSource = data.Stride;
+			else
+			{
+				// Compensate for possible negative stride
+				// (not needed for first loop, but we have to do it
+				// for second loop anyway)
+				pRowSource += bitmapHeight * data.Stride;
+				strideSource = -data.Stride;
+			}
+
+			int pixelIndex = 0;
+
+			// First loop: gather color information
+			for (UINT y = 0; y < bitmapHeight; y++) {	// For each row...
+				auto pPixelSource = pRowSource;
+
+				for (UINT x = 0; x < bitmapWidth; x++) {	// ...for each pixel...
+					byte pixelBlue = *pPixelSource++;
+					byte pixelGreen = *pPixelSource++;
+					byte pixelRed = *pPixelSource++;
+					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
+
+					auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
+					if (pixelAlpha < BYTE_MAX) {
+						hasSemiTransparency = true;
+						if (pixelAlpha == 0) {
+							m_transparentPixelIndex = pixelIndex;
+							m_transparentColor = argb;
+						}
+					}
+					pixels[pixelIndex++] = argb;
+				}
+
+				pRowSource += strideSource;
+			}
+
+			pSource->UnlockBits(&data);
+		}
+
 		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;

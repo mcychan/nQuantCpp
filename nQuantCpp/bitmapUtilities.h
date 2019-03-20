@@ -58,7 +58,7 @@ BOOL FixBitmapHeight(PVOID pDib, ULONG nSize, BOOL bTopDown);
 
 BOOL FillBitmapFileHeader(LPCVOID pDib, PBITMAPFILEHEADER pbmfh);
 
-typedef short (*DitherFn)(const ColorPalette*, const UINT nMaxColors, const ARGB);
+typedef UINT (*DitherFn)(const ColorPalette*, const UINT nMaxColors, const ARGB);
 
 bool dither_image(const ARGB* pixels, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, short* qPixels, const UINT width, const UINT height);
 
