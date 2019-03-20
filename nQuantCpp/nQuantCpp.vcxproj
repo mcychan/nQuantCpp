@@ -154,6 +154,7 @@
   <ItemGroup>
     <ClInclude Include="bitmapUtilities.h" />
     <ClInclude Include="CIELABConvertor.h" />
+    <ClInclude Include="DivQuantizer.h" />
     <ClInclude Include="Dl3Quantizer.h" />
     <ClInclude Include="EdgeAwareSQuantizer.h" />
     <ClInclude Include="MoDEQuantizer.h" />
@@ -170,6 +171,7 @@
   <ItemGroup>
     <ClCompile Include="bitmapUtilities.cpp" />
     <ClCompile Include="CIELABConvertor.cpp" />
+    <ClCompile Include="DivQuantizer.cpp" />
     <ClCompile Include="Dl3Quantizer.cpp" />
     <ClCompile Include="EdgeAwareSQuantizer.cpp" />
     <ClCompile Include="MoDEQuantizer.cpp" />

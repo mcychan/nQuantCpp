@@ -426,7 +426,7 @@ namespace NeuralNet
 					b_pix = range[((thisrowerr[3] + 8) >> 4) + c.GetB()];
 
 					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-					qPixels[pixelIndex] = Inxsearch(pPalette, argb);
+					qPixels[pixelIndex] = Inxsearch(pPalette, c.GetA() ? argb : pixels[pixelIndex]);
 
 					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 					a_pix = dith_max[a_pix - c2.GetA()];
