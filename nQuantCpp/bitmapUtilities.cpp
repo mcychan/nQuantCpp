@@ -649,11 +649,14 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	return true;
 }
 
-bool ProcessImagePixels(Bitmap* pDest, const short* qPixels)
+bool ProcessImagePixels(Bitmap* pDest, const short* qPixels, const int& transparentPixelIndex)
 {
 	UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
 	if (bpp < 16)
 		return false;
+	
+	if(transparentPixelIndex < 0 && pDest->GetPixelFormat() != PixelFormat16bppRGB565)
+		pDest->ConvertFormat(PixelFormat16bppRGB565, DitherTypeNone, PaletteTypeOptimal, nullptr, 0);
 
 	BitmapData targetData;
 	UINT w = pDest->GetWidth();
@@ -769,6 +772,9 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	const UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
 	const UINT bitmapWidth = pSource->GetWidth();
 	const UINT bitmapHeight = pSource->GetHeight();
+	
+	hasSemiTransparency = true;
+	transparentPixelIndex = -1;
 		
 	int pixelIndex = 0;
 	if (bitDepth <= 16) {
@@ -820,9 +826,11 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 
 				auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
 				if (pixelAlpha < BYTE_MAX) {
-					transparentPixelIndex = pixelIndex;
-					if (pixelAlpha == 0)
+					hasSemiTransparency = true;					
+					if (pixelAlpha == 0) {
 						transparentColor = argb;
+						transparentPixelIndex = pixelIndex;
+					}
 				}
 				pixels[pixelIndex++] = argb;
 			}

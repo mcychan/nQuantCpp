@@ -332,15 +332,14 @@ namespace NeuralNet
 			netindex[j] = maxnetpos; // really 256
 	}
 
-	UINT Inxsearch(const ColorPalette* pPalette, ARGB argb) {
-		UINT k = 0;
+	short Inxsearch(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb) {
+		short k = 0;
 		Color c(argb);
 		vector<short> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = SHORT_MAX;
 
-			UINT nMaxColors = pPalette->Count;
 			for (; k < nMaxColors; k++) {
 				Color c2(pPalette->Entries[k]);
 				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
@@ -371,127 +370,22 @@ namespace NeuralNet
 		return k;
 	}
 
-	bool quantize_image(const vector<ARGB>& pixels, const ColorPalette* pPalette, short* qPixels, int width, int height, bool dither)
+	bool quantize_image(const vector<ARGB>& pixels, const ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
 	{		
-		if (dither) {
-			bool odd_scanline = false;
-			short *thisrowerr, *nextrowerr;
-			int j, a_pix, r_pix, g_pix, b_pix, dir, two_val;
-			const byte DJ = 4;
-			const byte DITHER_MAX = 20;
-			const int err_len = (width + 2) * DJ;
-			byte range_tbl[DJ * 256] = { 0 };
-			byte* range = &range_tbl[256];
-			unique_ptr<short[]> erowErr = make_unique<short[]>(err_len);
-			unique_ptr<short[]> orowErr = make_unique<short[]>(err_len);
-			char dith_max_tbl[512] = { 0 };
-			char* dith_max = &dith_max_tbl[256];
-			short* erowerr = erowErr.get();
-			short* orowerr = orowErr.get();
+		if (dither) 
+			return dither_image(pixels.data(), pPalette, Inxsearch, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
 
-			for (int i = 0; i < 256; i++) {
-				range_tbl[i] = 0;
-				range_tbl[i + 256] = static_cast<byte>(i);
-				range_tbl[i + 512] = BYTE_MAX;
-				range_tbl[i + 768] = BYTE_MAX;
-			}
-
-			for (int i = 0; i < 256; i++) {
-				dith_max_tbl[i] = -DITHER_MAX;
-				dith_max_tbl[i + 256] = DITHER_MAX;
-			}
-			for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
-				dith_max_tbl[i + 256] = i;
-
-			UINT pixelIndex = 0;
-			for (int i = 0; i < height; i++) {
-				if (odd_scanline) {
-					dir = -1;
-					pixelIndex += (width - 1);
-					thisrowerr = orowerr + DJ;
-					nextrowerr = erowerr + width * DJ;
-				}
-				else {
-					dir = 1;
-					thisrowerr = erowerr + DJ;
-					nextrowerr = orowerr + width * DJ;
-				}
-				nextrowerr[0] = nextrowerr[1] = nextrowerr[2] = nextrowerr[3] = 0;
-				for (j = 0; j < width; j++) {
-					Color c(pixels[pixelIndex]);
-
-					a_pix = range[((thisrowerr[0] + 8) >> 4) + c.GetA()];
-					r_pix = range[((thisrowerr[1] + 8) >> 4) + c.GetR()];
-					g_pix = range[((thisrowerr[2] + 8) >> 4) + c.GetG()];
-					b_pix = range[((thisrowerr[3] + 8) >> 4) + c.GetB()];
-
-					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-					qPixels[pixelIndex] = Inxsearch(pPalette, c.GetA() ? argb : pixels[pixelIndex]);
-
-					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
-					a_pix = dith_max[a_pix - c2.GetA()];
-					r_pix = dith_max[r_pix - c2.GetR()];
-					g_pix = dith_max[g_pix - c2.GetG()];
-					b_pix = dith_max[b_pix - c2.GetB()];
-
-					two_val = a_pix * 2;
-					nextrowerr[0 - DJ] = a_pix;
-					a_pix += two_val;
-					nextrowerr[0 + DJ] += a_pix;
-					a_pix += two_val;
-					nextrowerr[0] += a_pix;
-					a_pix += two_val;
-					thisrowerr[0 + DJ] += a_pix;
-
-					two_val = r_pix * 2;
-					nextrowerr[1 - DJ] = r_pix;
-					r_pix += two_val;
-					nextrowerr[1 + DJ] += r_pix;
-					r_pix += two_val;
-					nextrowerr[1] += r_pix;
-					r_pix += two_val;
-					thisrowerr[1 + DJ] += r_pix;
-
-					two_val = g_pix * 2;
-					nextrowerr[2 - DJ] = g_pix;
-					g_pix += two_val;
-					nextrowerr[2 + DJ] += g_pix;
-					g_pix += two_val;
-					nextrowerr[2] += g_pix;
-					g_pix += two_val;
-					thisrowerr[2 + DJ] += g_pix;
-
-					two_val = b_pix * 2;
-					nextrowerr[3 - DJ] = b_pix;
-					b_pix += two_val;
-					nextrowerr[3 + DJ] += b_pix;
-					b_pix += two_val;
-					nextrowerr[3] += b_pix;
-					b_pix += two_val;
-					thisrowerr[3 + DJ] += b_pix;
-
-					thisrowerr += DJ;
-					nextrowerr -= DJ;
-					pixelIndex += dir;
-				}
-				if ((i % 2) == 1)
-					pixelIndex += (width + 1);
-
-				odd_scanline = !odd_scanline;
-			}
-			return true;
+		UINT pixelIndex = 0;
+		for (int j = 0; j < height; ++j) {
+			for (int i = 0; i < width; ++i)
+				qPixels[pixelIndex++] = Inxsearch(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 
-		for (int i = 0; i < (width * height); i++)
-			qPixels[i] = Inxsearch(pPalette, pixels[i]);
-
 		return true;
-	}
+	}	
 
 	void NeuQuantizer::Clear() {
 		memset((void*) network, 0, sizeof(network));
-		hasSemiTransparency = false;
-		m_transparentPixelIndex = -1;
 
 		for (int i = 0; i < 32; ++i)
 			radpower[i] = 0.0;
@@ -529,7 +423,7 @@ namespace NeuralNet
 		Inxbuild(pPalette);
 
 		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
-		quantize_image(pixels, pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+		quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
 	}
 

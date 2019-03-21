@@ -188,12 +188,11 @@ namespace PnnLABQuant
 		return 0;
 	}
 
-	UINT nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		UINT k = 0;
+		short k = 0;
 		Color c(argb);
 
-		unsigned short index = getARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex);
 		double mindist = SHORT_MAX;
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
@@ -248,9 +247,9 @@ namespace PnnLABQuant
 		return k;
 	}
 	
-	UINT closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		UINT k = 0;
+		short k = 0;
 		Color c(argb);
 		vector<double> closest(5);
 		auto got = closestMap.find(argb);
@@ -307,17 +306,19 @@ namespace PnnLABQuant
 
 	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
 	{
-		if (nMaxColors > 256)
-			nMaxColors = 256;
-
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
 
-		hasSemiTransparency = false;
-		m_transparentPixelIndex = -1;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
+		
+		auto qPixels = make_unique<short[]>(pixels.size());
+		if (nMaxColors > 256) {
+			hasSemiTransparency = false;
+			dither_image(pixels.data(), nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
+			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
+		}
 		
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
@@ -335,8 +336,7 @@ namespace PnnLABQuant
 				pPalette->Entries[1] = Color::White;
 			}
 		}
-
-		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
+		
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];

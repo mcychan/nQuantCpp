@@ -22,20 +22,6 @@ namespace PnnQuant
 		int nn, fw, bk, tm, mtm;
 	};
 
-	inline int getARGBIndex(const Color& c)
-	{
-		if(hasSemiTransparency)
-			return (c.GetA() & 0xF0) << 8 | (c.GetR() & 0xF0) << 4 | (c.GetG() & 0xF0) | (c.GetB() >> 4);
-		if (m_transparentPixelIndex >= 0)
-			return (c.GetA() & 0x80) << 8 | (c.GetR() & 0xF8) << 7 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
-		return (c.GetR() & 0xF8) << 8 | (c.GetG() & 0xFC) << 3 | (c.GetB() >> 3);
-	}
-	
-	inline double sqr(double value)
-    {
-        return value * value;
-    }
-
 	void find_nn(pnnbin* bins, int idx)
 	{
 		int i, nn = 0;
@@ -71,7 +57,7 @@ namespace PnnQuant
 			// !!! Can throw gamma correction in here, but what to do about perceptual
 			// !!! nonuniformity then?
 			Color c(pixel);
-			int index = getARGBIndex(c);
+			int index = getARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex);
 			auto& tb = bins[index];
 			tb.ac += c.GetA();
 			tb.rc += c.GetR();
@@ -183,9 +169,9 @@ namespace PnnQuant
 		return 0;
 	}
 
-	UINT nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		UINT k = 0;
+		short k = 0;
 		Color c(argb);
 
 		UINT curdist, mindist = SHORT_MAX;
@@ -217,9 +203,9 @@ namespace PnnQuant
 		return k;
 	}
 
-	UINT closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		UINT k = 0;
+		short k = 0;
 		Color c(argb);
 		vector<short> closest(5);
 		auto got = closestMap.find(argb);
@@ -257,8 +243,8 @@ namespace PnnQuant
 	}
 
 	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
-	{
-		if (dither)
+	{		
+		if (dither) 
 			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
 
 		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
@@ -269,90 +255,22 @@ namespace PnnQuant
 		}
 
 		return true;
-	}
+	}	
 
 	bool PnnQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
 	{
-		UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
-		UINT bitmapWidth = pSource->GetWidth();
-		UINT bitmapHeight = pSource->GetHeight();
+		const UINT bitmapWidth = pSource->GetWidth();
+		const UINT bitmapHeight = pSource->GetHeight();
 
-		hasSemiTransparency = false;
-		m_transparentPixelIndex = -1;
-		bool r = true;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		if (bitDepth <= 16) {
-			for (UINT y = 0; y < bitmapHeight; y++) {
-				for (UINT x = 0; x < bitmapWidth; x++) {
-					Color color;
-					pSource->GetPixel(x, y, &color);
-					if (color.GetA() < BYTE_MAX) {
-						hasSemiTransparency = true;
-						if (color.GetA() == 0) {
-							m_transparentPixelIndex = pixelIndex;
-							m_transparentColor = color.GetValue();
-						}
-					}
-					pixels[pixelIndex++] = color.GetValue();
-				}
-			}
-		}
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
-		// Lock bits on 3x8 source bitmap
-		else {
-			BitmapData data;
-			Status status = pSource->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, pSource->GetPixelFormat(), &data);
-			if (status != Ok)
-				return false;
-
-			auto pRowSource = (byte*)data.Scan0;
-			UINT strideSource;
-
-			if (data.Stride > 0) strideSource = data.Stride;
-			else
-			{
-				// Compensate for possible negative stride
-				// (not needed for first loop, but we have to do it
-				// for second loop anyway)
-				pRowSource += bitmapHeight * data.Stride;
-				strideSource = -data.Stride;
-			}
-
-			int pixelIndex = 0;
-
-			// First loop: gather color information
-			for (UINT y = 0; y < bitmapHeight; y++) {	// For each row...
-				auto pPixelSource = pRowSource;
-
-				for (UINT x = 0; x < bitmapWidth; x++) {	// ...for each pixel...
-					byte pixelBlue = *pPixelSource++;
-					byte pixelGreen = *pPixelSource++;
-					byte pixelRed = *pPixelSource++;
-					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
-
-					auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
-					if (pixelAlpha < BYTE_MAX) {
-						hasSemiTransparency = true;
-						if (pixelAlpha == 0) {
-							m_transparentPixelIndex = pixelIndex;
-							m_transparentColor = argb;
-						}
-					}
-					pixels[pixelIndex++] = argb;
-				}
-
-				pRowSource += strideSource;
-			}
-
-			pSource->UnlockBits(&data);
-		}
-
+		auto qPixels = make_unique<short[]>(pixels.size());
 		if (nMaxColors > 256) {
 			hasSemiTransparency = false;
-			auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
 			dither_image(pixels.data(), nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
-			return ProcessImagePixels(pDest, qPixels.get());
+			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
 		
 		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
@@ -373,7 +291,6 @@ namespace PnnQuant
 			}
 		}
 
-		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];

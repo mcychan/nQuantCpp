@@ -846,10 +846,12 @@ namespace nQuant
 	
 	bool WuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither, byte alphaThreshold, byte alphaFader)
 	{
+		if (nMaxColors > 256)
+			nMaxColors = 256;
+
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
-		hasSemiTransparency = false;
-		m_transparentPixelIndex = -1;
+		
 		ColorData colorData(SIDESIZE, bitmapWidth, bitmapHeight);
 		BuildHistogram(colorData, pSource, alphaThreshold, alphaFader);
 		CalculateMoments(colorData);
