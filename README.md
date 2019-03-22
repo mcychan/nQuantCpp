@@ -1,6 +1,7 @@
 # nQuantCpp
-nQuantCpp includes top 5 color quantization algorithms producing high quality 256 color 8 bit PNG images using an algorithm optimized for the highest quality possible.
+nQuantCpp includes top 5 color quantization algorithms for visual c++ producing high quality optimized images.
 
+Divisive hierarchical clustering algorithm,
 Fast pairwise nearest neighbor based algorithm, 
 NeuQuant Neural-Net Quantization Algorithm, 
 Xialoin Wu's fast optimal color quantizer, 
