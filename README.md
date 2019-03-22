@@ -1,16 +1,16 @@
 # nQuantCpp
-nQuantCpp includes top 5 color quantization algorithms for visual c++ producing high quality optimized images.
+nQuantCpp includes top 6 color quantization algorithms for visual c++ producing high quality optimized images.
 
 Divisive hierarchical clustering algorithm,
 Fast pairwise nearest neighbor based algorithm, 
 NeuQuant Neural-Net Quantization Algorithm, 
 Xialoin Wu's fast optimal color quantizer, 
-DL3 Quantization,
+Efficient, Edge-Aware, Combined Color Quantization and Dithering,
 Spatial color quantization
 
 Fast pairwise nearest neighbor based algorithm minimized color loss for photo having red lips and supports 256 or less colors with transparency. NeuQuant Neural-Net Quantization Algorithm produces smooth photo quantization especially for natual landscape photo and fully supports image having transparent color. Xialoin Wu's fast optimal color quantizer fully supports image having transparent color. DL3 Quantization supports 256 or less colors. Spatial color quantization supports 64 or less colors. nQuantCpp also provides a command line wrapper in case you want to use it from the command line.
 
-Either download nQuant from this site or add it to your Visual Studio project seamlessly.
+Either download nQuantCpp from this site or add it to your Visual Studio project seamlessly.
 The main features show up to discuss would be the error diffusion and dithering.
 
 Here some examples of output:
