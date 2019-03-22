@@ -80,8 +80,7 @@ namespace NeuralNet
 
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
-	ARGB m_transparentColor = Color::Transparent;
-	vector<ARGB> pixels;
+	ARGB m_transparentColor = Color::Transparent;	
 	map<ARGB, vector<short> > closestMap;
 
 	inline double biasvalue(unsigned int temp)
@@ -233,14 +232,14 @@ namespace NeuralNet
 		return bestbiaspos;
 	}
 
-	void Learn(int samplefac) {
+	void Learn(const int samplefac, const vector<ARGB>& pixels) {
 		UINT i, j;
 		UINT rad, delta, samplepixels, stepIndex = 0;
 		double radius, alpha;
 
 		int pos = 0;
 		int alphadec = 30 + ((samplefac - 1) / 3);
-		int lengthcount = pixels.size();
+		const UINT lengthcount = pixels.size();
 		samplepixels = lengthcount / samplefac;
 		delta = samplepixels / ncycles;  /* here's a problem with small images: samplepixels < ncycles => delta = 0 */
 		if (delta == 0)
@@ -287,17 +286,13 @@ namespace NeuralNet
 	}
 
 	void Inxbuild(ColorPalette* pPalette) {
-		int k = 0;
-		if (m_transparentPixelIndex >= 0)
-			++k;
+		short k = 0;
 		
-		for (; k < netsize; k++) {
+		for (; k < netsize; ++k) {
 			auto alpha = round_biased(network[k].al);
 			auto argb = Color::MakeARGB(alpha, biasvalue(unbiasvalue(network[k].r)), biasvalue(unbiasvalue(network[k].g)), biasvalue(unbiasvalue(network[k].b)));
 			pPalette->Entries[k] = argb;
 		}
-		if(m_transparentPixelIndex >= 0)
-			pPalette->Entries[0] = m_transparentColor;
 
 		int previouscol = 0;
 		int startpos = 0;
@@ -332,59 +327,55 @@ namespace NeuralNet
 			netindex[j] = maxnetpos; // really 256
 	}
 
-	short Inxsearch(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb) {
+	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	{
 		short k = 0;
 		Color c(argb);
-		vector<short> closest(5);
-		auto got = closestMap.find(argb);
-		if (got == closestMap.end()) {
-			closest[2] = closest[3] = SHORT_MAX;
 
-			for (; k < nMaxColors; k++) {
-				Color c2(pPalette->Entries[k]);
-				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
-				if (closest[4] < closest[2]) {
-					closest[1] = closest[0];
-					closest[3] = closest[2];
-					closest[0] = k;
-					closest[2] = closest[4];
-				}
-				else if (closest[4] < closest[3]) {
-					closest[1] = k;
-					closest[3] = closest[4];
-				}
-			}
+		UINT curdist, mindist = SHORT_MAX;
+		for (short i = 0; i < nMaxColors; i++) {
+			Color c2(pPalette->Entries[i]);
+			int adist = abs(c2.GetA() - c.GetA());
+			curdist = adist;
+			if (curdist > mindist)
+				continue;
 
-			if (closest[3] == SHORT_MAX)
-				closest[2] = 0;
+			int rdist = abs(c2.GetR() - c.GetR());
+			curdist += rdist;
+			if (curdist > mindist)
+				continue;
+
+			int gdist = abs(c2.GetG() - c.GetG());
+			curdist += gdist;
+			if (curdist > mindist)
+				continue;
+
+			int bdist = abs(c2.GetB() - c.GetB());
+			curdist += bdist;
+			if (curdist > mindist)
+				continue;
+
+			mindist = curdist;
+			k = i;
 		}
-		else
-			closest = got->second;
-
-		if (closest[2] == 0 || (rand() % (closest[3] + closest[2])) <= closest[3])
-			k = closest[0];
-		else
-			k = closest[1];
-
-		closestMap[argb] = closest;
 		return k;
 	}
 
 	bool quantize_image(const vector<ARGB>& pixels, const ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
 	{		
 		if (dither) 
-			return dither_image(pixels.data(), pPalette, Inxsearch, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
+			return dither_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
 
 		UINT pixelIndex = 0;
 		for (int j = 0; j < height; ++j) {
 			for (int i = 0; i < width; ++i)
-				qPixels[pixelIndex++] = Inxsearch(pPalette, nMaxColors, pixels[pixelIndex]);
+				qPixels[pixelIndex++] = nearestColorIndex(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 
 		return true;
 	}	
 
-	void NeuQuantizer::Clear() {
+	void Clear() {
 		memset((void*) network, 0, sizeof(network));
 
 		for (int i = 0; i < 32; ++i)
@@ -396,9 +387,6 @@ namespace NeuralNet
 			bias[i] = 0.0;
 			freq[i] = 0.0;
 		}
-
-		pixels.clear();
-		closestMap.clear();
 	}
 
 	// The work horse for NeuralNet color quantizing.
@@ -410,11 +398,11 @@ namespace NeuralNet
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
 
-		pixels.resize(bitmapWidth * bitmapHeight);
+		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
 		SetUpArrays();
-		Learn(dither ? 5 : 1);
+		Learn(dither ? 5 : 1, pixels);
 
 		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
@@ -422,9 +410,17 @@ namespace NeuralNet
 
 		Inxbuild(pPalette);
 
-		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
+		auto qPixels = make_unique<short[]>(pixels.size());
 		quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+		if (m_transparentPixelIndex >= 0) {
+			UINT k = qPixels[m_transparentPixelIndex];
+			if(nMaxColors > 2)
+				pPalette->Entries[k] = m_transparentColor;
+			else if (pPalette->Entries[k] != m_transparentColor)
+				swap(pPalette->Entries[0], pPalette->Entries[1]);
+		}
+		Clear();
+		
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
 	}
-
 }

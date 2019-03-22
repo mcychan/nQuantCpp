@@ -45,6 +45,7 @@ namespace DivQuant
 	{
 		T alpha = 0;
 		double L, A, B;
+		ARGB argb;
 		T weight = 0;
 	};
 
@@ -151,7 +152,7 @@ namespace DivQuant
 			cmap[i] = pixelVec[i];
 	}
 
-	void map_colors_mps(const ARGB* inPixelsPtr, UINT numPixels, short* qPixels, const ColorPalette* pPalette)
+	void map_colors_mps(const ARGB* inPixelsPtr, UINT numPixels, short* qPixels, ColorPalette* pPalette)
 	{
 		const UINT colormapSize = pPalette->Count;
 		const int size_lut_init = 4 * BYTE_MAX + 1;
@@ -160,7 +161,7 @@ namespace DivQuant
 		auto lut_init = make_unique<int[]>(size_lut_init);
 	  
 		auto cmap = make_unique<Pixel<int>[]>(colormapSize);
-		for (UINT i = 0; i < colormapSize; i++) {
+		for (UINT i = 0; i < colormapSize; ++i) {
 			Color c(pPalette->Entries[i]);
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
@@ -170,7 +171,8 @@ namespace DivQuant
 			pi->L = lab1.L;
 			pi->A = lab1.A;
 			pi->B = lab1.B;
-			pi->weight = 0;
+			pi->argb = c.GetValue();
+			pi->weight = c.GetA() + c.GetR() + c.GetG() + c.GetB();
 		}
 	  
 		const int size_lut_ssd = 2 * max_sum + 1;
@@ -179,20 +181,20 @@ namespace DivQuant
 		auto lut_ssd = lut_ssd_buffer.get() + max_sum;
 		lut_ssd[0] = 0;
 	  
-		// Premultiply the LUT entries by (1/3) -- see below
+		// Premultiply the LUT entries by (1/4) -- see below
 		for (int ik = 1; ik <= max_sum; ++ik)
-			lut_ssd[-ik] = lut_ssd[ik] = (int) (sqr(ik) / 3.0);
+			lut_ssd[-ik] = lut_ssd[ik] = (int) (sqr(ik) / 4.0);
 	  
-		// Sort the palette by the sum of color components.
-		for (UINT ic = 0; ic < colormapSize; ++ic)
-			cmap[ic].weight = rint(cmap[ic].L + cmap[ic].A + cmap[ic].B);
-	  
-		sort_color(cmap.get(), colormapSize);  
+		// Sort the palette by the sum of color components.	  
+		sort_color(cmap.get(), colormapSize);
+
+		for (UINT i = 0; i < colormapSize; ++i)
+			pPalette->Entries[i] = cmap[i].argb;
 	  
 		// Calculate the LUT
 		int low = (colormapSize >= 2) ? (int) (0.5 * (cmap[0].weight + cmap[1].weight) + 0.5) : 1;
 	  
-		int high = (colormapSize >= 2) ? (int) (0.5 * (cmap[colormapSize - 2].weight + cmap[colormapSize - 1].weight ) + 0.5) : 1;
+		int high = (colormapSize >= 2) ? (int) (0.5 * (cmap[colormapSize - 2].weight + cmap[colormapSize - 1].weight) + 0.5) : 1;
 	  
 		for (int ik = high; ik < size_lut_init; ++ik)
 			lut_init[ik] = colormapSize - 1;
@@ -336,7 +338,7 @@ namespace DivQuant
 	{  
 		const UINT num_colors = nMaxColors;
 	  
-		int apply_lkm = 0 < max_iters ? 1 : 0; /* indicates whether or not LKM is to be applied */
+		bool apply_lkm = 0 < max_iters; /* indicates whether or not LKM is to be applied */
 		int max_iters_m1 = max_iters - 1;  
 		
 		int tmp_buffer_used = 0; // Capacity in num points that can be stored in tmp_data
