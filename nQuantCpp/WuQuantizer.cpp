@@ -858,9 +858,12 @@ namespace nQuant
 		vector<Box> cubes;
 		SplitData(cubes, nMaxColors, colorData);
 
-		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
+		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
+
+		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
+			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
 
 		BuildLookups(pPalette, cubes, colorData);
 		cubes.clear();

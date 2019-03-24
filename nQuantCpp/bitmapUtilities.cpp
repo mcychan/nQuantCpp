@@ -656,7 +656,7 @@ bool ProcessImagePixels(Bitmap* pDest, const short* qPixels, const int& transpar
 		return false;
 	
 	if(transparentPixelIndex < 0 && pDest->GetPixelFormat() != PixelFormat16bppRGB565)
-		pDest->ConvertFormat(PixelFormat16bppRGB565, DitherTypeNone, PaletteTypeOptimal, nullptr, 0);
+		pDest->ConvertFormat(PixelFormat16bppRGB565, DitherTypeSolid, PaletteTypeOptimal, nullptr, 0);
 
 	BitmapData targetData;
 	UINT w = pDest->GetWidth();

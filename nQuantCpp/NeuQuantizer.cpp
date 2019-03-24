@@ -400,14 +400,16 @@ namespace NeuralNet
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
-
-		SetUpArrays();
-		Learn(dither ? 5 : 1, pixels);
-
-		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
+		
+		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
+		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
+			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
+
+		SetUpArrays();
+		Learn(dither ? 5 : 1, pixels);
 		Inxbuild(pPalette);
 
 		auto qPixels = make_unique<short[]>(pixels.size());

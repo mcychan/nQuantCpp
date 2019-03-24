@@ -992,23 +992,19 @@ namespace DivQuant
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
+		auto qPixels = make_unique<short[]>(pixels.size());
+		if (nMaxColors > 256) {
+			hasSemiTransparency = false;
+			dither_image(pixels.data(), nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
+			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
+		}
+
 		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		auto qPixels = make_unique<short[]>(pixels.size());
-		if (nMaxColors > 2) {
-			quant_varpart_fast(pixels.data(), pixels.size(), pPalette);
-			if (nMaxColors > 256) {
-				hasSemiTransparency = false;
-				if (dither)
-					dither_image(pixels.data(), nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
-				else
-					map_colors_mps(pixels.data(), pixels.size(), qPixels.get(), pPalette);
-				
-				return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
-			}
-		}
+		if (nMaxColors > 2)
+			quant_varpart_fast(pixels.data(), pixels.size(), pPalette);			
 		else {
 			if (m_transparentPixelIndex >= 0) {
 				pPalette->Entries[0] = m_transparentColor;
