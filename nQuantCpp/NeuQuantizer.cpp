@@ -3,7 +3,6 @@
 #include "stdafx.h"
 #include "NeuQuantizer.h"
 #include "bitmapUtilities.h"
-#include <map>
 
 namespace NeuralNet
 {
@@ -33,11 +32,11 @@ namespace NeuralNet
 
 	const int ncycles = 115;			// no. of learning cycles
 
-	const int netsize = 256;		// number of colours used
-	const int specials = 3;		// number of reserved colours used
+	const short netsize = 256;		// number of colours used
+	const short specials = 3;		// number of reserved colours used
 	const int bgColour = specials - 1;	// reserved background colour
-	const int cutnetsize = netsize - specials;
-	const int maxnetpos = netsize - 1;
+	const short cutnetsize = netsize - specials;
+	const short maxnetpos = netsize - 1;
 
 	const int initrad = netsize >> 3;   // for 256 cols, radius starts at 32
 	const double initradius = initrad * 1.0;
@@ -60,7 +59,7 @@ namespace NeuralNet
 
 	struct nq_pixel                        /* ABGRc */
 	{
-		double al, b, g, h, r;
+		double al, b, g, r;
 	};
 
 	nq_pixel network[netsize]; // the network itself
@@ -80,8 +79,7 @@ namespace NeuralNet
 
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
-	ARGB m_transparentColor = Color::Transparent;	
-	map<ARGB, vector<short> > closestMap;
+	ARGB m_transparentColor = Color::Transparent;
 
 	inline double biasvalue(unsigned int temp)
 	{
@@ -95,9 +93,8 @@ namespace NeuralNet
 	}
 
 	void SetUpArrays() {
-		for (int i = specials; i<netsize; i++) {
-			double temp;
-			temp = pow(i / 255.0, 1.0 / gamma_correction) * 255.0;
+		for (short i = specials; i < netsize; ++i) {
+			double temp = pow(i / 255.0, 1.0 / gamma_correction) * 255.0;
 			temp = round(temp);
 			biasvalues[i] = temp;
 
@@ -154,8 +151,8 @@ namespace NeuralNet
 		if (lo < 0)
 			lo = 0;
 		UINT hi = i + rad;
-		if (hi > netsize - 1)
-			hi = netsize - 1;
+		if (hi > maxnetpos)
+			hi = maxnetpos;
 
 		UINT j = i + 1;
 		int k = i - 1;
@@ -179,32 +176,25 @@ namespace NeuralNet
 		}
 	}
 
-	int Contest(byte al, byte r, byte g, byte b) {
+	UINT Contest(byte al, byte r, byte g, byte b) {
 		/* finds closest neuron (min dist) and updates freq */
 		/* finds best neuron (min dist-bias) and returns position */
 		/* for frequently chosen neurons, freq[i] is high and bias[i] is negative */
 		/* bias[i] = gamma*((1/netsize)-freq[i]) */
 
-		UINT i;
-		double dist, a, betafreq;
-		UINT bestpos, bestbiaspos;
-		double bestd, bestbiasd;
-
-		bestd = 1 << 30;
-		bestbiasd = bestd;
-		bestpos = 0;
-		bestbiaspos = bestpos;
+		UINT bestpos = 0, bestbiaspos = bestpos;
+		double bestd = 1 << 30, bestbiasd = bestd;
 
 		/* Using colorimportance(al) here was causing problems with images that were close to monocolor.
 		See bug reports: 3149791, 2938728, 2896731 and 2938710
 		*/
 		double colimp = 1.0; //colorimportance(al); 
 
-		for (i = 0; i < netsize; i++) {
+		for (short i = 0; i < netsize; ++i) {
 			double bestbiasd_biased = bestbiasd + bias[i];
 
-			a = network[i].b - b;
-			dist = abs(a) * colimp;
+			double a = network[i].b - b;
+			double dist = abs(a) * colimp;
 			a = network[i].r - r;
 			dist += abs(a) * colimp;
 
@@ -214,7 +204,7 @@ namespace NeuralNet
 				a = network[i].al - al;
 				dist += abs(a);
 
-				if (dist<bestd) {
+				if (dist < bestd) {
 					bestd = dist;
 					bestpos = i;
 				}
@@ -223,7 +213,8 @@ namespace NeuralNet
 					bestbiaspos = i;
 				}
 			}
-			betafreq = freq[i] / (1 << betashift);
+
+			double betafreq = freq[i] / (1 << betashift);
 			freq[i] -= betafreq;
 			bias[i] += betafreq * (1 << gammashift);
 		}
@@ -233,76 +224,74 @@ namespace NeuralNet
 	}
 
 	void Learn(const int samplefac, const vector<ARGB>& pixels) {
-		UINT i, j;
-		UINT rad, delta, samplepixels, stepIndex = 0;
-		double radius, alpha;
+		UINT stepIndex = 0;
 
 		int pos = 0;
 		int alphadec = 30 + ((samplefac - 1) / 3);
 		const UINT lengthcount = pixels.size();
-		samplepixels = lengthcount / samplefac;
-		delta = samplepixels / ncycles;  /* here's a problem with small images: samplepixels < ncycles => delta = 0 */
+		UINT samplepixels = lengthcount / samplefac;
+		UINT delta = samplepixels / ncycles;  /* here's a problem with small images: samplepixels < ncycles => delta = 0 */
 		if (delta == 0)
 			delta = 1;        /* kludge to fix */
-		alpha = initalpha;
-		radius = initradius;
+		double alpha = initalpha;
+		double radius = initradius;
 
-		rad = (UINT)radius;
-		if (rad <= 1) rad = 0;
-		for (i = 0; i < rad; i++)
-			radpower[i] = floor(alpha * (((rad*rad - i * i) * radiusbias) / (rad * rad)));
+		UINT rad = (UINT)radius;
+		if (rad <= 1)
+			rad = 0;
 
-		i = 0;
+		UINT i = 0;
+		for (; i < rad; ++i)
+			radpower[i] = floor(alpha * (((sqr(rad) - sqr(i)) * radiusbias) / sqr(rad)));
+
 		while (i < samplepixels) {
 			Color c(pixels[pos]);
 
 			byte al = c.GetA();
-			if (al) {
-				byte b = c.GetB();
-				byte g = c.GetG();
-				byte r = c.GetR();
+			byte b = c.GetB();
+			byte g = c.GetG();
+			byte r = c.GetR();
 
-				j = Contest(al, r, g, b);
+			auto j = Contest(al, r, g, b);
 
-				Altersingle(alpha, j, al, r, g, b);
-				if (rad)
-					Alterneigh(rad, j, al, r, g, b);   /* alter neighbours */
-			}
+			Altersingle(alpha, j, al, r, g, b);
+			if (rad)
+				Alterneigh(rad, j, al, r, g, b);   /* alter neighbours */
 
 			pos += primes[stepIndex++ % 4];
 			while (pos >= lengthcount)
 				pos -= lengthcount;
 
-			i++;
-			if (i % delta == 0) {                    /* FPE here if delta=0*/
+			if (++i % delta == 0) {                    /* FPE here if delta=0*/
 				alpha -= alpha / (double)alphadec;
 				radius -= radius / (double)radiusdec;
 				rad = (UINT)radius;
-				if (rad <= 1) rad = 0;
-				for (j = 0; j<rad; j++)
-					radpower[j] = floor(alpha * (((rad * rad - j * j) * radiusbias) / (rad * rad)));
+				if (rad <= 1)
+					rad = 0;
+				for (UINT j = 0; j < rad; ++j)
+					radpower[j] = floor(alpha * (((sqr(rad) - sqr(j)) * radiusbias) / sqr(rad)));
 			}
 		}
 	}
 
 	void Inxbuild(ColorPalette* pPalette) {
 		short k = 0;
-		
+
 		for (; k < netsize; ++k) {
 			auto alpha = round_biased(network[k].al);
 			auto argb = Color::MakeARGB(alpha, biasvalue(unbiasvalue(network[k].r)), biasvalue(unbiasvalue(network[k].g)), biasvalue(unbiasvalue(network[k].b)));
 			pPalette->Entries[k] = argb;
 		}
 
-		int previouscol = 0;
-		int startpos = 0;
+		short previouscol = 0;
+		short startpos = 0;
 
-		for (int i = 0; i<netsize; i++) {		
+		for (short i = 0; i < netsize; ++i) {			
 			Color c(pPalette->Entries[i]);
-			int smallpos = i;
-			int smallval = c.GetG();			// index on g
+			short smallpos = i;
+			short smallval = c.GetG();			// index on g
 											// find smallest in i..netsize-1
-			for (int j = i + 1; j<netsize; j++) {
+			for (short j = i + 1; j < netsize; ++j) {
 				Color c2(pPalette->Entries[j]);
 				if (c2.GetG() < smallval) {		// index on g				
 					smallpos = j;
@@ -316,14 +305,14 @@ namespace NeuralNet
 			// smallval entry is now in position i
 			if (smallval != previouscol) {
 				netindex[previouscol] = (startpos + i) >> 1;
-				for (int j = previouscol + 1; j < smallval; j++)
+				for (short j = previouscol + 1; j < smallval; ++j)
 					netindex[j] = i;
 				previouscol = smallval;
 				startpos = i;
 			}
 		}
 		netindex[previouscol] = (startpos + maxnetpos) >> 1;
-		for (int j = previouscol + 1; j<netsize; j++)
+		for (int j = previouscol + 1; j < netsize; ++j)
 			netindex[j] = maxnetpos; // really 256
 	}
 
@@ -333,24 +322,24 @@ namespace NeuralNet
 		Color c(argb);
 
 		UINT curdist, mindist = SHORT_MAX;
-		for (short i = 0; i < nMaxColors; i++) {
+		for (short i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			int adist = abs(c2.GetA() - c.GetA());
+			UINT adist = abs(c2.GetA() - c.GetA());
 			curdist = adist;
 			if (curdist > mindist)
 				continue;
 
-			int rdist = abs(c2.GetR() - c.GetR());
+			UINT rdist = abs(c2.GetR() - c.GetR());
 			curdist += rdist;
 			if (curdist > mindist)
 				continue;
 
-			int gdist = abs(c2.GetG() - c.GetG());
+			UINT gdist = abs(c2.GetG() - c.GetG());
 			curdist += gdist;
 			if (curdist > mindist)
 				continue;
 
-			int bdist = abs(c2.GetB() - c.GetB());
+			UINT bdist = abs(c2.GetB() - c.GetB());
 			curdist += bdist;
 			if (curdist > mindist)
 				continue;
@@ -362,25 +351,25 @@ namespace NeuralNet
 	}
 
 	bool quantize_image(const vector<ARGB>& pixels, const ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
-	{		
-		if (dither) 
+	{
+		if (dither)
 			return dither_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
 
 		UINT pixelIndex = 0;
-		for (int j = 0; j < height; ++j) {
-			for (int i = 0; i < width; ++i)
+		for (UINT j = 0; j < height; ++j) {
+			for (UINT i = 0; i < width; ++i)
 				qPixels[pixelIndex++] = nearestColorIndex(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 
 		return true;
-	}	
+	}
 
 	void Clear() {
-		memset((void*) network, 0, sizeof(network));
+		memset((void*)network, 0, sizeof(network));
 
-		for (int i = 0; i < 32; ++i)
+		for (byte i = 0; i < 32; ++i)
 			radpower[i] = 0.0;
-		for (int i = 0; i < netsize; ++i) {
+		for (short i = 0; i < netsize; ++i) {
 			netindex[i] = 0;
 			biasvalues[i] = 0;
 
@@ -392,7 +381,7 @@ namespace NeuralNet
 	// The work horse for NeuralNet color quantizing.
 	bool NeuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
 	{
-		if (nMaxColors > 256)
+		if (nMaxColors != 256)
 			nMaxColors = 256;
 
 		const UINT bitmapWidth = pSource->GetWidth();
@@ -400,7 +389,7 @@ namespace NeuralNet
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
-		
+
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
@@ -416,13 +405,13 @@ namespace NeuralNet
 		quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
-			if(nMaxColors > 2)
+			if (nMaxColors > 2)
 				pPalette->Entries[k] = m_transparentColor;
 			else if (pPalette->Entries[k] != m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[1]);
 		}
 		Clear();
-		
+
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
 	}
 }
