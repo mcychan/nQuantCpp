@@ -16,8 +16,8 @@ The main features show up to discuss would be the error diffusion and dithering.
 Here some examples of output:
 
 Original image<img src="https://i.stack.imgur.com/fOcIL.png" /><br>
-Reduced to 256 colors by Xialoin Wu's fast optimal color Quantization Algorithm<img src="https://i.stack.imgur.com/PGWVF.png" /><br>
-Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/4jLkg.png" /><br>
+Reduced to 256 colors by Xialoin Wu's fast optimal color Quantization Algorithm<img src="https://i.stack.imgur.com/DCMBt.png" /><br>
+Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/9lnWH.png" /><br>
 Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<img src="https://i.stack.imgur.com/RX2dK.png" /><br><br>
 Original photo<img src="https://i.stack.imgur.com/jFvEG.jpg" /><br>
 Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/yJIjQ.gif" />
