@@ -250,12 +250,7 @@ namespace DivQuant
 				}
 			}
 
-			if(colormapSize > 256) {
-				Color c(pPalette->Entries[index]);
-				qPixels[ik] = static_cast<short>(getARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex));
-			}
-			else
-				qPixels[ik] = index;
+			qPixels[ik] = index;
 		}
 	}
 

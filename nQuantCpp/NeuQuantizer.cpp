@@ -3,6 +3,8 @@
 #include "stdafx.h"
 #include "NeuQuantizer.h"
 #include "bitmapUtilities.h"
+#include "CIELABConvertor.h"
+#include <map>
 
 namespace NeuralNet
 {
@@ -30,19 +32,15 @@ namespace NeuralNet
 	* that this copyright notice remain intact.
 	*/
 
-	const int ncycles = 115;			// no. of learning cycles
-
-	const short netsize = 256;		// number of colours used
 	const short specials = 3;		// number of reserved colours used
-	const int bgColour = specials - 1;	// reserved background colour
-	const short cutnetsize = netsize - specials;
-	const short maxnetpos = netsize - 1;
-
-	const int initrad = netsize >> 3;   // for 256 cols, radius starts at 32
-	const double initradius = initrad * 1.0;
+	const int ncycles = 115;			// no. of learning cycles
 	const int radiusbiasshift = 8;
 	const int radiusbias = 1 << radiusbiasshift;
-	const int initBiasRadius = initrad * radiusbias;
+
+	short netsize = 256;		// number of colours used	
+	short maxnetpos = netsize - 1;
+	int initrad = netsize >> 3;   // for 256 cols, radius starts at 32
+	double initradius = initrad * 1.0;
 	const int radiusdec = 30; // factor of 1/30 each cycle
 
 	const int alphabiasshift = 10;			// alpha starts at 1
@@ -59,17 +57,17 @@ namespace NeuralNet
 
 	struct nq_pixel                        /* ABGRc */
 	{
-		double al, b, g, r;
+		double al, L, A, B;
 	};
 
-	nq_pixel network[netsize]; // the network itself
+	unique_ptr<nq_pixel[]> network; // the network itself
 
-	int netindex[netsize] = { 0 }; // for network lookup - really 256
-	double biasvalues[netsize] = { 0 };  // Biasvalues: based on frequency of nearest pixels
+	unique_ptr<int[]> netindex; // for network lookup - really 256
+	unique_ptr<double[]> biasvalues;  // Biasvalues: based on frequency of nearest pixels
 
-	double bias[netsize] = { 0.0 };  // bias and freq arrays for learning
-	double freq[netsize] = { 0.0 };
-	double radpower[initrad] = { 0.0 };
+	unique_ptr<double[]> bias;  // bias and freq arrays for learning
+	unique_ptr<double[]> freq;
+	unique_ptr<double[]> radpower;
 
 	// four primes near 500 - assume no image has a length so large
 	// that it is divisible by all four primes
@@ -80,11 +78,7 @@ namespace NeuralNet
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-
-	inline double biasvalue(unsigned int temp)
-	{
-		return biasvalues[temp];
-	}
+	map<ARGB, CIELABConvertor::Lab> pixelMap;
 
 	inline double colorimportance(double al)
 	{
@@ -93,12 +87,15 @@ namespace NeuralNet
 	}
 
 	void SetUpArrays() {
-		for (short i = specials; i < netsize; ++i) {
-			double temp = pow(i / 255.0, 1.0 / gamma_correction) * 255.0;
-			temp = round(temp);
-			biasvalues[i] = temp;
+		network = make_unique<nq_pixel[]>(netsize);
+		netindex = make_unique<int[]>(netsize);
+		biasvalues = make_unique<double[]>(netsize);
+		bias = make_unique<double[]>(netsize);
+		freq = make_unique<double[]>(netsize);
+		radpower = make_unique<double[]>(initrad);
 
-			network[i].b = network[i].g = network[i].r = biasvalue(i * 256 / netsize);
+		for (short i = specials; i < netsize; ++i) {
+			network[i].L = network[i].A = network[i].B = i / netsize;
 
 			/*  Sets alpha values at 0 for dark pixels. */
 			if (i < 16)
@@ -110,17 +107,15 @@ namespace NeuralNet
 		}
 	}
 
-	UINT unbiasvalue(double temp)
+	void getLab(const Color& c, CIELABConvertor::Lab& lab1)
 	{
-		if (temp < 0)
-			return 0;
-
-		temp = pow(temp / 255.0, gamma_correction) * BYTE_MAX;
-		temp = floor((temp / 255.0 * 256.0));
-
-		if (temp > BYTE_MAX)
-			return BYTE_MAX;
-		return (UINT)temp;
+		auto got = pixelMap.find(c.GetValue());
+		if (got == pixelMap.end()) {
+			CIELABConvertor::RGB2LAB(c, lab1);
+			pixelMap[c.GetValue()] = lab1;
+		}
+		else
+			lab1 = got->second;
 	}
 
 	inline UINT round_biased(double temp)
@@ -134,19 +129,19 @@ namespace NeuralNet
 		return (UINT)temp;
 	}
 
-	void Altersingle(double alpha, UINT i, byte al, byte r, byte g, byte b) {
+	void Altersingle(double alpha, UINT i, byte al, double L, double A, double B) {
 		double colorimp = 1.0;//0.5;// + 0.7 * colorimportance(al);
 
 		alpha /= initalpha;
 
 		/* alter hit neuron */
 		network[i].al -= alpha * (network[i].al - al);
-		network[i].b -= colorimp * alpha * (network[i].b - b);
-		network[i].g -= colorimp * alpha * (network[i].g - g);
-		network[i].r -= colorimp * alpha * (network[i].r - r);
+		network[i].L -= colorimp * alpha * (network[i].L - L);
+		network[i].A -= colorimp * alpha * (network[i].A - A);
+		network[i].B -= colorimp * alpha * (network[i].B - B);
 	}
 
-	void Alterneigh(UINT rad, UINT i, byte al, byte r, byte g, byte b) {
+	void Alterneigh(UINT rad, UINT i, byte al, double L, double A, double B) {
 		int lo = i - rad;
 		if (lo < 0)
 			lo = 0;
@@ -156,27 +151,27 @@ namespace NeuralNet
 
 		UINT j = i + 1;
 		int k = i - 1;
-		double* q = radpower;
+		auto q = radpower.get();
 		while ((j <= hi) || (k >= lo)) {
 			double a = (*(++q)) / alpharadbias;
 			if (j <= hi) {
 				network[j].al -= a * (network[j].al - al);
-				network[j].b -= a * (network[j].b - b);
-				network[j].g -= a * (network[j].g - g);
-				network[j].r -= a * (network[j].r - r);
+				network[j].L -= a * (network[j].L - L);
+				network[j].A -= a * (network[j].A - A);
+				network[j].B -= a * (network[j].B - B);
 				j++;
 			}
 			if (k >= lo) {
 				network[k].al -= a * (network[k].al - al);
-				network[k].b -= a * (network[k].b - b);
-				network[k].g -= a * (network[k].g - g);
-				network[k].r -= a * (network[k].r - r);
+				network[k].L -= a * (network[k].L - L);
+				network[k].A -= a * (network[k].A - A);
+				network[k].B -= a * (network[k].B - B);
 				k--;
 			}
 		}
 	}
 
-	UINT Contest(byte al, byte r, byte g, byte b) {
+	UINT Contest(byte al, double L, double A, double B) {
 		/* finds closest neuron (min dist) and updates freq */
 		/* finds best neuron (min dist-bias) and returns position */
 		/* for frequently chosen neurons, freq[i] is high and bias[i] is negative */
@@ -193,13 +188,13 @@ namespace NeuralNet
 		for (short i = 0; i < netsize; ++i) {
 			double bestbiasd_biased = bestbiasd + bias[i];
 
-			double a = network[i].b - b;
+			double a = network[i].L - L;
 			double dist = abs(a) * colimp;
-			a = network[i].r - r;
+			a = network[i].A - A;
 			dist += abs(a) * colimp;
 
 			if (dist < bestd || dist < bestbiasd_biased) {
-				a = network[i].g - g;
+				a = network[i].B - B;
 				dist += abs(a) * colimp;
 				a = network[i].al - al;
 				dist += abs(a);
@@ -240,23 +235,22 @@ namespace NeuralNet
 		if (rad <= 1)
 			rad = 0;
 
-		UINT i = 0;
-		for (; i < rad; ++i)
+		for (UINT i = 0; i < rad; ++i)
 			radpower[i] = floor(alpha * (((sqr(rad) - sqr(i)) * radiusbias) / sqr(rad)));
 
+		UINT i = 0;
 		while (i < samplepixels) {
 			Color c(pixels[pos]);
 
 			byte al = c.GetA();
-			byte b = c.GetB();
-			byte g = c.GetG();
-			byte r = c.GetR();
+			CIELABConvertor::Lab lab1;
+			getLab(c, lab1);
 
-			auto j = Contest(al, r, g, b);
+			auto j = Contest(al, lab1.L, lab1.A, lab1.B);
 
-			Altersingle(alpha, j, al, r, g, b);
+			Altersingle(alpha, j, al, lab1.L, lab1.A, lab1.B);
 			if (rad)
-				Alterneigh(rad, j, al, r, g, b);   /* alter neighbours */
+				Alterneigh(rad, j, al, lab1.L, lab1.A, lab1.B);   /* alter neighbours */
 
 			pos += primes[stepIndex++ % 4];
 			while (pos >= lengthcount)
@@ -277,21 +271,26 @@ namespace NeuralNet
 	void Inxbuild(ColorPalette* pPalette) {
 		short k = 0;
 
-		for (; k < netsize; ++k) {
-			auto alpha = round_biased(network[k].al);
-			auto argb = Color::MakeARGB(alpha, biasvalue(unbiasvalue(network[k].r)), biasvalue(unbiasvalue(network[k].g)), biasvalue(unbiasvalue(network[k].b)));
-			pPalette->Entries[k] = argb;
+		UINT nMaxColors = pPalette->Count;
+		if (nMaxColors > netsize)
+			nMaxColors = netsize;
+
+		for (; k < nMaxColors; ++k) {
+			CIELABConvertor::Lab lab1;
+			lab1.alpha = round_biased(network[k].al);
+			lab1.L = network[k].L, lab1.A = network[k].A, lab1.B = network[k].B;
+			pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
 		}
 
 		short previouscol = 0;
 		short startpos = 0;
 
-		for (short i = 0; i < netsize; ++i) {			
+		for (short i = 0; i < nMaxColors; ++i) {
 			Color c(pPalette->Entries[i]);
 			short smallpos = i;
 			short smallval = c.GetG();			// index on g
 											// find smallest in i..netsize-1
-			for (short j = i + 1; j < netsize; ++j) {
+			for (short j = i + 1; j < nMaxColors; ++j) {
 				Color c2(pPalette->Entries[j]);
 				if (c2.GetG() < smallval) {		// index on g				
 					smallpos = j;
@@ -321,28 +320,53 @@ namespace NeuralNet
 		short k = 0;
 		Color c(argb);
 
-		UINT curdist, mindist = SHORT_MAX;
-		for (short i = 0; i < nMaxColors; ++i) {
+		double mindist = SHORT_MAX;
+		CIELABConvertor::Lab lab1, lab2;
+		getLab(c, lab1);
+
+		for (UINT i = 0; i < nMaxColors; i++) {
 			Color c2(pPalette->Entries[i]);
-			UINT adist = abs(c2.GetA() - c.GetA());
-			curdist = adist;
+			getLab(c2, lab2);
+
+			double curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
 
-			UINT rdist = abs(c2.GetR() - c.GetR());
-			curdist += rdist;
-			if (curdist > mindist)
-				continue;
+			if (nMaxColors < 256) {
+				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
+				curdist += sqr(deltaL_prime_div_k_L_S_L);
+				if (curdist > mindist)
+					continue;
 
-			UINT gdist = abs(c2.GetG() - c.GetG());
-			curdist += gdist;
-			if (curdist > mindist)
-				continue;
+				double a1Prime, a2Prime, CPrime1, CPrime2;
+				double deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
+				curdist += sqr(deltaC_prime_div_k_L_S_L);
+				if (curdist > mindist)
+					continue;
 
-			UINT bdist = abs(c2.GetB() - c.GetB());
-			curdist += bdist;
-			if (curdist > mindist)
-				continue;
+				double barCPrime, barhPrime;
+				double deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
+				curdist += sqr(deltaH_prime_div_k_L_S_L);
+				if (curdist > mindist)
+					continue;
+
+				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
+				if (curdist > mindist)
+					continue;
+			}
+			else {
+				curdist += sqr(lab2.L - lab1.L);
+				if (curdist > mindist)
+					continue;
+
+				curdist += sqr(lab2.A - lab1.A);
+				if (curdist > mindist)
+					continue;
+
+				curdist += sqr(lab2.B - lab1.B);
+				if (curdist > mindist)
+					continue;
+			}
 
 			mindist = curdist;
 			k = i;
@@ -365,23 +389,20 @@ namespace NeuralNet
 	}
 
 	void Clear() {
-		memset((void*)network, 0, sizeof(network));
+		network.reset();
+		netindex.reset();
+		biasvalues.reset();
+		bias.reset();
+		freq.reset();
+		radpower.reset();
 
-		for (byte i = 0; i < 32; ++i)
-			radpower[i] = 0.0;
-		for (short i = 0; i < netsize; ++i) {
-			netindex[i] = 0;
-			biasvalues[i] = 0;
-
-			bias[i] = 0.0;
-			freq[i] = 0.0;
-		}
+		pixelMap.clear();
 	}
 
 	// The work horse for NeuralNet color quantizing.
 	bool NeuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
 	{
-		if (nMaxColors != 256)
+		if (nMaxColors > 256)
 			nMaxColors = 256;
 
 		const UINT bitmapWidth = pSource->GetWidth();
@@ -396,6 +417,11 @@ namespace NeuralNet
 
 		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
 			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
+
+		netsize = nMaxColors;		// number of colours used
+		maxnetpos = netsize - 1;
+		initrad = netsize < 8 ? 1 : (netsize >> 3);
+		initradius = initrad * 1.0;
 
 		SetUpArrays();
 		Learn(dither ? 5 : 1, pixels);
