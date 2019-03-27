@@ -24,6 +24,9 @@ namespace DivQuant
 	class DivQuantizer
 	{
 		public:
+			void quant_varpart_fast(const ARGB* inPixels, const UINT numPixels, ColorPalette* pPalette,
+				const UINT numRows = 1, const bool allPixelsUnique = true,
+				const int num_bits = 8, const int dec_factor = 1, const int max_iters = 10);
 			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither = true);
 	};
 }
