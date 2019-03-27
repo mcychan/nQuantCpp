@@ -180,7 +180,7 @@ namespace EdgeAwareSQuant
 		return b_yx(k_y, k_x);
 	}
 
-	void compute_a_image_ea(const vector<ARGB>& image, Mat<Mat<float> >& b, array2d<vector_fixed<float, 4> >& a)
+	void compute_a_image_ea(const vector<ARGB>& image, Mat<Mat<float> >& b, array2d<vector_fixed<float, 3> >& a)
 	{
 		int extendedFilterRadius = (b(0, 0).get_width() - 1) / 2;
 		for (int i_y = 0; i_y < a.get_height(); i_y++) {
@@ -203,7 +203,6 @@ namespace EdgeAwareSQuant
 							a(i_x, i_y)[0] += tmpBvalue * jPixel.GetR() / 255.0f;
 							a(i_x, i_y)[1] += tmpBvalue * jPixel.GetG() / 255.0f;
 							a(i_x, i_y)[2] += tmpBvalue * jPixel.GetB() / 255.0f;
-							a(i_x, i_y)[3] += tmpBvalue * jPixel.GetA() / 255.0f;
 						}
 					}
 				}
@@ -233,7 +232,7 @@ namespace EdgeAwareSQuant
 		return result;
 	}
 
-	void sum_coarsen(const array2d<vector_fixed<float, 4> >& fine, array2d<vector_fixed<float, 4> >& coarse)
+	void sum_coarsen(const array2d<vector_fixed<float, 3> >& fine, array2d<vector_fixed<float, 3> >& coarse)
 	{
 		for (int y = 0; y < coarse.get_height(); y++) {
 			for (int x = 0; x < coarse.get_width(); x++) {
@@ -263,14 +262,14 @@ namespace EdgeAwareSQuant
 		}
 	}
 
-	void compute_initial_s_ea_icm(array2d<vector_fixed<float, 4> >& s, const Mat<byte>& indexImg8, Mat<Mat<float> >& b)
+	void compute_initial_s_ea_icm(array2d<vector_fixed<float, 3> >& s, const Mat<byte>& indexImg8, Mat<Mat<float> >& b)
 	{
 		int palette_size = s.get_width();
 		int coarse_width = indexImg8.get_width();
 		int coarse_height = indexImg8.get_height();
 		int center_x = (b(0, 0).get_height() - 1) / 2, center_y = (b(0, 0).get_height() - 1) / 2;
 		int extendedFilterRadius = (b(0, 0).get_height() - 1) / 2;
-		vector_fixed<float, 4> zero_vector;
+		vector_fixed<float, 3> zero_vector;
 		for (int v = 0; v < palette_size; v++) {
 			for (int alpha = v; alpha < palette_size; alpha++)
 				s(v, alpha) = zero_vector; // alpha > v
@@ -290,20 +289,20 @@ namespace EdgeAwareSQuant
 						auto b_ij = b_value_ea(b, i_x, i_y, j_x, j_y);
 						int v = indexImg8(i_y, i_x);
 						int alpha = indexImg8(j_y, j_x);
-						for (byte p = 0; p < 4; ++p)
+						for (byte p = 0; p < 3; ++p)
 							s(v, alpha)[p] += b_ij;
 					}
 				}
 				int v = indexImg8(i_y, i_x);
 				auto b_ii = b_value_ea(b, i_x, i_y, i_x, i_y);
-				for (byte p = 0; p < 4; ++p)
+				for (byte p = 0; p < 3; ++p)
 					s(v, v)[p] += b_ii;
 			}
 		}
 	}
 
-	void refine_palette_icm_mat(array2d<vector_fixed<float, 4> >& s, const Mat<byte>& indexImg8,
-		const array2d<vector_fixed<float, 4> >& a, vector<vector_fixed<float, 4> >& palette, int& palatte_changed)
+	void refine_palette_icm_mat(array2d<vector_fixed<float, 3> >& s, const Mat<byte>& indexImg8,
+		const array2d<vector_fixed<float, 3> >& a, vector<vector_fixed<float, 3> >& palette, int& palatte_changed)
 	{
 		// We only computed the half of S above the diagonal - reflect it
 		for (int v = 0; v < s.get_width(); v++) {
@@ -311,7 +310,7 @@ namespace EdgeAwareSQuant
 				s(v, alpha) = s(alpha, v);
 		}
 
-		vector<vector_fixed<float, 4> > r(palette.size());
+		vector<vector_fixed<float, 3> > r(palette.size());
 
 		for (int i_y = 0; i_y < indexImg8.get_height(); i_y++) {
 			for (int i_x = 0; i_x < indexImg8.get_width(); i_x++) {
@@ -321,7 +320,7 @@ namespace EdgeAwareSQuant
 		}
 
 		float max_palette_delta = 0.0f, min_palette_delta = 1.0f;
-		for (short k = 0; k < 4; k++) {
+		for (short k = 0; k < 3; k++) {
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
 			auto& palette_channel = -1.0f * ((2.0f * S_k).matrix_inverse()) * R_k;
@@ -343,7 +342,7 @@ namespace EdgeAwareSQuant
 				palette[v][k] = val;
 
 				if (m_transparentPixelIndex >= 0 && k > 1) {
-					auto argb = Color::MakeARGB(static_cast<byte>(BYTE_MAX * palette[v][3]), static_cast<byte>(BYTE_MAX * palette[v][0]), static_cast<byte>(BYTE_MAX * palette[v][1]), static_cast<byte>(BYTE_MAX * palette[v][2]));
+					auto argb = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[v][0]), static_cast<byte>(BYTE_MAX * palette[v][1]), static_cast<byte>(BYTE_MAX * palette[v][2]));
 					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
 						swap(palette[0], palette[v]);
 				}
@@ -352,7 +351,7 @@ namespace EdgeAwareSQuant
 	}
 
 	void spatial_color_quant_ea_icm_saliency(const vector<ARGB>& image, Mat<Mat<float> >& weightMaps, Mat<float> saliencyMap,
-		array2d<UINT>& quantized_image, vector<vector_fixed<float, 4> >& palette,
+		array2d<UINT>& quantized_image, vector<vector_fixed<float, 3> >& palette,
 		const float initial_temperature = 1.0, const float final_temperature = 0.00001, const int temps_per_level = 1, const int repeats_per_temp = 1, const int filter_radius = 1)
 	{
 		int allNeiLevel = 1;
@@ -364,7 +363,7 @@ namespace EdgeAwareSQuant
 		fill_random_icm(*pIndexImg8, palette.size());
 
 		// Compute a_I^l, b_{IJ}^l according to  Puzicha's (18)
-		auto a_array = make_unique<array2d<vector_fixed<float, 4> >[]>(max_coarse_level + 1);
+		auto a_array = make_unique<array2d<vector_fixed<float, 3> >[]>(max_coarse_level + 1);
 		auto b_array = make_unique<Mat<Mat<float> >[]>(max_coarse_level + 1);
 
 		auto& b0 = b_array[0];
@@ -434,7 +433,7 @@ namespace EdgeAwareSQuant
 
 		// Multiscale ICM
 		coarse_level = max_coarse_level;
-		array2d<vector_fixed<float, 4> > s(palette.size(), palette.size());
+		array2d<vector_fixed<float, 3> > s(palette.size(), palette.size());
 		compute_initial_s_ea_icm(s, *pIndexImg8, b_array[coarse_level]);
 
 		float paletteSize = palette.size() * 1.0f;
@@ -444,7 +443,7 @@ namespace EdgeAwareSQuant
 			for (int l1 = 0; l1 < palette.size(); l1++) {
 				for (int l2 = l1; l2 < palette.size(); l2++) {
 					float curDist = 0.0f;
-					for (byte c = 0; c < 4; ++c)
+					for (byte c = 0; c < 3; ++c)
 						curDist += sqr(palette[l1][c] - palette[l2][c]);
 
 					centroidDist[l1][l2] = pair<float, int>(curDist, l2);
@@ -486,7 +485,7 @@ namespace EdgeAwareSQuant
 						visit_queue.pop_front();
 
 						// Compute based on Puzicha's (28)
-						vector_fixed<float, 4> p_i;
+						vector_fixed<float, 3> p_i;
 						for (int j_y = i_y - (b1.get_height() - 1) / 2; j_y <= i_y + (b1.get_height() - 1) / 2; j_y++) {
 							if (j_y < 0 || j_y >= pIndexImg8->get_height())
 								continue;
@@ -498,7 +497,7 @@ namespace EdgeAwareSQuant
 									continue;
 								auto b_ij = b_value_ea(b, i_x, i_y, j_x, j_y);
 								auto& pixelIndex = pIndexImg8->at(j_y, j_x);
-								for (byte p = 0; p < 4; ++p)
+								for (byte p = 0; p < 3; ++p)
 									p_i[p] += b_ij * palette[pixelIndex][p];
 							}
 						}
@@ -706,13 +705,12 @@ namespace EdgeAwareSQuant
 		divQuantizer.quant_varpart_fast(pixels.data(), pixels.size(), pPalette);
 
 		// init
-		vector<vector_fixed<float, 4> > palette(nMaxColors);
+		vector<vector_fixed<float, 3> > palette(nMaxColors);
 		for (UINT k = 0; k < nMaxColors; k++) {
 			Color c(pPalette->Entries[k]);
 			palette[k][0] = c.GetR() / 255.0f;
 			palette[k][1] = c.GetG() / 255.0f;
 			palette[k][2] = c.GetB() / 255.0f;
-			palette[k][3] = c.GetA() / 255.0f;
 		}
 
 		Mat<Mat<float> > weightMaps(bitmapHeight, bitmapWidth);
@@ -722,7 +720,7 @@ namespace EdgeAwareSQuant
 		if (nMaxColors > 2) {
 			/* Fill palette */
 			for (UINT k = 0; k < nMaxColors; ++k)
-				pPalette->Entries[k] = Color::MakeARGB(static_cast<byte>(BYTE_MAX * palette[k][3]), static_cast<byte>(BYTE_MAX * palette[k][0]), static_cast<byte>(BYTE_MAX * palette[k][1]), static_cast<byte>(BYTE_MAX * palette[k][2]));
+				pPalette->Entries[k] = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[k][0]), static_cast<byte>(BYTE_MAX * palette[k][1]), static_cast<byte>(BYTE_MAX * palette[k][2]));
 
 			if (m_transparentPixelIndex >= 0) {
 				UINT k = quantized_image[m_transparentPixelIndex];
