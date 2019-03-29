@@ -773,7 +773,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	const UINT bitmapWidth = pSource->GetWidth();
 	const UINT bitmapHeight = pSource->GetHeight();
 	
-	hasSemiTransparency = true;
+	hasSemiTransparency = false;
 	transparentPixelIndex = -1;
 		
 	int pixelIndex = 0;

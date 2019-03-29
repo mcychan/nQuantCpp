@@ -265,6 +265,7 @@ namespace EdgeAwareSQuant
 
 	void compute_initial_s_ea_icm(array2d<vector_fixed<float, 4> >& s, const Mat<byte>& indexImg8, Mat<Mat<float> >& b)
 	{
+		const int length = hasSemiTransparency ? 4 : 3;
 		int palette_size = s.get_width();
 		int coarse_width = indexImg8.get_width();
 		int coarse_height = indexImg8.get_height();
@@ -290,18 +291,14 @@ namespace EdgeAwareSQuant
 						auto b_ij = b_value_ea(b, i_x, i_y, j_x, j_y);
 						int v = indexImg8(i_y, i_x);
 						int alpha = indexImg8(j_y, j_x);
-						s(v, alpha)[0] += b_ij;
-						s(v, alpha)[1] += b_ij;
-						s(v, alpha)[2] += b_ij;
-						s(v, alpha)[3] += b_ij;
+						for (byte p = 0; p < length; ++p)
+							s(v, alpha)[p] += b_ij;
 					}
 				}
 				int v = indexImg8(i_y, i_x);
 				auto b_ii = b_value_ea(b, i_x, i_y, i_x, i_y);
-				s(v, v)[0] += b_ii;
-				s(v, v)[1] += b_ii;
-				s(v, v)[2] += b_ii;
-				s(v, v)[3] += b_ii;
+				for (byte p = 0; p < length; ++p)
+					s(v, v)[p] += b_ii;
 			}
 		}
 	}
@@ -325,7 +322,7 @@ namespace EdgeAwareSQuant
 		}
 
 		float max_palette_delta = 0.0f, min_palette_delta = 1.0f;
-		short length = m_transparentPixelIndex >= 0 ? 4 : 3;
+		const int length = hasSemiTransparency ? 4 : 3;
 		for (short k = 0; k < length; k++) {
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
@@ -347,8 +344,8 @@ namespace EdgeAwareSQuant
 					palatte_changed++;
 				palette[v][k] = val;
 
-				if (m_transparentPixelIndex >= 0 && k > 1) {
-					auto argb = Color::MakeARGB(static_cast<byte>(BYTE_MAX * palette[v][3]), static_cast<byte>(BYTE_MAX * palette[v][0]), static_cast<byte>(BYTE_MAX * palette[v][1]), static_cast<byte>(BYTE_MAX * palette[v][2]));
+				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k > 1) {
+					auto argb = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[v][0]), static_cast<byte>(BYTE_MAX * palette[v][1]), static_cast<byte>(BYTE_MAX * palette[v][2]));
 					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
 						swap(palette[0], palette[v]);
 				}
@@ -360,6 +357,7 @@ namespace EdgeAwareSQuant
 		array2d<UINT>& quantized_image, vector<vector_fixed<float, 4> >& palette,
 		const float initial_temperature = 1.0, const float final_temperature = 0.00001, const int temps_per_level = 1, const int repeats_per_temp = 1, const int filter_radius = 1)
 	{
+		const int length = hasSemiTransparency ? 4 : 3;
 		int allNeiLevel = 1;
 		int max_coarse_level = 4;
 		int neiSize = 10;
@@ -386,7 +384,7 @@ namespace EdgeAwareSQuant
 			ai.reset(weightMaps.get_width() >> coarse_level, weightMaps.get_height() >> coarse_level);
 
 			int newExtendedFilterSize = b0(0, 0).get_height() - 2;
-			newExtendedFilterSize = max(3, newExtendedFilterSize);
+			newExtendedFilterSize = max(length, newExtendedFilterSize);
 
 			auto& bi = b_array[coarse_level];
 			bi.reset(ai.get_height(), ai.get_width());
@@ -449,7 +447,7 @@ namespace EdgeAwareSQuant
 			for (int l1 = 0; l1 < palette.size(); l1++) {
 				for (int l2 = l1; l2 < palette.size(); l2++) {
 					float curDist = 0.0f;
-					for (byte c = 0; c < 4; ++c)
+					for (byte c = 0; c < length; ++c)
 						curDist += sqr(palette[l1][c] - palette[l2][c]);
 
 					centroidDist[l1][l2] = pair<float, int>(curDist, l2);
@@ -503,10 +501,8 @@ namespace EdgeAwareSQuant
 									continue;
 								auto b_ij = b_value_ea(b, i_x, i_y, j_x, j_y);
 								auto& pixelIndex = pIndexImg8->at(j_y, j_x);
-								p_i[0] += b_ij * palette[pixelIndex][0];
-								p_i[1] += b_ij * palette[pixelIndex][1];
-								p_i[2] += b_ij * palette[pixelIndex][2];
-								p_i[3] += b_ij * palette[pixelIndex][3];
+								for (byte p = 0; p < length; ++p)
+									p_i[p] += b_ij * palette[pixelIndex][p];
 							}
 						}
 

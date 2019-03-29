@@ -35,6 +35,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SpatialQuant
 {
+	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
 
@@ -341,8 +342,8 @@ namespace SpatialQuant
 			result.emplace_back(*it % width, *it / width);
 	}
 
-	void compute_b_array(array2d<vector_fixed<double, 3> >& filter_weights,
-		array2d<vector_fixed<double, 3> >& b)
+	void compute_b_array(array2d<vector_fixed<double, 4> >& filter_weights,
+		array2d<vector_fixed<double, 4> >& b)
 	{
 		// Assume that the pixel i is always located at the center of b,
 		// and vary pixel j's location through each location in b.
@@ -370,17 +371,17 @@ namespace SpatialQuant
 		}
 	}
 
-	vector_fixed<double, 3> b_value(array2d<vector_fixed<double, 3> >& b, const int i_x, const int i_y, const int j_x, const int j_y)
+	vector_fixed<double, 4> b_value(array2d<vector_fixed<double, 4> >& b, const int i_x, const int i_y, const int j_x, const int j_y)
 	{
 		int radius_width = (b.get_width() - 1) / 2, radius_height = (b.get_height() - 1) / 2;
 		int k_x = j_x - i_x + radius_width;
 		int k_y = j_y - i_y + radius_height;
 		if (k_x < 0 || k_y < 0 || k_x >= b.get_width() || k_y >= b.get_height())
-			return vector_fixed<double, 3>();
+			return vector_fixed<double, 4>();
 		return b(k_x, k_y);
 	}
 
-	void compute_a_image(const array2d<vector_fixed<double, 3> >& image, array2d<vector_fixed<double, 3> >& b, array2d<vector_fixed<double, 3> >& a)
+	void compute_a_image(const array2d<vector_fixed<double, 4> >& image, array2d<vector_fixed<double, 4> >& b, array2d<vector_fixed<double, 4> >& a)
 	{
 		int radius_width = (b.get_width() - 1) / 2, radius_height = (b.get_height() - 1) / 2;
 		for (int i_y = 0; i_y < a.get_height(); i_y++) {
@@ -405,7 +406,7 @@ namespace SpatialQuant
 		}
 	}
 
-	void sum_coarsen(const array2d<vector_fixed<double, 3> >& fine, array2d<vector_fixed<double, 3> >& coarse)
+	void sum_coarsen(const array2d<vector_fixed<double, 4> >& fine, array2d<vector_fixed<double, 4> >& coarse)
 	{
 		for (int y = 0; y<coarse.get_height(); y++) {
 			for (int x = 0; x<coarse.get_width(); x++) {
@@ -497,14 +498,15 @@ namespace SpatialQuant
 		}
 	}
 
-	void compute_initial_s(array2d<vector_fixed<double, 3> >& s, const array3d<double>& coarse_variables, array2d<vector_fixed<double, 3> >& b)
+	void compute_initial_s(array2d<vector_fixed<double, 4> >& s, const array3d<double>& coarse_variables, array2d<vector_fixed<double, 4> >& b)
 	{
+		const int length = hasSemiTransparency ? 4 : 3;
 		int palette_size = s.get_width();
 		int coarse_width = coarse_variables.get_width();
 		int coarse_height = coarse_variables.get_height();
 		int center_x = (b.get_width() - 1) / 2, center_y = (b.get_height() - 1) / 2;
 		auto center_b = b_value(b, 0, 0, 0, 0);
-		vector_fixed<double, 3> zero_vector;
+		vector_fixed<double, 4> zero_vector;
 		for (int v = 0; v < palette_size; v++) {
 			for (int alpha = v; alpha < palette_size; alpha++)
 				s(v, alpha) = zero_vector;
@@ -522,7 +524,7 @@ namespace SpatialQuant
 							auto v1 = coarse_variables(i_x, i_y, v);
 							for (int alpha = v; alpha<palette_size; alpha++) {
 								auto mult = v1 * coarse_variables(j_x, j_y, alpha);
-								for (byte p = 0; p < 3; ++p)
+								for (byte p = 0; p < length; ++p)
 									s(v, alpha)[p] += mult * b_ij[p];
 							}
 						}
@@ -534,9 +536,10 @@ namespace SpatialQuant
 		}
 	}
 
-	void update_s(array2d<vector_fixed<double, 3> >& s, const array3d<double>& coarse_variables, array2d<vector_fixed<double, 3> >& b,
+	void update_s(array2d<vector_fixed<double, 4> >& s, const array3d<double>& coarse_variables, array2d<vector_fixed<double, 4> >& b,
 		const int j_x, const int j_y, const int alpha, const double delta)
 	{
+		const int length = hasSemiTransparency ? 4 : 3;
 		int palette_size = s.get_width();
 		auto coarse_width = coarse_variables.get_width();
 		auto coarse_height = coarse_variables.get_height();
@@ -550,12 +553,12 @@ namespace SpatialQuant
 					continue;
 				for (int v = 0; v <= alpha; v++) {
 					auto mult = coarse_variables(i_x, i_y, v);
-					for(byte p = 0; p < 3; ++p)
+					for(byte p = 0; p < length; ++p)
 						s(v, alpha)[p] += mult * delta_b_ij[p];
 				}
 				for (int v = alpha; v<palette_size; v++) {
 					auto mult = coarse_variables(i_x, i_y, v);
-					for (byte p = 0; p < 3; ++p)
+					for (byte p = 0; p < length; ++p)
 						s(alpha, v)[p] += mult * delta_b_ij[p];
 				}
 			}
@@ -563,8 +566,8 @@ namespace SpatialQuant
 		s(alpha, alpha) += delta * b_value(b, 0, 0, 0, 0);
 	}
 
-	void refine_palette(array2d<vector_fixed<double, 3> >& s, const array3d<double>& coarse_variables,
-		const array2d<vector_fixed<double, 3> >& a, vector<vector_fixed<double, 3> >& palette)
+	void refine_palette(array2d<vector_fixed<double, 4> >& s, const array3d<double>& coarse_variables,
+		const array2d<vector_fixed<double, 4> >& a, vector<vector_fixed<double, 4> >& palette)
 	{
 		// We only computed the half of S above the diagonal - reflect it
 		for (int v = 0; v<s.get_width(); v++) {
@@ -572,7 +575,7 @@ namespace SpatialQuant
 				s(v, alpha) = s(alpha, v);
 		}
 
-		vector<vector_fixed<double, 3> > r(palette.size());
+		vector<vector_fixed<double, 4> > r(palette.size());
 		for (int v = 0; v<palette.size(); v++) {
 			for (int i_y = 0; i_y<coarse_variables.get_height(); i_y++) {
 				for (int i_x = 0; i_x<coarse_variables.get_width(); i_x++)
@@ -580,7 +583,8 @@ namespace SpatialQuant
 			}
 		}
 
-		for (int k = 0; k < 3; k++) {
+		const int length = hasSemiTransparency ? 4 : 3;
+		for (int k = 0; k < length; k++) {
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
 			auto& palette_channel = -1.0 * ((2.0 * S_k).matrix_inverse()) * R_k;
@@ -592,15 +596,21 @@ namespace SpatialQuant
 					val = 1.0;
 
 				palette[v][k] = val;
+
+				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k > 1) {
+					auto argb = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[v][0]), static_cast<byte>(BYTE_MAX * palette[v][1]), static_cast<byte>(BYTE_MAX * palette[v][2]));
+					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
+						swap(palette[0], palette[v]);
+				}
 			}			
 		}
 	}
 
-	void compute_initial_j_palette_sum(array2d<vector_fixed<double, 3> >& j_palette_sum, const array3d<double>& coarse_variables, const vector<vector_fixed<double, 3> >& palette)
+	void compute_initial_j_palette_sum(array2d<vector_fixed<double, 4> >& j_palette_sum, const array3d<double>& coarse_variables, const vector<vector_fixed<double, 4> >& palette)
 	{
 		for (int j_y = 0; j_y<coarse_variables.get_height(); j_y++) {
 			for (int j_x = 0; j_x<coarse_variables.get_width(); j_x++) {
-				vector_fixed<double, 3> palette_sum;
+				vector_fixed<double, 4> palette_sum;
 				for (UINT alpha = 0; alpha < palette.size(); alpha++)
 					palette_sum += coarse_variables(j_x, j_y, alpha) * palette[alpha];
 				j_palette_sum(j_x, j_y) = palette_sum;
@@ -608,10 +618,11 @@ namespace SpatialQuant
 		}
 	}
 
-	bool spatial_color_quant(const array2d<vector_fixed<double, 3> >& image, array2d<vector_fixed<double, 3> >& filter_weights,
-		array2d<UINT>& quantized_image, vector<vector_fixed<double, 3> >& palette,
+	bool spatial_color_quant(const array2d<vector_fixed<double, 4> >& image, array2d<vector_fixed<double, 4> >& filter_weights,
+		array2d<UINT>& quantized_image, vector<vector_fixed<double, 4> >& palette,
 		const double initial_temperature = 1.0, const double final_temperature = 0.001, const int temps_per_level = 3, const int repeats_per_temp = 1)
 	{
+		const int length = hasSemiTransparency ? 4 : 3;
 		UINT nMaxColor = palette.size();
 		int max_coarse_level = //1;
 			compute_max_coarse_level(image.get_width(), image.get_height());
@@ -629,22 +640,22 @@ namespace SpatialQuant
 		// Compute a_i, b_{ij} according to (11)
 		int extended_neighborhood_width = filter_weights.get_width() * 2 - 1;
 		int extended_neighborhood_height = filter_weights.get_height() * 2 - 1;
-		array2d<vector_fixed<double, 3> > b0(extended_neighborhood_width,
+		array2d<vector_fixed<double, 4> > b0(extended_neighborhood_width,
 			extended_neighborhood_height);
 		compute_b_array(filter_weights, b0);
 
-		array2d<vector_fixed<double, 3> > a0(image.get_width(), image.get_height());
+		array2d<vector_fixed<double, 4> > a0(image.get_width(), image.get_height());
 		compute_a_image(image, b0, a0);
 
 		// Compute a_I^l, b_{IJ}^l according to (18)
-		vector<array2d<vector_fixed<double, 3> > > a_vec, b_vec;
+		vector<array2d<vector_fixed<double, 4> > > a_vec, b_vec;
 		a_vec.emplace_back(a0);
 		b_vec.emplace_back(b0);
 
 		int radius_width = (filter_weights.get_width() - 1) / 2, radius_height = (filter_weights.get_height() - 1) / 2;
 		int coarse_level;
 		for (coarse_level = 1; coarse_level <= max_coarse_level; coarse_level++) {
-			array2d<vector_fixed<double, 3> > bi(max(3, b_vec.back().get_width() - 2), max(3, b_vec.back().get_height() - 2));
+			array2d<vector_fixed<double, 4> > bi(max(length, b_vec.back().get_width() - 2), max(length, b_vec.back().get_height() - 2));
 
 			for (int J_y = 0; J_y<bi.get_height(); J_y++) {
 				for (int J_x = 0; J_x<bi.get_width(); J_x++) {
@@ -660,7 +671,7 @@ namespace SpatialQuant
 			}
 			b_vec.emplace_back(bi);
 
-			array2d<vector_fixed<double, 3> > ai(image.get_width() >> coarse_level, image.get_height() >> coarse_level);
+			array2d<vector_fixed<double, 4> > ai(image.get_width() >> coarse_level, image.get_height() >> coarse_level);
 			sum_coarsen(a_vec.back(), ai);
 			a_vec.emplace_back(ai);
 		}
@@ -668,13 +679,13 @@ namespace SpatialQuant
 		// Multiscale annealing
 		coarse_level = max_coarse_level;
 		const int iters_per_level = temps_per_level;
-		double temperature_multiplier = pow(final_temperature / initial_temperature, 1.0 / (max(3, max_coarse_level * iters_per_level)));
+		double temperature_multiplier = pow(final_temperature / initial_temperature, 1.0 / (max(length, max_coarse_level * iters_per_level)));
 
 		int iters_at_current_level = 0;
 		bool skip_palette_maintenance = false;
-		array2d<vector_fixed<double, 3> > s(palette.size(), palette.size());
+		array2d<vector_fixed<double, 4> > s(palette.size(), palette.size());
 		compute_initial_s(s, coarse_variables, b_vec[coarse_level]);
-		auto p_palette_sum = make_unique<array2d< vector_fixed<double, 3> > >(coarse_variables.get_width(), coarse_variables.get_height());
+		auto p_palette_sum = make_unique<array2d< vector_fixed<double, 4> > >(coarse_variables.get_width(), coarse_variables.get_height());
 		auto j_palette_sum = p_palette_sum.get();
 		compute_initial_j_palette_sum(*j_palette_sum, coarse_variables, palette);
 
@@ -683,7 +694,7 @@ namespace SpatialQuant
 			auto& coarse_variables = *p_coarse_variables;
 			auto& a = a_vec[coarse_level];
 			auto& b = b_vec[coarse_level];
-			vector_fixed<double, 3> middle_b = b_value(b, 0, 0, 0, 0);
+			vector_fixed<double, 4> middle_b = b_value(b, 0, 0, 0, 0);
 
 			int center_x = (b.get_width() - 1) / 2, center_y = (b.get_height() - 1) / 2;
 			int step_counter = 0;
@@ -705,7 +716,7 @@ namespace SpatialQuant
 					visit_queue.pop_front();
 
 					// Compute (25)
-					vector_fixed<double, 3> p_i;
+					vector_fixed<double, 4> p_i;
 					for (int y = 0; y<b.get_height(); y++) {
 						int j_y = y - center_y + i_y;
 						if (j_y < 0 || j_y >= coarse_variables.get_height())
@@ -718,7 +729,7 @@ namespace SpatialQuant
 								continue;
 							auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 							auto& j_pal = (*j_palette_sum)(j_x, j_y);
-							for (byte p = 0; p < 3; ++p)
+							for (byte p = 0; p < length; ++p)
 								p_i[p] += b_ij[p] * j_pal[p];
 						}
 					}
@@ -757,7 +768,7 @@ namespace SpatialQuant
 						UINT index = i_y * coarse_variables.get_width() + i_x;
 
 						coarse_variables(i_x, i_y, v) = new_val;
-						for (byte p = 0; p < 3; ++p)
+						for (byte p = 0; p < length; ++p)
 							j_pal[p] += delta_m_iv * palette[v][p];
 
 						if (abs(delta_m_iv) > 0.001 && !skip_palette_maintenance)
@@ -810,7 +821,7 @@ namespace SpatialQuant
 				pp_coarse_variables.reset(p_new_coarse_variables);
 				p_coarse_variables = pp_coarse_variables.get();
 				iters_at_current_level = 0;
-				p_palette_sum.reset(new array2d<vector_fixed<double, 3> >(p_coarse_variables->get_width(), p_coarse_variables->get_height()));
+				p_palette_sum.reset(new array2d<vector_fixed<double, 4> >(p_coarse_variables->get_width(), p_coarse_variables->get_height()));
 				j_palette_sum = p_palette_sum.get();
 				compute_initial_j_palette_sum(*j_palette_sum, *p_coarse_variables, palette);
 				skip_palette_maintenance = true;
@@ -906,9 +917,10 @@ namespace SpatialQuant
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
 
+		hasSemiTransparency = false;
 		m_transparentPixelIndex = -1;
 		int pixelIndex = 0;
-		array2d<vector_fixed<double, 3> > pixels(bitmapWidth, bitmapHeight);
+		array2d<vector_fixed<double, 4> > pixels(bitmapWidth, bitmapHeight);
 		if (bitDepth <= 16) {
 			for (UINT y = 0; y < bitmapHeight; y++) {
 				for (UINT x = 0; x < bitmapWidth; x++, pixelIndex++) {
@@ -917,8 +929,10 @@ namespace SpatialQuant
 					pixels(x, y)[0] = color.GetR() / ((double)BYTE_MAX);
 					pixels(x, y)[1] = color.GetG() / ((double)BYTE_MAX);
 					pixels(x, y)[2] = color.GetB() / ((double)BYTE_MAX);
+					pixels(x, y)[3] = color.GetA() / ((double)BYTE_MAX);
 
 					if (color.GetA() < BYTE_MAX) {
+						hasSemiTransparency = true;
 						m_transparentPixelIndex = pixelIndex;
 						if (color.GetA() == 0)
 							m_transparentColor = color.GetValue();
@@ -963,8 +977,10 @@ namespace SpatialQuant
 					pixels(x, y)[0] = pixelRed / ((double)BYTE_MAX);
 					pixels(x, y)[1] = pixelGreen / ((double)BYTE_MAX);
 					pixels(x, y)[2] = pixelBlue / ((double)BYTE_MAX);
+					pixels(x, y)[3] = pixelAlpha / ((double)BYTE_MAX);
 
 					if (pixelAlpha < BYTE_MAX) {
+						hasSemiTransparency = true;
 						m_transparentPixelIndex = pixelIndex;
 						if (pixelAlpha == 0)
 							m_transparentColor = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
@@ -977,28 +993,29 @@ namespace SpatialQuant
 			pSource->UnlockBits(&data);
 		}
 
+		const int length = hasSemiTransparency ? 4 : 3;
 		double dithering_level = 1.0;
-		array2d<vector_fixed<double, 3> > filter3_weights(3, 3);
+		array2d<vector_fixed<double, 4> > filter3_weights(3, 3);
 		double sum = 0.0;
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
 				double value = exp(-sqrt((double)((i - 2)*(i - 2) + (j - 2)*(j - 2))) / (dithering_level * dithering_level));
-				for (short k = 0; k < 3; k++)
+				for (short k = 0; k < length; k++)
 					sum += filter3_weights(i, j)[k] = value;
 			}
 		}
 		sum /= 3.0;
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
-				for (short k = 0; k < 3; k++)
+				for (short k = 0; k < length; k++)
 					filter3_weights(i, j)[k] /= sum;
 			}
 		}
 
 		array2d<UINT> quantized_image(bitmapWidth, bitmapHeight);
-		vector<vector_fixed<double, 3> > palette(nMaxColors);
+		vector<vector_fixed<double, 4> > palette(nMaxColors);
 		for (UINT i = 0; i<nMaxColors; i++) {
-			for (byte p = 0; p < 3; ++p)
+			for (byte p = 0; p < length; ++p)
 				palette[i][p] = ((double)rand()) / RAND_MAX;
 		}
 
@@ -1012,7 +1029,7 @@ namespace SpatialQuant
 		if (nMaxColors > 2) {
 			/* Fill palette */
 			for (UINT k = 0; k<nMaxColors; ++k)
-				pPalette->Entries[k] = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[k][0]), static_cast<byte>(BYTE_MAX * palette[k][1]), static_cast<byte>(BYTE_MAX * palette[k][2]));
+				pPalette->Entries[k] = Color::MakeARGB(hasSemiTransparency ? static_cast<byte>(BYTE_MAX * palette[k][3]) : BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[k][0]), static_cast<byte>(BYTE_MAX * palette[k][1]), static_cast<byte>(BYTE_MAX * palette[k][2]));
 			
 			if (m_transparentPixelIndex >= 0) {
 				UINT k = quantized_image[m_transparentPixelIndex];
