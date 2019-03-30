@@ -25,7 +25,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "stdafx.h"
 #include "EdgeAwareSQuantizer.h"
-#include "DivQuantizer.h"
+#include "PnnLABQuantizer.h"
 #include "bitmapUtilities.h"
 
 #include <deque>
@@ -705,8 +705,8 @@ namespace EdgeAwareSQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		DivQuant::DivQuantizer divQuantizer;
-		divQuantizer.quant_varpart_fast(pixels.data(), pixels.size(), pPalette);
+		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
+		pnnLABQuantizer.pnnquan(pixels, pPalette, nMaxColors);
 
 		// init
 		vector<vector_fixed<float, 4> > palette(nMaxColors);
