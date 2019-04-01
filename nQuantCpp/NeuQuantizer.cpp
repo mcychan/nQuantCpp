@@ -63,7 +63,6 @@ namespace NeuralNet
 	unique_ptr<nq_pixel[]> network; // the network itself
 
 	unique_ptr<int[]> netindex; // for network lookup - really 256
-	unique_ptr<double[]> biasvalues;  // Biasvalues: based on frequency of nearest pixels
 
 	unique_ptr<double[]> bias;  // bias and freq arrays for learning
 	unique_ptr<double[]> freq;
@@ -88,8 +87,7 @@ namespace NeuralNet
 
 	void SetUpArrays() {
 		network = make_unique<nq_pixel[]>(netsize);
-		netindex = make_unique<int[]>(netsize);
-		biasvalues = make_unique<double[]>(netsize);
+		netindex = make_unique<int[]>(256);
 		bias = make_unique<double[]>(netsize);
 		freq = make_unique<double[]>(netsize);
 		radpower = make_unique<double[]>(initrad);
@@ -391,7 +389,6 @@ namespace NeuralNet
 	void Clear() {
 		network.reset();
 		netindex.reset();
-		biasvalues.reset();
 		bias.reset();
 		freq.reset();
 		radpower.reset();
