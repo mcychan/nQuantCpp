@@ -56,12 +56,12 @@ namespace Dl3Quant
 
 	using namespace std;
 
-	struct CUBE3 {		
+	struct CUBE3 {
 		int a, r, g, b;
 		int aa, rr, gg, bb;
 		UINT cc;
 		UINT pixel_count = 0;
-		UINT err;		
+		UINT err;
 	};
 
 	void setARGB(CUBE3& rec)
@@ -72,38 +72,20 @@ namespace Dl3Quant
 		rec.gg = (rec.g + v2) / v;
 		rec.bb = (rec.b + v2) / v;
 	}
-	
-	UINT calc_err(CUBE3* rgb_table3, const int* squares3, UINT c1, UINT c2)
+
+	UINT calc_err(CUBE3* rgb_table3, const int* squares3, const UINT& c1, const UINT& c2)
 	{
-		UINT dist1, dist2, P1, P2, P3;
-		int A1, R1, G1, B1, A2, R2, G2, B2, A3, R3, G3, B3;
+		UINT A1 = rgb_table3[c1].aa;
+		UINT R1 = rgb_table3[c1].rr;
+		UINT G1 = rgb_table3[c1].gg;
+		UINT B1 = rgb_table3[c1].bb;
 
-		P1 = rgb_table3[c1].pixel_count;
-		P2 = rgb_table3[c2].pixel_count;
-		P3 = P1 + P2;
+		UINT A2 = rgb_table3[c2].aa;
+		UINT R2 = rgb_table3[c2].rr;
+		UINT G2 = rgb_table3[c2].gg;
+		UINT B2 = rgb_table3[c2].bb;
 
-		A3 = (rgb_table3[c1].a + rgb_table3[c2].a + (P3 >> 1)) / P3;
-		R3 = (rgb_table3[c1].r + rgb_table3[c2].r + (P3 >> 1)) / P3;
-		G3 = (rgb_table3[c1].g + rgb_table3[c2].g + (P3 >> 1)) / P3;
-		B3 = (rgb_table3[c1].b + rgb_table3[c2].b + (P3 >> 1)) / P3;
-
-		A1 = rgb_table3[c1].aa;
-		R1 = rgb_table3[c1].rr;
-		G1 = rgb_table3[c1].gg;
-		B1 = rgb_table3[c1].bb;
-
-		A2 = rgb_table3[c2].aa;
-		R2 = rgb_table3[c2].rr;
-		G2 = rgb_table3[c2].gg;
-		B2 = rgb_table3[c2].bb;
-
-		dist1 = squares3[A3 - A1] + squares3[R3 - R1] + squares3[G3 - G1] + squares3[B3 - B1];
-		dist1 = (UINT)(sqrt(dist1) * P1);
-
-		dist2 = squares3[A2 - A3] + squares3[R2 - R3] + squares3[G2 - G3] + squares3[B2 - B3];
-		dist2 = (UINT)(sqrt(dist2) * P2);
-
-		return (dist1 + dist2);
+		return squares3[A2 - A1] + squares3[R2 - R1] + squares3[G2 - G1] + squares3[B2 - B1];
 	}
 
 	void build_table3(CUBE3* rgb_table3, ARGB argb)
@@ -124,7 +106,7 @@ namespace Dl3Quant
 			build_table3(rgb_table3, pixel);
 
 		UINT tot_colors = 0;
-		for (int i = 0; i < 65536; ++i) {			
+		for (int i = 0; i < 65536; ++i) {
 			if (rgb_table3[i].pixel_count) {
 				setARGB(rgb_table3[i]);
 				rgb_table3[tot_colors++] = rgb_table3[i];
@@ -133,12 +115,12 @@ namespace Dl3Quant
 		return tot_colors;
 	}
 
-	void recount_next(CUBE3* rgb_table3, const int* squares3, UINT tot_colors, UINT i)
+	void recount_next(CUBE3* rgb_table3, const int* squares3, const UINT& tot_colors, const UINT& i)
 	{
 		UINT c2 = 0;
 		UINT err = UINT_MAX;
 		for (UINT j = i + 1; j < tot_colors; ++j) {
-			UINT cur_err = calc_err(rgb_table3, squares3, i, j);
+			auto cur_err = calc_err(rgb_table3, squares3, i, j);
 			if (cur_err < err) {
 				err = cur_err;
 				c2 = j;
@@ -148,17 +130,14 @@ namespace Dl3Quant
 		rgb_table3[i].cc = c2;
 	}
 
-	void recount_dist(CUBE3* rgb_table3, const int* squares3, UINT tot_colors, int c1)
+	void recount_dist(CUBE3* rgb_table3, const int* squares3, const UINT& tot_colors, const UINT& c1)
 	{
-		int i;
-		UINT cur_err;
-
 		recount_next(rgb_table3, squares3, tot_colors, c1);
-		for (i = 0; i < c1; ++i) {
-            if (rgb_table3[i].cc == c1)
+		for (int i = 0; i < c1; ++i) {
+			if (rgb_table3[i].cc == c1)
 				recount_next(rgb_table3, squares3, tot_colors, i);
 			else {
-				cur_err = calc_err(rgb_table3, squares3, i, c1);
+				auto cur_err = calc_err(rgb_table3, squares3, i, c1);
 				if (cur_err < rgb_table3[i].err) {
 					rgb_table3[i].err = cur_err;
 					rgb_table3[i].cc = c1;
@@ -167,82 +146,84 @@ namespace Dl3Quant
 		}
 	}
 
-	int reduce_table3(CUBE3* rgb_table3, const int* squares3, UINT tot_colors, UINT num_colors)
+	void reduce_table3(CUBE3* rgb_table3, const int* squares3, UINT tot_colors, const UINT& num_colors)
 	{
-		int c1=0, c2=0, grand_total, bailout = FALSE;
-		UINT err;
-
 		UINT i = 0;
 		for (; i < (tot_colors - 1); ++i)
 			recount_next(rgb_table3, squares3, tot_colors, i);
 
-		rgb_table3[i].err = ~0L;
+		rgb_table3[i].err = UINT_MAX;
 		rgb_table3[i].cc = tot_colors;
 
-		grand_total = tot_colors-num_colors;
+		UINT c1 = 0, grand_total = tot_colors - num_colors;
 		while (tot_colors > num_colors) {
-			err = ~0L;
-			for (UINT i = 0; i < tot_colors; ++i) {
-                  if (rgb_table3[i].err < err) {
-                        err = rgb_table3[i].err;
-                        c1 = i;
-                  }
-            }
-            c2 = rgb_table3[c1].cc;
+			UINT err = UINT_MAX;
+			for (i = 0; i < tot_colors; ++i) {
+				if (rgb_table3[i].err < err) {
+					err = rgb_table3[i].err;
+					c1 = i;
+				}
+			}
+			auto c2 = rgb_table3[c1].cc;
 			rgb_table3[c2].a += rgb_table3[c1].a;
-            rgb_table3[c2].r += rgb_table3[c1].r;
-            rgb_table3[c2].g += rgb_table3[c1].g;
-            rgb_table3[c2].b += rgb_table3[c1].b;
-            rgb_table3[c2].pixel_count += rgb_table3[c1].pixel_count;
-            setARGB(rgb_table3[c2]);
+			rgb_table3[c2].r += rgb_table3[c1].r;
+			rgb_table3[c2].g += rgb_table3[c1].g;
+			rgb_table3[c2].b += rgb_table3[c1].b;
+			rgb_table3[c2].pixel_count += rgb_table3[c1].pixel_count;
+			setARGB(rgb_table3[c2]);
 
-            rgb_table3[c1] = rgb_table3[--tot_colors];
-            rgb_table3[tot_colors-1].err = ~0L;
-            rgb_table3[tot_colors-1].cc = tot_colors;
+			rgb_table3[c1] = rgb_table3[--tot_colors];
+			rgb_table3[tot_colors - 1].err = UINT_MAX;
+			rgb_table3[tot_colors - 1].cc = tot_colors;
 
-            for (i = 0; i < c1; ++i) {
+			for (i = 0; i < c1; ++i) {
 				if (rgb_table3[i].cc == tot_colors)
 					rgb_table3[i].cc = c1;
-            }
+			}
 
-            for (i = c1 + 1; i < tot_colors; ++i) {
+			for (i = c1 + 1; i < tot_colors; ++i) {
 				if (rgb_table3[i].cc == tot_colors)
 					recount_next(rgb_table3, squares3, tot_colors, i);
-            }
+			}
 
-            recount_dist(rgb_table3, squares3, tot_colors, c1);
-            if (c2 != tot_colors)
+			recount_dist(rgb_table3, squares3, tot_colors, c1);
+			if (c2 != tot_colors)
 				recount_dist(rgb_table3, squares3, tot_colors, c2);
 		}
-
-		return bailout;
 	}
-	
-	short nearestColorIndex(const CUBE3* rgb_table3, const int* squares3, const UINT nMaxColors, const ARGB argb)
+
+	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
 		short k = 0;
 		Color c(argb);
 
 		auto got = rightMatches.find(argb);
 		if (got == rightMatches.end()) {
-			int curdist, mindist = SHORT_MAX;
-			for (UINT i = 0; i < nMaxColors; ++i) {
-				curdist = squares3[rgb_table3[i].aa - c.GetA()];
+			UINT curdist, mindist = SHORT_MAX;
+			for (short i = 0; i < nMaxColors; i++) {
+				Color c2(pPalette->Entries[i]);
+				int adist = abs(c2.GetA() - c.GetA());
+				curdist = adist;
 				if (curdist > mindist)
 					continue;
-				curdist += squares3[rgb_table3[i].rr - c.GetR()];
+
+				int rdist = abs(c2.GetR() - c.GetR());
+				curdist += rdist;
 				if (curdist > mindist)
 					continue;
-				curdist += squares3[rgb_table3[i].gg - c.GetG()];
+
+				int gdist = abs(c2.GetG() - c.GetG());
+				curdist += gdist;
 				if (curdist > mindist)
 					continue;
-				curdist += squares3[rgb_table3[i].bb - c.GetB()];
+
+				int bdist = abs(c2.GetB() - c.GetB());
+				curdist += bdist;
 				if (curdist > mindist)
 					continue;
-				if (curdist < mindist) {
-					mindist = curdist;					
-					k = i;
-				}
+
+				mindist = curdist;
+				k = i;
 			}
 			rightMatches[argb] = k;
 		}
@@ -251,8 +232,8 @@ namespace Dl3Quant
 
 		return k;
 	}
-		
-	short closestColorIndex(const CUBE3* rgb_table3, const int* squares3, const UINT nMaxColors, const ARGB argb)
+
+	short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
 		short k = 0;
 		Color c(argb);
@@ -262,7 +243,8 @@ namespace Dl3Quant
 			closest[2] = closest[3] = SHORT_MAX;
 
 			for (; k < nMaxColors; k++) {
-				closest[4] = abs(c.GetA() - rgb_table3[k].aa) + abs(c.GetR() - rgb_table3[k].rr) + abs(c.GetG() - rgb_table3[k].gg) + abs(c.GetB() - rgb_table3[k].bb);
+				Color c2(pPalette->Entries[k]);
+				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
 				if (closest[4] < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];
@@ -289,114 +271,19 @@ namespace Dl3Quant
 		closestMap[argb] = closest;
 		return k;
 	}
-	
-	bool quantize_image3(const ARGB* pixels, CUBE3* rgb_table3, const UINT nMaxColors, short* qPixels, const int* squares3, const UINT width, const UINT height, const bool dither)
-	{	
+
+	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
+	{
+		if (dither)
+			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
+
+		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		UINT pixelIndex = 0;
-
-		if (dither) {
-			bool odd_scanline = false;
-			short *row0, *row1;
-			int j, a_pix, r_pix, g_pix, b_pix, dir, k;
-			const int DJ = 4;
-			const int DITHER_MAX = 20;
-			const int err_len = (width + 2) * DJ;
-			byte clamp[DJ * 256] = { 0 };
-			auto erowErr = make_unique<short[]>(err_len);
-			auto orowErr = make_unique<short[]>(err_len);
-			char limtb[512] = { 0 };
-			auto lim = &limtb[256];
-			auto erowerr = erowErr.get();
-			auto orowerr = orowErr.get();
-			short lookup[65536] = { 0 };
-
-			for (int i = 0; i < 256; ++i) {
-				clamp[i] = 0;
-				clamp[i + 256] = static_cast<byte>(i);
-				clamp[i + 512] = BYTE_MAX;
-				clamp[i + 768] = BYTE_MAX;
-
-				limtb[i] = -DITHER_MAX;
-				limtb[i + 256] = DITHER_MAX;
-			}
-			for (int i = -DITHER_MAX; i <= DITHER_MAX; ++i)
-				limtb[i + 256] = i;
-
-			for (UINT i = 0; i < height; ++i) {
-				if (odd_scanline) {
-					dir = -1;
-					pixelIndex += (width - 1);
-					row0 = &orowerr[DJ];
-					row1 = &erowerr[width * DJ];
-				}
-				else {
-					dir = 1;
-					row0 = &erowerr[DJ];
-					row1 = &orowerr[width * DJ];
-				}
-				row1[0] = row1[1] = row1[2] = row1[3] = 0;
-				for (j = 0; j < width; ++j) {
-					Color c(pixels[pixelIndex]);
-
-					r_pix = clamp[((row0[0] + 0x1008) >> 4) + c.GetR()];
-					g_pix = clamp[((row0[1] + 0x1008) >> 4) + c.GetG()];
-					b_pix = clamp[((row0[2] + 0x1008) >> 4) + c.GetB()];
-					a_pix = clamp[((row0[3] + 0x1008) >> 4) + c.GetA()];
-
-					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-					Color c1(argb);
-					int offset = getARGBIndex(c1, hasSemiTransparency, m_transparentPixelIndex);
-					if (!lookup[offset])
-						lookup[offset] = nearestColorIndex(rgb_table3, squares3, nMaxColors, c.GetA() ? argb : pixels[pixelIndex]) + 1;
-
-					qPixels[pixelIndex] = lookup[offset] - 1;
-
-					Color c2(qPixels[pixelIndex]);
-
-					r_pix = lim[r_pix - c2.GetR()];
-					g_pix = lim[g_pix - c2.GetG()];
-					b_pix = lim[b_pix - c2.GetB()];
-					a_pix = lim[a_pix - c2.GetA()];
-
-					k = r_pix * 2;
-					row1[0 - DJ] = r_pix;
-					row1[0 + DJ] += (r_pix += k);
-					row1[0] += (r_pix += k);
-					row0[0 + DJ] += (r_pix += k);
-
-					k = g_pix * 2;
-					row1[1 - DJ] = g_pix;
-					row1[1 + DJ] += (g_pix += k);
-					row1[1] += (g_pix += k);
-					row0[1 + DJ] += (g_pix += k);
-
-					k = b_pix * 2;
-					row1[2 - DJ] = b_pix;
-					row1[2 + DJ] += (b_pix += k);
-					row1[2] += (b_pix += k);
-					row0[2 + DJ] += (b_pix += k);
-
-					k = a_pix * 2;
-					row1[3 - DJ] = a_pix;
-					row1[3 + DJ] += (a_pix += k);
-					row1[3] += (a_pix += k);
-					row0[3 + DJ] += (a_pix += k);
-
-					row0 += DJ;
-					row1 -= DJ;
-					pixelIndex += dir;
-				}
-				if ((i % 2) == 1)
-					pixelIndex += (width + 1);
-
-				odd_scanline = !odd_scanline;
-			}
-			return true;
+		for (int j = 0; j < height; ++j) {
+			for (int i = 0; i < width; ++i)
+				qPixels[pixelIndex++] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 
-		short(*fcnPtr)(const CUBE3* rgb_table3, const int* squares3, const UINT nMaxColors, const ARGB) = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
-		for (; pixelIndex < (width * height);)
-			qPixels[pixelIndex++] = (*fcnPtr)(rgb_table3, squares3, nMaxColors, pixels[pixelIndex]);
 		return true;
 	}
 
@@ -413,38 +300,49 @@ namespace Dl3Quant
 
 	bool Dl3Quantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
 	{
-		auto rgb_table3 = make_unique<CUBE3[]>(65536);
-
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
-		
-		UINT tot_colors = build_table3(rgb_table3.get(), pixels);
-		int sqr_tbl[BYTE_MAX + BYTE_MAX + 1];
-
-		for (int i = (-BYTE_MAX); i <= BYTE_MAX; ++i)
-			sqr_tbl[i + BYTE_MAX] = i * i;
-
-		auto squares3 = &sqr_tbl[BYTE_MAX];
-
-		reduce_table3(rgb_table3.get(), squares3, tot_colors, nMaxColors);
-	
-		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
-		quantize_image3(pixels.data(), rgb_table3.get(), nMaxColors, qPixels.get(), squares3, bitmapWidth, bitmapHeight, dither);
-		closestMap.clear();
-		rightMatches.clear();
 
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
-		GetQuantizedPalette(pPalette, rgb_table3.get());
-		rgb_table3.reset();
-		
+
+		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
+		if (nMaxColors > 2) {
+			auto rgb_table3 = make_unique<CUBE3[]>(65536);
+			UINT tot_colors = build_table3(rgb_table3.get(), pixels);
+			int sqr_tbl[BYTE_MAX + BYTE_MAX + 1];
+
+			for (int i = (-BYTE_MAX); i <= BYTE_MAX; ++i)
+				sqr_tbl[i + BYTE_MAX] = i * i;
+
+			auto squares3 = &sqr_tbl[BYTE_MAX];
+
+			reduce_table3(rgb_table3.get(), squares3, tot_colors, nMaxColors);
+
+			GetQuantizedPalette(pPalette, rgb_table3.get());
+		}
+		else {
+			if (m_transparentPixelIndex >= 0) {
+				pPalette->Entries[0] = m_transparentColor;
+				pPalette->Entries[1] = Color::Black;
+			}
+			else {
+				pPalette->Entries[0] = Color::Black;
+				pPalette->Entries[1] = Color::White;
+			}
+		}
+
+		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+		closestMap.clear();
+		rightMatches.clear();
+
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
-			if(nMaxColors > 2)
+			if (nMaxColors > 2)
 				pPalette->Entries[k] = m_transparentColor;
 			else if (pPalette->Entries[k] != m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[1]);
