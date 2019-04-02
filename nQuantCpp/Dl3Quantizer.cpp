@@ -95,10 +95,10 @@ namespace Dl3Quant
 		int B2 = rgb_table3[c2].bb;
 
 		UINT dist1 = squares3[A3 - A1] + squares3[R3 - R1] + squares3[G3 - G1] + squares3[B3 - B1];
-		dist1 = (UINT)(sqrt(dist1) * P1);
+		dist1 *= P1;
 
 		UINT dist2 = squares3[A2 - A3] + squares3[R2 - R3] + squares3[G2 - G3] + squares3[B2 - B3];
-		dist2 = (UINT)(sqrt(dist2) * P2);
+		dist2 *= P2;
 
 		return (dist1 + dist2);
 	}
