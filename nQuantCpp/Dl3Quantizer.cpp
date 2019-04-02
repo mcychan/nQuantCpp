@@ -75,17 +75,32 @@ namespace Dl3Quant
 
 	UINT calc_err(CUBE3* rgb_table3, const int* squares3, const UINT& c1, const UINT& c2)
 	{
-		UINT A1 = rgb_table3[c1].aa;
-		UINT R1 = rgb_table3[c1].rr;
-		UINT G1 = rgb_table3[c1].gg;
-		UINT B1 = rgb_table3[c1].bb;
+		UINT P1 = rgb_table3[c1].pixel_count;
+		UINT P2 = rgb_table3[c2].pixel_count;
+		UINT P3 = P1 + P2;
 
-		UINT A2 = rgb_table3[c2].aa;
-		UINT R2 = rgb_table3[c2].rr;
-		UINT G2 = rgb_table3[c2].gg;
-		UINT B2 = rgb_table3[c2].bb;
+		int A3 = (rgb_table3[c1].a + rgb_table3[c2].a + (P3 >> 1)) / P3;
+		int R3 = (rgb_table3[c1].r + rgb_table3[c2].r + (P3 >> 1)) / P3;
+		int G3 = (rgb_table3[c1].g + rgb_table3[c2].g + (P3 >> 1)) / P3;
+		int B3 = (rgb_table3[c1].b + rgb_table3[c2].b + (P3 >> 1)) / P3;
 
-		return squares3[A2 - A1] + squares3[R2 - R1] + squares3[G2 - G1] + squares3[B2 - B1];
+		int A1 = rgb_table3[c1].aa;
+		int R1 = rgb_table3[c1].rr;
+		int G1 = rgb_table3[c1].gg;
+		int B1 = rgb_table3[c1].bb;
+
+		int A2 = rgb_table3[c2].aa;
+		int R2 = rgb_table3[c2].rr;
+		int G2 = rgb_table3[c2].gg;
+		int B2 = rgb_table3[c2].bb;
+
+		UINT dist1 = squares3[A3 - A1] + squares3[R3 - R1] + squares3[G3 - G1] + squares3[B3 - B1];
+		dist1 = (UINT)(sqrt(dist1) * P1);
+
+		UINT dist2 = squares3[A2 - A3] + squares3[R2 - R3] + squares3[G2 - G3] + squares3[B2 - B3];
+		dist2 = (UINT)(sqrt(dist2) * P2);
+
+		return (dist1 + dist2);
 	}
 
 	void build_table3(CUBE3* rgb_table3, ARGB argb)
