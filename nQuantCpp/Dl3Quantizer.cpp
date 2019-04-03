@@ -3,10 +3,10 @@
  * DL3 Quantization
  * ================
  *
- * File: dl3quant.c
  * Author: Dennis Lee   E-mail: denlee@ecf.utoronto.ca
  *
  * Copyright (C) 1993-1997 Dennis Lee
+ * Copyright (c) 2019 Miller Cy Chan
  *
  * C implementation of DL3 Quantization.
  * DL3 Quantization is a 2-pass color quantizer that uses an
@@ -52,7 +52,6 @@ namespace Dl3Quant
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
 	map<ARGB, vector<short> > closestMap;
-	map<ARGB, UINT> rightMatches;
 
 	using namespace std;
 
@@ -61,7 +60,7 @@ namespace Dl3Quant
 		int aa, rr, gg, bb;
 		UINT cc;
 		UINT pixel_count = 0;
-		UINT err;
+		double err;
 	};
 
 	void setARGB(CUBE3& rec)
@@ -73,7 +72,14 @@ namespace Dl3Quant
 		rec.bb = (rec.b + v2) / v;
 	}
 
-	UINT calc_err(CUBE3* rgb_table3, const int* squares3, const UINT& c1, const UINT& c2)
+	/* inline double __declspec (naked) __fastcall _sqrt(double n)
+	{
+		_asm fld qword ptr[esp + 4]
+			_asm fsqrt
+		_asm ret 8
+	} */
+
+	double calc_err(CUBE3* rgb_table3, const int* squares3, const UINT& c1, const UINT& c2)
 	{
 		UINT P1 = rgb_table3[c1].pixel_count;
 		UINT P2 = rgb_table3[c2].pixel_count;
@@ -94,10 +100,10 @@ namespace Dl3Quant
 		int G2 = rgb_table3[c2].gg;
 		int B2 = rgb_table3[c2].bb;
 
-		UINT dist1 = squares3[A3 - A1] + squares3[R3 - R1] + squares3[G3 - G1] + squares3[B3 - B1];
+		double dist1 = squares3[A3 - A1] + squares3[R3 - R1] + squares3[G3 - G1] + squares3[B3 - B1];
 		dist1 *= P1;
 
-		UINT dist2 = squares3[A2 - A3] + squares3[R2 - R3] + squares3[G2 - G3] + squares3[B2 - B3];
+		double dist2 = squares3[A2 - A3] + squares3[R2 - R3] + squares3[G2 - G3] + squares3[B2 - B3];
 		dist2 *= P2;
 
 		return (dist1 + dist2);
@@ -122,7 +128,7 @@ namespace Dl3Quant
 
 		UINT tot_colors = 0;
 		for (int i = 0; i < 65536; ++i) {
-			if (rgb_table3[i].pixel_count) {
+			if (rgb_table3[i].pixel_count > 0) {
 				setARGB(rgb_table3[i]);
 				rgb_table3[tot_colors++] = rgb_table3[i];
 			}
@@ -133,7 +139,7 @@ namespace Dl3Quant
 	void recount_next(CUBE3* rgb_table3, const int* squares3, const UINT& tot_colors, const UINT& i)
 	{
 		UINT c2 = 0;
-		UINT err = UINT_MAX;
+		double err = UINT_MAX;
 		for (UINT j = i + 1; j < tot_colors; ++j) {
 			auto cur_err = calc_err(rgb_table3, squares3, i, j);
 			if (cur_err < err) {
@@ -212,38 +218,32 @@ namespace Dl3Quant
 		short k = 0;
 		Color c(argb);
 
-		auto got = rightMatches.find(argb);
-		if (got == rightMatches.end()) {
-			UINT curdist, mindist = SHORT_MAX;
-			for (short i = 0; i < nMaxColors; i++) {
-				Color c2(pPalette->Entries[i]);
-				int adist = abs(c2.GetA() - c.GetA());
-				curdist = adist;
-				if (curdist > mindist)
-					continue;
+		UINT curdist, mindist = SHORT_MAX;
+		for (short i = 0; i < nMaxColors; i++) {
+			Color c2(pPalette->Entries[i]);
+			int adist = abs(c2.GetA() - c.GetA());
+			curdist = adist;
+			if (curdist > mindist)
+				continue;
 
-				int rdist = abs(c2.GetR() - c.GetR());
-				curdist += rdist;
-				if (curdist > mindist)
-					continue;
+			int rdist = abs(c2.GetR() - c.GetR());
+			curdist += rdist;
+			if (curdist > mindist)
+				continue;
 
-				int gdist = abs(c2.GetG() - c.GetG());
-				curdist += gdist;
-				if (curdist > mindist)
-					continue;
+			int gdist = abs(c2.GetG() - c.GetG());
+			curdist += gdist;
+			if (curdist > mindist)
+				continue;
 
-				int bdist = abs(c2.GetB() - c.GetB());
-				curdist += bdist;
-				if (curdist > mindist)
-					continue;
+			int bdist = abs(c2.GetB() - c.GetB());
+			curdist += bdist;
+			if (curdist > mindist)
+				continue;
 
-				mindist = curdist;
-				k = i;
-			}
-			rightMatches[argb] = k;
+			mindist = curdist;
+			k = i;
 		}
-		else
-			k = got->second;
 
 		return k;
 	}
@@ -306,10 +306,8 @@ namespace Dl3Quant
 	{
 		for (short k = 0; k < pPalette->Count; ++k) {
 			UINT sum = rgb_table3[k].pixel_count;
-			if (sum <= 0)
-				continue;
-
-			pPalette->Entries[k] = Color::MakeARGB(rgb_table3[k].aa, rgb_table3[k].rr, rgb_table3[k].gg, rgb_table3[k].bb);
+			if (sum > 0)
+				pPalette->Entries[k] = Color::MakeARGB(rgb_table3[k].aa, rgb_table3[k].rr, rgb_table3[k].gg, rgb_table3[k].bb);
 		}
 	}
 
@@ -353,7 +351,6 @@ namespace Dl3Quant
 
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		closestMap.clear();
-		rightMatches.clear();
 
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];

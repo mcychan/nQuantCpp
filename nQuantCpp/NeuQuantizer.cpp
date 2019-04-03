@@ -15,6 +15,7 @@ namespace NeuralNet
 	* ------------------------------------------
 	*
 	* Copyright (c) 1994 Anthony Dekker
+	* Copyright (c) 2019 Miller Cy Chan
 	*
 	* NEUQUANT Neural-Net quantization algorithm by Anthony Dekker, 1994.
 	* See "Kohonen neural networks for optimal colour quantization"
