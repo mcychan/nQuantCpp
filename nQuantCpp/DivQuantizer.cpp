@@ -70,7 +70,7 @@ namespace DivQuant
                   const UINT numRows,
                   const UINT numCols,
                   const int dec_factor,
-                  UINT* num_colors)
+                  UINT& num_colors)
 	{ 
 		unique_ptr<double[]> weights;
 		if(dec_factor <= 0) {
@@ -79,7 +79,7 @@ namespace DivQuant
 		}
   
 		vector<shared_ptr<Bucket> > hash_table(COLOR_HASH_SIZE);
-		*num_colors = 0;
+		num_colors = 0;
   
 		for (UINT ir = 0; ir < numRows; ir += dec_factor) {
 			for (UINT ic = 0; ic < numCols; ic += dec_factor) {
@@ -101,7 +101,7 @@ namespace DivQuant
 					bucket->value++;
 				}
 				else {
-					(*num_colors)++;
+					++num_colors;
 
 					/* Create a new bucket entry for this color */
 					bucket = make_shared<Bucket>();					
@@ -113,7 +113,7 @@ namespace DivQuant
 			}
 		}
   
-		weights = make_unique<double[]>(*num_colors);
+		weights = make_unique<double[]>(num_colors);
   
 		/* Normalization factor to obtain color frequencies to color probabilities */
 		double norm_factor = 1.0 / (ceil(numRows / (double) dec_factor) * ceil(numCols / (double) dec_factor));
@@ -219,12 +219,12 @@ namespace DivQuant
 			// Calculate the squared Euclidean distance between cp and cinit
 			UINT min_dist = abs(c.GetA() - cmap[index].alpha) + abs(lab1.L - cmap[index].L) + abs(lab1.A - cmap[index].A) + abs(lab1.B - cmap[index].B);
 			int upi = index, downi = index;
-			int up = 1, down = 1;
+			bool up = true, down = true;
 			while (up || down) {
 				if (up) {				
 					if (++upi > (colormapSize - 1) || lut_ssd[sum - cmap[upi].weight] >= min_dist) {
 						// Terminate the search in UP direction
-						up = 0;          
+						up = false;          
 					}
 					else {
 						UINT dist = abs(c.GetA() - cmap[upi].alpha) + abs(lab1.L - cmap[upi].L) + abs(lab1.A - cmap[upi].A) + abs(lab1.B - cmap[upi].B);          
@@ -238,7 +238,7 @@ namespace DivQuant
 				if (down) {				
 					if (--downi < 0 || lut_ssd[sum - cmap[downi].weight] >= min_dist) {
 						// Terminate the search in DOWN direction
-						down = 0;          
+						down = false;
 					}
 					else {
 						UINT dist = abs(c.GetA() - cmap[downi].alpha) + abs(lab1.L - cmap[downi].L) + abs(lab1.A - cmap[downi].A) + abs(lab1.B - cmap[downi].B);
@@ -254,7 +254,7 @@ namespace DivQuant
 		}
 	}
 
-	// MT  : type of the member attribute, either uint8_t uint32_t
+	// MT  : type of the member attribute, either byte or UINT
 	template <typename MT>
 	void DivQuantClusterInitMeanAndVar(const int num_points, const ARGB* data, const double data_weight, double* weightsPtr, Pixel<double>* total_mean, Pixel<double>* total_var)
 	{
@@ -903,13 +903,13 @@ namespace DivQuant
 		}
 		else if (!allPixelsUnique && num_bits == 8) {
 			// No cut bits, but duplicate pixels, dedup now
-			weightsPtr = calc_color_table(inPixels, numPixels, tmpPixels.get(), numRows, numCols, dec_factor, &nMaxColors);
+			weightsPtr = calc_color_table(inPixels, numPixels, tmpPixels.get(), numRows, numCols, dec_factor, nMaxColors);
 			std::copy(tmpPixels.get(), tmpPixels.get() + numPixels, inputPixels.get());
 		}
 		else {
 			// cut bits with right shift and dedup to generate significantly smaller sized buffer
 			cut_bits(inPixels, numPixels, tmpPixels.get(), num_bits, num_bits, num_bits, num_bits);
-			weightsPtr = calc_color_table(tmpPixels.get(), numPixels, tmpPixels.get(), numRows, numCols, dec_factor, &nMaxColors);
+			weightsPtr = calc_color_table(tmpPixels.get(), numPixels, tmpPixels.get(), numRows, numCols, dec_factor, nMaxColors);
 			std::copy(tmpPixels.get(), tmpPixels.get() + numPixels, inputPixels.get());
 		}
 	  
