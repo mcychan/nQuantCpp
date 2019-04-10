@@ -1,7 +1,7 @@
 ﻿#pragma once
 /* Multiobjective Image Color Quantization Algorithm Based on Self-Adaptive Hybrid Differential Evolution
 Copyright (C) 2014-2016 Zhongbo Hu, Qinghua Su, Xuewen Xia
-Copyright (c) 2018-2019 Miller Cy Chan
+Copyright (c) 2018 - 2019 Miller Cy Chan
 * Adaptive algorithm k-means idea-accelerated differential evolution algorithm: each individual is a set of cluster centers, according to the probability K_probability
 * The mean center of the K_number sub-cluster of this class replaces the original individual (following the acceptance criteria of parent-child competition)
 * Iterate the differential evolution algorithm
@@ -14,7 +14,6 @@ Copyright (c) 2018-2019 Miller Cy Chan
 #include <ctime>
 #include <iomanip>      // std::setprecision
 #include <unordered_map>
-#include <unordered_set>
 
 namespace MoDEQuant
 {
@@ -355,12 +354,13 @@ namespace MoDEQuant
 						}
 					}
 					else { // Differential Evolution
-						unordered_set<int> numbers;
-						numbers.insert(i);
-						while (numbers.size() < 3)
-							numbers.insert((int)(rand1() * N));
-						auto it = numbers.begin();
-						int b = *it, d = *(++it);
+						int d, b;
+						do {
+							d = (int)(rand1() * N);
+						} while (d == i);
+						do {
+							b = (int)(rand1() * N);
+						} while (b == d || b == i);
 
 						int jr = (int)(rand1() * D); // every individual update control parameters
 						if (rand1() < 0.1) {
