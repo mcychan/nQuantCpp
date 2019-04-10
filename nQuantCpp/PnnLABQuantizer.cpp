@@ -1,22 +1,22 @@
 ﻿#pragma once
 /* Fast pairwise nearest neighbor based algorithm for multilevel thresholding
 Copyright (C) 2004-2016 Mark Tyler and Dmitry Groshev
-Copyright (c) 2018 Miller Cy Chan
+Copyright (c) 2018-2019 Miller Cy Chan
 * error measure; time used is proportional to number of bins squared - WJ */
 
 #include "stdafx.h"
 #include "PnnLABQuantizer.h"
 #include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
-#include <map>
+#include <unordered_map>
 
 namespace PnnLABQuant
 {
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	map<ARGB, CIELABConvertor::Lab> pixelMap;	
-	map<ARGB, vector<double> > closestMap;
+	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
+	unordered_map<ARGB, vector<double> > closestMap;
 
 	struct pnnbin {
 		double ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;

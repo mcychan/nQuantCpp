@@ -1,7 +1,7 @@
 ﻿#pragma once
 /* Copyright (c) 2006 Derrick Coetzee
 Copyright(c) 2015 Hao-Zhi Huang
-Copyright (c) 2018 Miller Cy Chan
+Copyright (c) 2018-2019 Miller Cy Chan
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -25,11 +25,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "stdafx.h"
 #include "EdgeAwareSQuantizer.h"
-#include "PnnLABQuantizer.h"
+#include "DivQuantizer.h"
 #include "bitmapUtilities.h"
+#include "CIELABConvertor.h"
 
 #include <deque>
 #include <algorithm>
+#include <unordered_map>
 #include <numeric>
 #include <math.h>
 #include <time.h>
@@ -40,6 +42,7 @@ namespace EdgeAwareSQuant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
+	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
 
 	const int DECOMP_SVD = 1;
 
@@ -125,6 +128,17 @@ namespace EdgeAwareSQuant
 		random_permutation(width * height, perm1d);
 		for (auto it = perm1d.rbegin(); it != perm1d.rend(); ++it)
 			result.emplace_back(*it % width, *it / width);
+	}
+
+	void getLab(const Color& c, CIELABConvertor::Lab& lab1)
+	{
+		auto got = pixelMap.find(c.GetValue());
+		if (got == pixelMap.end()) {
+			CIELABConvertor::RGB2LAB(c, lab1);
+			pixelMap[c.GetValue()] = lab1;
+		}
+		else
+			lab1 = got->second;
 	}
 
 	void compute_b_array_ea_saliency(Mat<Mat<float> >& weightMaps, Mat<Mat<float> >& b, int filterRadius, Mat<float>& saliencyMap)
@@ -446,9 +460,17 @@ namespace EdgeAwareSQuant
 			vector<vector<pair<float, int> > > centroidDist(paletteSize, vector<pair<float, int> >(paletteSize, pair<float, int>(0.0f, -1)));
 			for (int l1 = 0; l1 < palette.size(); l1++) {
 				for (int l2 = l1; l2 < palette.size(); l2++) {
-					float curDist = 0.0f;
-					for (byte c = 0; c < length; ++c)
-						curDist += sqr(palette[l1][c] - palette[l2][c]);
+					Color c(hasSemiTransparency ? static_cast<byte>(BYTE_MAX * palette[l1][3]) : BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[l1][0]), static_cast<byte>(BYTE_MAX * palette[l1][1]), static_cast<byte>(BYTE_MAX * palette[l1][2]));
+					CIELABConvertor::Lab lab1;
+					getLab(c, lab1);
+
+					Color c2(hasSemiTransparency ? static_cast<byte>(BYTE_MAX * palette[l2][3]) : BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[l2][0]), static_cast<byte>(BYTE_MAX * palette[l2][1]), static_cast<byte>(BYTE_MAX * palette[l2][2]));
+					CIELABConvertor::Lab lab2;
+					getLab(c2, lab2);
+
+					float curDist = CIELABConvertor::CIEDE2000(lab1, lab2);
+					if (hasSemiTransparency)
+						curDist += sqr(c.GetA() - c2.GetA());
 
 					centroidDist[l1][l2] = pair<float, int>(curDist, l2);
 					centroidDist[l2][l1] = pair<float, int>(curDist, l1);
@@ -705,8 +727,8 @@ namespace EdgeAwareSQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
-		pnnLABQuantizer.pnnquan(pixels, pPalette, nMaxColors);
+		DivQuant::DivQuantizer divQuantizer;
+		divQuantizer.quant_varpart_fast(pixels.data(), pixels.size(), pPalette);
 
 		// init
 		vector<vector_fixed<float, 4> > palette(nMaxColors);
@@ -721,6 +743,7 @@ namespace EdgeAwareSQuant
 		Mat<Mat<float> > weightMaps(bitmapHeight, bitmapWidth);
 		filter_bila(pixels, weightMaps);
 		spatial_color_quant_ea_icm_saliency(pixels, weightMaps, saliencyMap, quantized_image, palette);
+		pixelMap.clear();
 
 		if (nMaxColors > 2) {
 			/* Fill palette */

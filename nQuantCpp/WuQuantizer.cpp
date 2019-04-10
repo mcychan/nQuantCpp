@@ -8,6 +8,8 @@
 // Univ. of Western Ontario
 // London, Ontario N6A 5B7
 // wu@csd.uwo.ca
+//
+// Copyright(c) 2018 - 2019 Miller Cy Chan
 // 
 // Algorithm: Greedy orthogonal bipartition of RGB space for variance
 // 	   minimization aided by inclusion-exclusion tricks.
@@ -21,7 +23,7 @@
 #include "stdafx.h"
 #include "WuQuantizer.h"
 #include "bitmapUtilities.h"
-#include <map>
+#include <unordered_map>
 
 namespace nQuant
 {
@@ -38,8 +40,8 @@ namespace nQuant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	map<ARGB, vector<short> > closestMap;
-	map<ARGB, UINT> rightMatches;
+	unordered_map<ARGB, vector<short> > closestMap;
+	unordered_map<ARGB, UINT> rightMatches;
 
 	struct Box {
 		byte AlphaMinimum = 0;
@@ -649,26 +651,22 @@ namespace nQuant
 		auto got = rightMatches.find(argb);
 		if (got == rightMatches.end()) {
 			UINT nMaxColors = pPalette->Count;
-			UINT curdist, mindist = SHORT_MAX;
+			UINT mindist = SHORT_MAX;
 			for (UINT i = 0; i < nMaxColors; i++) {
 				Color c2(pPalette->Entries[i]);
-				UINT deltaAlpha = sqr(c2.GetA() - c.GetA());
-				curdist = deltaAlpha;
+				UINT curdist = sqr(c2.GetA() - c.GetA());
 				if (curdist > mindist)
 					continue;
 
-				UINT deltaRed = sqr(c2.GetR() - c.GetR());
-				curdist += deltaRed;
+				curdist += sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
 
-				UINT deltaGreen = sqr(c2.GetG() - c.GetG());
-				curdist += deltaGreen;
+				curdist += sqr(c2.GetG() - c.GetG());
 				if (curdist > mindist)
 					continue;
 
-				UINT deltaBlue = sqr(c2.GetB() - c.GetB());
-				curdist += deltaBlue;
+				curdist += sqr(c2.GetB() - c.GetB());
 				if (curdist > mindist)
 					continue;
 

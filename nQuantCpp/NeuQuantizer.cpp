@@ -4,7 +4,7 @@
 #include "NeuQuantizer.h"
 #include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
-#include <map>
+#include <unordered_map>
 
 namespace NeuralNet
 {
@@ -78,7 +78,7 @@ namespace NeuralNet
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	map<ARGB, CIELABConvertor::Lab> pixelMap;
+	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
 
 	inline double colorimportance(double al)
 	{

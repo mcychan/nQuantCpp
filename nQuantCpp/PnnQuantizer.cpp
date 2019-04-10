@@ -1,20 +1,20 @@
 ﻿#pragma once
 /* Fast pairwise nearest neighbor based algorithm for multilevel thresholding
 Copyright (C) 2004-2016 Mark Tyler and Dmitry Groshev
-Copyright (c) 2018 Miller Cy Chan
+Copyright (c) 2018-2019 Miller Cy Chan
 * error measure; time used is proportional to number of bins squared - WJ */
 
 #include "stdafx.h"
 #include "PnnQuantizer.h"
 #include "bitmapUtilities.h"
-#include <map>
+#include <unordered_map>
 
 namespace PnnQuant
 {
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	map<ARGB, vector<short> > closestMap;
+	unordered_map<ARGB, vector<short> > closestMap;
 
 	struct pnnbin {
 		double ac = 0, rc = 0, gc = 0, bc = 0, err = 0;
@@ -174,26 +174,22 @@ namespace PnnQuant
 		short k = 0;
 		Color c(argb);
 
-		UINT curdist, mindist = SHORT_MAX;
+		UINT mindist = INT_MAX;
 		for (short i = 0; i < nMaxColors; i++) {
 			Color c2(pPalette->Entries[i]);
-			int adist = abs(c2.GetA() - c.GetA());
-			curdist = adist;
+			UINT curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
 
-			int rdist = abs(c2.GetR() - c.GetR());
-			curdist += rdist;
+			curdist += sqr(c2.GetR() - c.GetR());
 			if (curdist > mindist)
 				continue;
 
-			int gdist = abs(c2.GetG() - c.GetG());
-			curdist += gdist;
+			curdist += sqr(c2.GetG() - c.GetG());
 			if (curdist > mindist)
 				continue;
 
-			int bdist = abs(c2.GetB() - c.GetB());
-			curdist += bdist;
+			curdist += sqr(c2.GetB() - c.GetB());
 			if (curdist > mindist)
 				continue;
 
