@@ -166,13 +166,13 @@ namespace DivQuant
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
 			
-			auto pi = &cmap[i];
-			pi->alpha = c.GetA();
-			pi->L = lab1.L;
-			pi->A = lab1.A;
-			pi->B = lab1.B;
-			pi->argb = c.GetValue();
-			pi->weight = c.GetA() + c.GetR() + c.GetG() + c.GetB();
+			auto& pi = cmap[i];
+			pi.alpha = c.GetA();
+			pi.L = lab1.L;
+			pi.A = lab1.A;
+			pi.B = lab1.B;
+			pi.argb = c.GetValue();
+			pi.weight = c.GetA() + c.GetR() + c.GetG() + c.GetB();
 		}
 	  
 		const int size_lut_ssd = 2 * max_sum + 1;
@@ -256,7 +256,7 @@ namespace DivQuant
 
 	// MT  : type of the member attribute, either byte or UINT
 	template <typename MT>
-	void DivQuantClusterInitMeanAndVar(const int num_points, const ARGB* data, const double data_weight, double* weightsPtr, Pixel<double>* total_mean, Pixel<double>* total_var)
+	void DivQuantClusterInitMeanAndVar(const int num_points, const ARGB* data, const double data_weight, double* weightsPtr, Pixel<double>& total_mean, Pixel<double>& total_var)
 	{
 		double mean_alpha = 0.0, mean_L = 0.0, mean_A = 0.0, mean_B = 0.0;
 		double var_alpha = 0.0, var_L = 0.0, var_A = 0.0, var_B = 0.0;
@@ -311,15 +311,15 @@ namespace DivQuant
 		var_B -= sqr(mean_B);
   
 		// Copy data to user supplied pointers
-		total_mean->alpha = mean_alpha;
-		total_mean->L = mean_L;
-		total_mean->A = mean_A;
-		total_mean->B = mean_B;
+		total_mean.alpha = mean_alpha;
+		total_mean.L = mean_L;
+		total_mean.A = mean_A;
+		total_mean.B = mean_B;
   
-		total_var->alpha = var_alpha;
-		total_var->L = var_L;
-		total_var->A = var_A;
-		total_var->B = var_B;
+		total_var.alpha = var_alpha;
+		total_var.L = var_L;
+		total_var.A = var_A;
+		total_var.B = var_B;
 	}
 
 	// This method defines a clustering approach that divides the input into
@@ -382,14 +382,9 @@ namespace DivQuant
 		double cut_pos; /* cutting position */
 		double total_weight; /* weight of C */
 		double max_val;
-		Pixel<double>* new_mean; /* componentwise mean of C2 */
-		Pixel<double>* new_var; /* componentwise variance of C2 */
 		
-		Pixel<double> total_mean_prop; // componentwise mean of C
-		Pixel<double> total_var_prop; // componentwise variance of C
-		
-		auto total_mean = &total_mean_prop; // componentwise mean of C
-		auto total_var = &total_var_prop; // componentwise variance of C 
+		Pixel<double> total_mean; // componentwise mean of C
+		Pixel<double> total_var; // componentwise variance of C
   
 		double new_weight; /* weight of C2 */
 		double lhs;
@@ -403,50 +398,50 @@ namespace DivQuant
 				DivQuantClusterInitMeanAndVar<MT>(num_points, data, data_weight, weightsPtr, total_mean, total_var);
 			else {
 				// Cluster mean/variance has already been calculated
-				total_mean->alpha = mean[old_index].alpha;
-				total_mean->L = mean[old_index].L;
-				total_mean->A = mean[old_index].A;
-				total_mean->B = mean[old_index].B;
+				total_mean.alpha = mean[old_index].alpha;
+				total_mean.L = mean[old_index].L;
+				total_mean.A = mean[old_index].A;
+				total_mean.B = mean[old_index].B;
 			  
-				total_var->alpha = var[old_index].alpha;
-				total_var->L = var[old_index].L;
-				total_var->A = var[old_index].A;
-				total_var->B = var[old_index].B;    
+				total_var.alpha = var[old_index].alpha;
+				total_var.L = var[old_index].L;
+				total_var.A = var[old_index].A;
+				total_var.B = var[old_index].B;    
 			}
 		
 			/* Determine the axis with the greatest variance */    
-			max_val = total_var->alpha;
+			max_val = total_var.alpha;
 			byte cut_axis = 0; /* index of the cutting axis */
-			cut_pos = total_mean->alpha;
-			if (max_val < total_var->L) {
-				max_val = total_var->L;
+			cut_pos = total_mean.alpha;
+			if (max_val < total_var.L) {
+				max_val = total_var.L;
 				cut_axis = 1;
-				cut_pos = total_mean->L;
+				cut_pos = total_mean.L;
 			}
 			
-			if (max_val < total_var->A) {
-				max_val = total_var->A;
+			if (max_val < total_var.A) {
+				max_val = total_var.A;
 				cut_axis = 2;
-				cut_pos = total_mean->A;
+				cut_pos = total_mean.A;
 			}
 		
-			if (max_val < total_var->B) {
-				max_val = total_var->B;
+			if (max_val < total_var.B) {
+				max_val = total_var.B;
 				cut_axis = 3;
-				cut_pos = total_mean->B;
+				cut_pos = total_mean.B;
 			}
 		
-			new_mean = &mean[new_index];
-			new_var = &var[new_index];
+			auto& new_mean = mean[new_index]; /* componentwise mean of C2 */
+			auto& new_var = var[new_index]; /* componentwise variance of C2 */
 		
 			// Reset the statistics of the new cluster
 			new_weight = 0.0;
 			UINT new_weight_count = 0;
-			new_mean->alpha = new_mean->L = new_mean->A = new_mean->B = 0.0;
+			new_mean.alpha = new_mean.L = new_mean.A = new_mean.B = 0.0;
 		
 			if (!apply_lkm) {
 				new_size = 0;
-				new_var->alpha = new_var->L = new_var->A = new_var->B = 0.0;
+				new_var.alpha = new_var.L = new_var.A = new_var.B = 0.0;
 			}
 			
 			// STEP 3: SPLIT THE CLUSTER OLD_INDEX    
@@ -490,10 +485,10 @@ namespace DivQuant
 
 							tmp_weight = weightsPtr[pointindex];
 				
-							new_mean->alpha += tmp_weight * c.GetA();
-							new_mean->L += tmp_weight * lab1.L;
-							new_mean->A += tmp_weight * lab1.A;
-							new_mean->B += tmp_weight * lab1.B;
+							new_mean.alpha += tmp_weight * c.GetA();
+							new_mean.L += tmp_weight * lab1.L;
+							new_mean.A += tmp_weight * lab1.A;
+							new_mean.B += tmp_weight * lab1.B;
 						}
 			  
 						// Update the point membership and variance/size of the new cluster
@@ -513,10 +508,10 @@ namespace DivQuant
 							else {
 								// non-uniform weights              
 								// tmp_weight already set above in loop
-								new_var->alpha += tmp_weight * sqr(c.GetA());
-								new_var->L += tmp_weight * sqr(lab1.L);
-								new_var->A += tmp_weight * sqr(lab1.A);
-								new_var->B += tmp_weight * sqr(lab1.B);
+								new_var.alpha += tmp_weight * sqr(c.GetA());
+								new_var.L += tmp_weight * sqr(lab1.L);
+								new_var.A += tmp_weight * sqr(lab1.A);
+								new_var.B += tmp_weight * sqr(lab1.B);
 							}
 				
 							++new_size;
@@ -531,34 +526,34 @@ namespace DivQuant
 				} // end foreach tmp_num_points inner loop
 		  
 				if (weightsPtr == nullptr) {
-					new_mean->alpha += new_mean_alpha;
-					new_mean->L += new_mean_L;
-					new_mean->A += new_mean_A;
-					new_mean->B += new_mean_B;
+					new_mean.alpha += new_mean_alpha;
+					new_mean.L += new_mean_L;
+					new_mean.A += new_mean_A;
+					new_mean.B += new_mean_B;
 			
 					if (!apply_lkm) {
-						new_var->alpha += new_var_alpha;
-						new_var->L += new_var_L;
-						new_var->A += new_var_A;
-						new_var->B += new_var_B;
+						new_var.alpha += new_var_alpha;
+						new_var.L += new_var_L;
+						new_var.A += new_var_A;
+						new_var.B += new_var_B;
 					}
 				}
 		  
 			} // end foreach tmp_num_points outer loop
 		
 			if (weightsPtr == nullptr) {
-				new_mean->alpha *= data_weight;
-				new_mean->L *= data_weight;
-				new_mean->A *= data_weight;
-				new_mean->B *= data_weight;
+				new_mean.alpha *= data_weight;
+				new_mean.L *= data_weight;
+				new_mean.A *= data_weight;
+				new_mean.B *= data_weight;
 		  
 				new_weight = new_weight_count * data_weight;
 		  
 				if (!apply_lkm) {
-					new_var->alpha *= data_weight;
-					new_var->L *= data_weight;
-					new_var->A *= data_weight;
-					new_var->B *= data_weight;
+					new_var.alpha *= data_weight;
+					new_var.L *= data_weight;
+					new_var.A *= data_weight;
+					new_var.B *= data_weight;
 				}
 			}
 		
@@ -566,33 +561,33 @@ namespace DivQuant
 			double old_weight = total_weight - new_weight; /* weight of C1 */
 		
 			// Calculate the mean of the new cluster
-			new_mean->alpha /= new_weight;
-			new_mean->L /= new_weight;
-			new_mean->A /= new_weight;
-			new_mean->B /= new_weight;    
+			new_mean.alpha /= new_weight;
+			new_mean.L /= new_weight;
+			new_mean.A /= new_weight;
+			new_mean.B /= new_weight;    
 		
 			/* Calculate the mean of the old cluster using the 'combined mean' formula */
-			auto old_mean = &mean[old_index]; /* componentwise mean of C1 */
-			old_mean->alpha = (total_weight * total_mean->alpha - new_weight * new_mean->alpha) / old_weight;
-			old_mean->L = (total_weight * total_mean->L - new_weight * new_mean->L) / old_weight;
-			old_mean->A = (total_weight * total_mean->A - new_weight * new_mean->A) / old_weight;
-			old_mean->B = (total_weight * total_mean->B - new_weight * new_mean->B) / old_weight;    
+			auto& old_mean = mean[old_index]; /* componentwise mean of C1 */
+			old_mean.alpha = (total_weight * total_mean.alpha - new_weight * new_mean.alpha) / old_weight;
+			old_mean.L = (total_weight * total_mean.L - new_weight * new_mean.L) / old_weight;
+			old_mean.A = (total_weight * total_mean.A - new_weight * new_mean.A) / old_weight;
+			old_mean.B = (total_weight * total_mean.B - new_weight * new_mean.B) / old_weight;    
 		
 			/* LOCAL K-MEANS BEGIN */  
 			for (int it = 0; it < max_iters; ++it) {
 				// Precalculations
-				lhs = 0.5 * (sqr(old_mean->alpha) - sqr(new_mean->alpha) + sqr(old_mean->L) - sqr(new_mean->L) + sqr(old_mean->A) - sqr(new_mean->A) + sqr(old_mean->B) - sqr(new_mean->B));
+				lhs = 0.5 * (sqr(old_mean.alpha) - sqr(new_mean.alpha) + sqr(old_mean.L) - sqr(new_mean.L) + sqr(old_mean.A) - sqr(new_mean.A) + sqr(old_mean.B) - sqr(new_mean.B));
 		  
-				double rhs_alpha = old_mean->alpha - new_mean->alpha;
-				double rhs_L = old_mean->L - new_mean->L;
-				double rhs_A = old_mean->A - new_mean->A;
-				double rhs_B = old_mean->B - new_mean->B;
+				double rhs_alpha = old_mean.alpha - new_mean.alpha;
+				double rhs_L = old_mean.L - new_mean.L;
+				double rhs_A = old_mean.A - new_mean.A;
+				double rhs_B = old_mean.B - new_mean.B;
 		  
 				// Reset the statistics of the new cluster
 				new_weight = 0.0;
 				new_size = 0;
-				new_mean->alpha = new_mean->L = new_mean->A = new_mean->B = 0.0;
-				new_var->alpha = new_var->L = new_var->A = new_var->B = 0.0;
+				new_mean.alpha = new_mean.L = new_mean.A = new_mean.B = 0.0;
+				new_var.alpha = new_var.L = new_var.A = new_var.B = 0.0;
 		  
 				for (int ip = 0; ip < tmp_num_points; ) {
 					int maxLoopOffset = 0xFFFF;
@@ -634,10 +629,10 @@ namespace DivQuant
 									new_mean_B += lab1.B;
 								}
 								else {
-									new_mean->alpha += tmp_weight * c.GetA();
-									new_mean->L += tmp_weight * lab1.L;
-									new_mean->A += tmp_weight * lab1.A;
-									new_mean->B += tmp_weight * lab1.B;
+									new_mean.alpha += tmp_weight * c.GetA();
+									new_mean.L += tmp_weight * lab1.L;
+									new_mean.A += tmp_weight * lab1.A;
+									new_mean.B += tmp_weight * lab1.B;
 								}
 							}
 							else {
@@ -654,15 +649,15 @@ namespace DivQuant
 									new_var_B += sqr(lab1.B);
 								}
 								else {
-									new_mean->alpha += tmp_weight * c.GetA();
-									new_mean->L += tmp_weight * lab1.L;
-									new_mean->A += tmp_weight * lab1.A;
-									new_mean->B += tmp_weight * lab1.B;
+									new_mean.alpha += tmp_weight * c.GetA();
+									new_mean.L += tmp_weight * lab1.L;
+									new_mean.A += tmp_weight * lab1.A;
+									new_mean.B += tmp_weight * lab1.B;
 									
-									new_var->alpha += tmp_weight * sqr(c.GetA());
-									new_var->L += tmp_weight * sqr(lab1.L);
-									new_var->A += tmp_weight * sqr(lab1.A);
-									new_var->B += tmp_weight * sqr(lab1.B);
+									new_var.alpha += tmp_weight * sqr(c.GetA());
+									new_var.L += tmp_weight * sqr(lab1.L);
+									new_var.A += tmp_weight * sqr(lab1.A);
+									new_var.B += tmp_weight * sqr(lab1.B);
 								}
 					  
 								// Save the membership of the point
@@ -678,46 +673,46 @@ namespace DivQuant
 					} // end foreach tmp_num_points inner loop
 					
 					if (weightsPtr == nullptr) {
-						new_mean->alpha += new_mean_alpha;
-						new_mean->L += new_mean_L;
-						new_mean->A += new_mean_A;
-						new_mean->B += new_mean_B;
+						new_mean.alpha += new_mean_alpha;
+						new_mean.L += new_mean_L;
+						new_mean.A += new_mean_A;
+						new_mean.B += new_mean_B;
 					  
-						new_var->alpha += new_var_alpha;
-						new_var->L += new_var_L;
-						new_var->A += new_var_A;
-						new_var->B += new_var_B;
+						new_var.alpha += new_var_alpha;
+						new_var.L += new_var_L;
+						new_var.A += new_var_A;
+						new_var.B += new_var_B;
 					}        
 				} // end foreach tmp_num_points outer loop
 				  
 				if (weightsPtr == nullptr) {
-					new_mean->alpha *= data_weight;
-					new_mean->L *= data_weight;
-					new_mean->A *= data_weight;
-					new_mean->B *= data_weight;
+					new_mean.alpha *= data_weight;
+					new_mean.L *= data_weight;
+					new_mean.A *= data_weight;
+					new_mean.B *= data_weight;
 					
 					new_weight = new_size * data_weight;
 					
-					new_var->alpha *= data_weight;
-					new_var->L *= data_weight;
-					new_var->A *= data_weight;
-					new_var->B *= data_weight;
+					new_var.alpha *= data_weight;
+					new_var.L *= data_weight;
+					new_var.A *= data_weight;
+					new_var.B *= data_weight;
 				}
 			  
 				// Calculate the mean of the new cluster
-				new_mean->alpha /= new_weight;
-				new_mean->L /= new_weight;
-				new_mean->A /= new_weight;
-				new_mean->B /= new_weight;
+				new_mean.alpha /= new_weight;
+				new_mean.L /= new_weight;
+				new_mean.A /= new_weight;
+				new_mean.B /= new_weight;
 			  
 				// Calculate the weight of the old cluster
 				old_weight = total_weight - new_weight;
 			  
 				// Calculate the mean of the old cluster using the 'combined mean' formula
-				old_mean->alpha = (total_weight * total_mean->alpha - new_weight * new_mean->alpha) / old_weight;
-				old_mean->L = (total_weight * total_mean->L - new_weight * new_mean->L) / old_weight;
-				old_mean->A = (total_weight * total_mean->A - new_weight * new_mean->A) / old_weight;
-				old_mean->B = (total_weight * total_mean->B - new_weight * new_mean->B) / old_weight;
+				old_mean.alpha = (total_weight * total_mean.alpha - new_weight * new_mean.alpha) / old_weight;
+				old_mean.L = (total_weight * total_mean.L - new_weight * new_mean.L) / old_weight;
+				old_mean.A = (total_weight * total_mean.A - new_weight * new_mean.A) / old_weight;
+				old_mean.B = (total_weight * total_mean.B - new_weight * new_mean.B) / old_weight;
 			}
 		
 			/* LOCAL K-MEANS END */
@@ -733,36 +728,36 @@ namespace DivQuant
 		
 			/* Calculate the variance of the new cluster */
 			/* Alternative weighted variance formula: ( sum{w_i * x_i^2} / sum{w_i} ) - bar{x}^2 */
-			new_var->alpha = new_var->alpha / new_weight - sqr(new_mean->alpha);
-			new_var->L = new_var->L / new_weight - sqr(new_mean->L);
-			new_var->A = new_var->A / new_weight - sqr(new_mean->A);
-			new_var->B = new_var->B / new_weight - sqr(new_mean->B);
+			new_var.alpha = new_var.alpha / new_weight - sqr(new_mean.alpha);
+			new_var.L = new_var.L / new_weight - sqr(new_mean.L);
+			new_var.A = new_var.A / new_weight - sqr(new_mean.A);
+			new_var.B = new_var.B / new_weight - sqr(new_mean.B);
 		
 			/* Calculate the variance of the old cluster using the 'combined variance' formula */
-			auto old_var = &var[old_index];
-			old_var->alpha = ((total_weight * total_var->alpha -
-				new_weight * (new_var->alpha + sqr(new_mean->alpha - total_mean->alpha))) / old_weight) -
-				sqr(old_mean->alpha - total_mean->alpha);
+			auto& old_var = var[old_index];
+			old_var.alpha = ((total_weight * total_var.alpha -
+				new_weight * (new_var.alpha + sqr(new_mean.alpha - total_mean.alpha))) / old_weight) -
+				sqr(old_mean.alpha - total_mean.alpha);
 				
-			old_var->L = ((total_weight * total_var->L -
-				new_weight * (new_var->L + sqr(new_mean->L - total_mean->L))) / old_weight) -
-				sqr(old_mean->L - total_mean->L);
+			old_var.L = ((total_weight * total_var.L -
+				new_weight * (new_var.L + sqr(new_mean.L - total_mean.L))) / old_weight) -
+				sqr(old_mean.L - total_mean.L);
 		
-			old_var->A = ((total_weight * total_var->A -
-				new_weight * (new_var->A + sqr(new_mean->A - total_mean->A))) / old_weight) -
-				sqr(old_mean->A - total_mean->A);
+			old_var.A = ((total_weight * total_var.A -
+				new_weight * (new_var.A + sqr(new_mean.A - total_mean.A))) / old_weight) -
+				sqr(old_mean.A - total_mean.A);
 		
-			old_var->B = ((total_weight * total_var->B -
-				new_weight * (new_var->B + sqr(new_mean->B - total_mean->B))) / old_weight) -
-				sqr(old_mean->B - total_mean->B);
+			old_var.B = ((total_weight * total_var.B -
+				new_weight * (new_var.B + sqr(new_mean.B - total_mean.B))) / old_weight) -
+				sqr(old_mean.B - total_mean.B);
 		
 			/* Store the updated cluster weights */
 			weight[old_index] = old_weight;
 			weight[new_index] = new_weight;
 		
 			/* Store the cluster TSEs */
-			tse[old_index] = old_weight * (old_var->alpha + old_var->L + old_var->A + old_var->B);
-			tse[new_index] = new_weight * (new_var->alpha + new_var->L + new_var->A + new_var->B);
+			tse[old_index] = old_weight * (old_var.alpha + old_var.L + old_var.A + old_var.B);
+			tse[new_index] = new_weight * (new_var.alpha + new_var.L + new_var.A + new_var.B);
 		
 			/* STEP 4: DETERMINE THE NEXT CLUSTER TO BE SPLIT */
 		
