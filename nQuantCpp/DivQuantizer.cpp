@@ -388,7 +388,6 @@ namespace DivQuant
 		Pixel<double> total_var; // componentwise variance of C
 
 		double new_weight; /* weight of C2 */
-		double lhs;
 		auto tmp_data = data; /* temporary data set (holds the cluster to be split) */
 		double tmp_weight; /* weight of a particular pixel */
 		for (; new_index < num_colors; ++new_index) {
@@ -577,7 +576,7 @@ namespace DivQuant
 			/* LOCAL K-MEANS BEGIN */
 			for (int it = 0; it < max_iters; ++it) {
 				// Precalculations
-				lhs = 0.5 * (sqr(old_mean.alpha) - sqr(new_mean.alpha) + sqr(old_mean.L) - sqr(new_mean.L) + sqr(old_mean.A) - sqr(new_mean.A) + sqr(old_mean.B) - sqr(new_mean.B));
+				double lhs = 0.5 * (sqr(old_mean.alpha) - sqr(new_mean.alpha) + sqr(old_mean.L) - sqr(new_mean.L) + sqr(old_mean.A) - sqr(new_mean.A) + sqr(old_mean.B) - sqr(new_mean.B));
 
 				double rhs_alpha = old_mean.alpha - new_mean.alpha;
 				double rhs_L = old_mean.L - new_mean.L;
@@ -592,7 +591,7 @@ namespace DivQuant
 
 				for (int ip = 0; ip < tmp_num_points; ) {
 					int maxLoopOffset = 0xFFFF;
-					int numLeft = (tmp_num_points - ip);
+					int numLeft = tmp_num_points - ip;
 					if (numLeft < maxLoopOffset)
 						maxLoopOffset = numLeft;
 
