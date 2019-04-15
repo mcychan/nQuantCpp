@@ -398,7 +398,7 @@ namespace NeuralNet
 	}
 
 	// The work horse for NeuralNet color quantizing.
-	bool NeuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
+	bool NeuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
 		if (nMaxColors > 256)
 			nMaxColors = 256;

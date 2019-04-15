@@ -304,7 +304,7 @@ namespace PnnLABQuant
 		return true;
 	}
 
-	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
+	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
@@ -316,7 +316,7 @@ namespace PnnLABQuant
 		auto qPixels = make_unique<short[]>(pixels.size());
 		if (nMaxColors > 256) {
 			hasSemiTransparency = false;
-			dither_image(pixels.data(), nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
+			dither_image(pixels.data(), hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
 		

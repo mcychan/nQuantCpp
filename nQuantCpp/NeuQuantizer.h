@@ -24,6 +24,6 @@ namespace NeuralNet
 	class NeuQuantizer
 	{
 		public:
-			bool QuantizeImage(Bitmap* pSource, Bitmap *pDest, UINT nMaxColors = 256, bool dither = true);
+			bool QuantizeImage(Bitmap* pSource, Bitmap *pDest, UINT& nMaxColors, bool dither = true);
 	};
 }

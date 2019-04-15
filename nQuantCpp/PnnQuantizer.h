@@ -24,6 +24,6 @@ namespace PnnQuant
 	class PnnQuantizer
 	{
 		public:
-			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither = true);
+			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
 	};
 }

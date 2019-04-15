@@ -25,6 +25,6 @@ namespace PnnLABQuant
 	{
 		public:
 			int pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors);
-			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither = true);
+			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
 	};
 }

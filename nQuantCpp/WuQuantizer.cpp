@@ -553,8 +553,7 @@ namespace nQuant
 		boxList[0].GreenMaximum = MAXSIDEINDEX;
 		boxList[0].BlueMaximum = MAXSIDEINDEX;
 
-		const int COLORSIZE = --colorCount;
-		for (int cubeIndex = 1; cubeIndex < COLORSIZE; ++cubeIndex) {
+		for (int cubeIndex = 1; cubeIndex < colorCount; ++cubeIndex) {
 			if (Cut(data, boxList[next], boxList[cubeIndex])) {
 				volumeVariance[next] = boxList[next].Size > 1 ? CalculateVariance(data, boxList[next]) : 0.0f;
 				volumeVariance[cubeIndex] = boxList[cubeIndex].Size > 1 ? CalculateVariance(data, boxList[cubeIndex]) : 0.0f;
@@ -842,19 +841,13 @@ namespace nQuant
 		return true;
 	}
 	
-	bool WuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither, byte alphaThreshold, byte alphaFader)
+	bool WuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither, byte alphaThreshold, byte alphaFader)
 	{
 		if (nMaxColors > 256)
 			nMaxColors = 256;
 
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
-		
-		ColorData colorData(SIDESIZE, bitmapWidth, bitmapHeight);
-		BuildHistogram(colorData, pSource, alphaThreshold, alphaFader);
-		CalculateMoments(colorData);
-		vector<Box> cubes;
-		SplitData(cubes, nMaxColors, colorData);
 
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
@@ -862,6 +855,12 @@ namespace nQuant
 
 		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
 			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
+		
+		ColorData colorData(SIDESIZE, bitmapWidth, bitmapHeight);
+		BuildHistogram(colorData, pSource, alphaThreshold, alphaFader);
+		CalculateMoments(colorData);
+		vector<Box> cubes;
+		SplitData(cubes, nMaxColors, colorData);		
 
 		BuildLookups(pPalette, cubes, colorData);
 		cubes.clear();

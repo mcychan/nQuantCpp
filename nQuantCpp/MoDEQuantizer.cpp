@@ -512,7 +512,7 @@ namespace MoDEQuant
 		return true;
 	}
 
-	bool MoDEQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
+	bool MoDEQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
 		UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
 		UINT bitmapWidth = pSource->GetWidth();
@@ -527,7 +527,7 @@ namespace MoDEQuant
 		if (nMaxColors > 256) {
 			hasSemiTransparency = false;
 			auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
-			dither_image(pixels.data(), nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
+			dither_image(pixels.data(), hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
 

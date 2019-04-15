@@ -24,6 +24,6 @@ namespace Dl3Quant
 	class Dl3Quantizer
 	{
 		public:
-			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither = true);
+			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
 	};
 }

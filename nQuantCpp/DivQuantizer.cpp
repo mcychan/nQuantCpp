@@ -151,9 +151,9 @@ namespace DivQuant
 			cmap[i] = pixelVec[i];
 	}
 
-	bool map_colors_mps(const ARGB* inPixelsPtr, UINT numPixels, short* qPixels, ColorPalette* pPalette)
+	bool map_colors_mps(const ARGB* inPixelsPtr, UINT numPixels, short* qPixels, vector<ARGB>& palette)
 	{
-		const UINT colormapSize = pPalette->Count;
+		const UINT colormapSize = palette.size();
 		const int size_lut_init = 4 * BYTE_MAX + 1;
 		const int max_sum = 4 * BYTE_MAX;
   
@@ -161,7 +161,7 @@ namespace DivQuant
 	  
 		auto cmap = make_unique<Pixel<int>[]>(colormapSize);
 		for (UINT i = 0; i < colormapSize; ++i) {
-			Color c(pPalette->Entries[i]);
+			Color c(palette[i]);
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
 			
@@ -188,7 +188,7 @@ namespace DivQuant
 		sort_color(cmap.get(), colormapSize);
 
 		for (UINT i = 0; i < colormapSize; ++i)
-			pPalette->Entries[i] = cmap[i].argb;
+			palette[i] = cmap[i].argb;
 	  
 		// Calculate the LUT
 		int low = (colormapSize >= 2) ? (int) (0.5 * (cmap[0].weight + cmap[1].weight) + 0.5) : 1;
@@ -249,7 +249,8 @@ namespace DivQuant
 				}
 			}
 
-			qPixels[ik] = index;
+			Color c2(palette[index]);			
+			qPixels[ik] = getARGBIndex(c2, hasSemiTransparency, m_transparentPixelIndex);
 		}
 		return true;
 	}
@@ -329,48 +330,48 @@ namespace DivQuant
 	// MT  : type of the member attribute, either byte or UINT
 	template <typename MT>
 	void DivQuantCluster(const int num_points, ARGB* data, ARGB* tmp_buffer, const double data_weight, double* weightsPtr,
-        const int num_bits, const int max_iters, ColorPalette* pPalette, UINT& nMaxColors)
-	{  
+		const int num_bits, const int max_iters, ColorPalette* pPalette, ARGB* pPal, UINT& nMaxColors)
+	{
 		const UINT num_colors = nMaxColors;
-	  
+
 		bool apply_lkm = 0 < max_iters; /* indicates whether or not LKM is to be applied */
-		int max_iters_m1 = max_iters - 1;  
-		
+		int max_iters_m1 = max_iters - 1;
+
 		int tmp_buffer_used = 0; // Capacity in num points that can be stored in tmp_data
 
 		// The member array is either byte or UINT.
 		auto member = make_unique<MT[]>(num_points);
 
-	  
+
 		unique_ptr<int[]> point_index;
-	  
+
 		auto weight = make_unique<double[]>(num_colors); /* total weight of each cluster */
-	  
+
 		/*
 		* Contains the size of each cluster. The size of a cluster is
 		* actually the number unique colors that it represents.
 		*/
 		auto size = make_unique<int[]>(num_colors);
-	  
+
 		auto tse = make_unique<double[]>(num_colors); /* total squared error of each cluster */
-	  
+
 		auto mean = make_unique<Pixel<double>[]>(num_colors); /* componentwise mean (centroid) of each cluster */
-	  
-		auto var = make_unique<Pixel<double>[]>(num_colors); /* componentwise variance of each cluster */		
-	  
+
+		auto var = make_unique<Pixel<double>[]>(num_colors); /* componentwise variance of each cluster */
+
 		/* Cluster 0 is always the first cluster to be split */
 		int old_index = 0; /* index of C or C1 */
-	  
+
 		/* First cluster to be split contains the entire data set */
 		weight[old_index] = 1.0;
-	  
+
 		int tmp_num_points = num_points; /* number of points in C */
 		/*
 		* # points is not the same as # pixels. Each point represents
 		* potentially multiple pixels with a specific color.
-		*/	
+		*/
 		size[old_index] = tmp_num_points;
-	  
+
 		/* Perform ( NUM_COLORS - 1 ) splits */
 		/*
 		OLD_INDEX denotes the index of the cluster to be split.
@@ -382,18 +383,18 @@ namespace DivQuant
 		double cut_pos; /* cutting position */
 		double total_weight; /* weight of C */
 		double max_val;
-		
+
 		Pixel<double> total_mean; // componentwise mean of C
 		Pixel<double> total_var; // componentwise variance of C
-  
+
 		double new_weight; /* weight of C2 */
 		double lhs;
 		auto tmp_data = data; /* temporary data set (holds the cluster to be split) */
-		double tmp_weight; /* weight of a particular pixel */ 
+		double tmp_weight; /* weight of a particular pixel */
 		for (; new_index < num_colors; ++new_index) {
-			/* STEPS 1 & 2: DETERMINE THE CUTTING AXIS AND POSITION */    
+			/* STEPS 1 & 2: DETERMINE THE CUTTING AXIS AND POSITION */
 			total_weight = weight[old_index];
-		
+
 			if (new_index == 1)
 				DivQuantClusterInitMeanAndVar<MT>(num_points, data, data_weight, weightsPtr, total_mean, total_var);
 			else {
@@ -402,14 +403,14 @@ namespace DivQuant
 				total_mean.L = mean[old_index].L;
 				total_mean.A = mean[old_index].A;
 				total_mean.B = mean[old_index].B;
-			  
+
 				total_var.alpha = var[old_index].alpha;
 				total_var.L = var[old_index].L;
 				total_var.A = var[old_index].A;
-				total_var.B = var[old_index].B;    
+				total_var.B = var[old_index].B;
 			}
-		
-			/* Determine the axis with the greatest variance */    
+
+			/* Determine the axis with the greatest variance */
 			max_val = total_var.alpha;
 			byte cut_axis = 0; /* index of the cutting axis */
 			cut_pos = total_mean.alpha;
@@ -418,59 +419,59 @@ namespace DivQuant
 				cut_axis = 1;
 				cut_pos = total_mean.L;
 			}
-			
+
 			if (max_val < total_var.A) {
 				max_val = total_var.A;
 				cut_axis = 2;
 				cut_pos = total_mean.A;
 			}
-		
+
 			if (max_val < total_var.B) {
 				max_val = total_var.B;
 				cut_axis = 3;
 				cut_pos = total_mean.B;
 			}
-		
+
 			auto& new_mean = mean[new_index]; /* componentwise mean of C2 */
 			auto& new_var = var[new_index]; /* componentwise variance of C2 */
-		
+
 			// Reset the statistics of the new cluster
 			new_weight = 0.0;
 			UINT new_weight_count = 0;
 			new_mean.alpha = new_mean.L = new_mean.A = new_mean.B = 0.0;
-		
+
 			if (!apply_lkm) {
 				new_size = 0;
 				new_var.alpha = new_var.L = new_var.A = new_var.B = 0.0;
 			}
-			
+
 			// STEP 3: SPLIT THE CLUSTER OLD_INDEX    
 			for (int ip = 0; ip < tmp_num_points; ) {
 				double new_mean_alpha = 0, new_mean_L = 0, new_mean_A = 0, new_mean_B = 0;
-		  
+
 				double new_var_alpha = 0, new_var_L = 0, new_var_A = 0, new_var_B = 0;
-		  
+
 				int maxLoopOffset = 0xFFFF;
 				int numLeft = (tmp_num_points - ip);
 				if (numLeft < maxLoopOffset)
 					maxLoopOffset = numLeft;
 
 				maxLoopOffset += ip;
-		  
+
 				for (; ip < maxLoopOffset; ++ip) {
 					Color c(tmp_data[ip]);
 					CIELABConvertor::Lab lab1;
 					getLab(c, lab1);
-			
+
 					double proj_val = c.GetA();
-					if(cut_axis == 1)
+					if (cut_axis == 1)
 						proj_val = lab1.L;
-					else if(cut_axis == 2)
+					else if (cut_axis == 2)
 						proj_val = lab1.A;
-					else if(cut_axis == 3)
+					else if (cut_axis == 3)
 						proj_val = lab1.B; /* projection of a data point on the cutting axis */
-			
-					if (cut_pos < proj_val) {          
+
+					if (cut_pos < proj_val) {
 						if (weightsPtr == nullptr) {
 							new_mean_alpha += c.GetA();
 							new_mean_L += lab1.L;
@@ -484,13 +485,13 @@ namespace DivQuant
 								pointindex = point_index[ip];
 
 							tmp_weight = weightsPtr[pointindex];
-				
+
 							new_mean.alpha += tmp_weight * c.GetA();
 							new_mean.L += tmp_weight * lab1.L;
 							new_mean.A += tmp_weight * lab1.A;
 							new_mean.B += tmp_weight * lab1.B;
 						}
-			  
+
 						// Update the point membership and variance/size of the new cluster
 						if (!apply_lkm) {
 							int pointindex = ip;
@@ -498,7 +499,7 @@ namespace DivQuant
 								pointindex = point_index[ip];
 
 							member[pointindex] = new_index;
-				
+
 							if (weightsPtr == nullptr) {
 								new_var_alpha += sqr(c.GetA());
 								new_var_L += sqr(lab1.L);
@@ -513,24 +514,24 @@ namespace DivQuant
 								new_var.A += tmp_weight * sqr(lab1.A);
 								new_var.B += tmp_weight * sqr(lab1.B);
 							}
-				
+
 							++new_size;
 						}
-			  
+
 						// Update the weight of the new cluster          
 						if (weightsPtr == nullptr)
 							++new_weight_count;
 						else
 							new_weight += tmp_weight;
-					}        
+					}
 				} // end foreach tmp_num_points inner loop
-		  
+
 				if (weightsPtr == nullptr) {
 					new_mean.alpha += new_mean_alpha;
 					new_mean.L += new_mean_L;
 					new_mean.A += new_mean_A;
 					new_mean.B += new_mean_B;
-			
+
 					if (!apply_lkm) {
 						new_var.alpha += new_var_alpha;
 						new_var.L += new_var_L;
@@ -538,17 +539,17 @@ namespace DivQuant
 						new_var.B += new_var_B;
 					}
 				}
-		  
+
 			} // end foreach tmp_num_points outer loop
-		
+
 			if (weightsPtr == nullptr) {
 				new_mean.alpha *= data_weight;
 				new_mean.L *= data_weight;
 				new_mean.A *= data_weight;
 				new_mean.B *= data_weight;
-		  
+
 				new_weight = new_weight_count * data_weight;
-		  
+
 				if (!apply_lkm) {
 					new_var.alpha *= data_weight;
 					new_var.L *= data_weight;
@@ -556,39 +557,39 @@ namespace DivQuant
 					new_var.B *= data_weight;
 				}
 			}
-		
+
 			// Calculate the weight of the old cluster
 			double old_weight = total_weight - new_weight; /* weight of C1 */
-		
+
 			// Calculate the mean of the new cluster
 			new_mean.alpha /= new_weight;
 			new_mean.L /= new_weight;
 			new_mean.A /= new_weight;
-			new_mean.B /= new_weight;    
-		
+			new_mean.B /= new_weight;
+
 			/* Calculate the mean of the old cluster using the 'combined mean' formula */
 			auto& old_mean = mean[old_index]; /* componentwise mean of C1 */
 			old_mean.alpha = (total_weight * total_mean.alpha - new_weight * new_mean.alpha) / old_weight;
 			old_mean.L = (total_weight * total_mean.L - new_weight * new_mean.L) / old_weight;
 			old_mean.A = (total_weight * total_mean.A - new_weight * new_mean.A) / old_weight;
-			old_mean.B = (total_weight * total_mean.B - new_weight * new_mean.B) / old_weight;    
-		
-			/* LOCAL K-MEANS BEGIN */  
+			old_mean.B = (total_weight * total_mean.B - new_weight * new_mean.B) / old_weight;
+
+			/* LOCAL K-MEANS BEGIN */
 			for (int it = 0; it < max_iters; ++it) {
 				// Precalculations
 				lhs = 0.5 * (sqr(old_mean.alpha) - sqr(new_mean.alpha) + sqr(old_mean.L) - sqr(new_mean.L) + sqr(old_mean.A) - sqr(new_mean.A) + sqr(old_mean.B) - sqr(new_mean.B));
-		  
+
 				double rhs_alpha = old_mean.alpha - new_mean.alpha;
 				double rhs_L = old_mean.L - new_mean.L;
 				double rhs_A = old_mean.A - new_mean.A;
 				double rhs_B = old_mean.B - new_mean.B;
-		  
+
 				// Reset the statistics of the new cluster
 				new_weight = 0.0;
 				new_size = 0;
 				new_mean.alpha = new_mean.L = new_mean.A = new_mean.B = 0.0;
 				new_var.alpha = new_var.L = new_var.A = new_var.B = 0.0;
-		  
+
 				for (int ip = 0; ip < tmp_num_points; ) {
 					int maxLoopOffset = 0xFFFF;
 					int numLeft = (tmp_num_points - ip);
@@ -596,33 +597,33 @@ namespace DivQuant
 						maxLoopOffset = numLeft;
 
 					maxLoopOffset += ip;
-			
+
 					double new_mean_alpha = 0, new_mean_L = 0, new_mean_A = 0, new_mean_B = 0;
-			
+
 					double new_var_alpha = 0, new_var_L = 0, new_var_A = 0, new_var_B = 0;
-			
-					for (; ip < maxLoopOffset; ++ip) {          
+
+					for (; ip < maxLoopOffset; ++ip) {
 						Color c(tmp_data[ip]);
 						CIELABConvertor::Lab lab1;
 						getLab(c, lab1);
-						
+
 						int pointindex = ip;
 						if (point_index.get())
 							pointindex = point_index[ip];
 
 						if (weightsPtr != nullptr)
 							tmp_weight = weightsPtr[pointindex];
-			  
-						if (lhs < ((rhs_alpha * c.GetA()) + (rhs_L * lab1.L) + (rhs_A * lab1.A) + (rhs_B * lab1.B))) {            
+
+						if (lhs < ((rhs_alpha * c.GetA()) + (rhs_L * lab1.L) + (rhs_A * lab1.A) + (rhs_B * lab1.B))) {
 							if (it == max_iters_m1) {
 								// Save the membership of the point
 								member[pointindex] = old_index;
 							}
 						}
-						else {           
+						else {
 							if (it != max_iters_m1) {
 								// Update only mean				  
-								if(weightsPtr == nullptr) {
+								if (weightsPtr == nullptr) {
 									new_mean_alpha += c.GetA();
 									new_mean_L += lab1.L;
 									new_mean_A += lab1.A;
@@ -642,7 +643,7 @@ namespace DivQuant
 									new_mean_L += lab1.L;
 									new_mean_A += lab1.A;
 									new_mean_B += lab1.B;
-									
+
 									new_var_alpha += sqr(c.GetA());
 									new_var_L += sqr(lab1.L);
 									new_var_A += sqr(lab1.A);
@@ -653,17 +654,17 @@ namespace DivQuant
 									new_mean.L += tmp_weight * lab1.L;
 									new_mean.A += tmp_weight * lab1.A;
 									new_mean.B += tmp_weight * lab1.B;
-									
+
 									new_var.alpha += tmp_weight * sqr(c.GetA());
 									new_var.L += tmp_weight * sqr(lab1.L);
 									new_var.A += tmp_weight * sqr(lab1.A);
 									new_var.B += tmp_weight * sqr(lab1.B);
 								}
-					  
+
 								// Save the membership of the point
 								member[pointindex] = new_index;
 							}
-						
+
 							// Update the weight/size of the new cluster					
 							if (weightsPtr != nullptr)
 								new_weight += tmp_weight;
@@ -671,96 +672,96 @@ namespace DivQuant
 							++new_size;
 						}
 					} // end foreach tmp_num_points inner loop
-					
+
 					if (weightsPtr == nullptr) {
 						new_mean.alpha += new_mean_alpha;
 						new_mean.L += new_mean_L;
 						new_mean.A += new_mean_A;
 						new_mean.B += new_mean_B;
-					  
+
 						new_var.alpha += new_var_alpha;
 						new_var.L += new_var_L;
 						new_var.A += new_var_A;
 						new_var.B += new_var_B;
-					}        
+					}
 				} // end foreach tmp_num_points outer loop
-				  
+
 				if (weightsPtr == nullptr) {
 					new_mean.alpha *= data_weight;
 					new_mean.L *= data_weight;
 					new_mean.A *= data_weight;
 					new_mean.B *= data_weight;
-					
+
 					new_weight = new_size * data_weight;
-					
+
 					new_var.alpha *= data_weight;
 					new_var.L *= data_weight;
 					new_var.A *= data_weight;
 					new_var.B *= data_weight;
 				}
-			  
+
 				// Calculate the mean of the new cluster
 				new_mean.alpha /= new_weight;
 				new_mean.L /= new_weight;
 				new_mean.A /= new_weight;
 				new_mean.B /= new_weight;
-			  
+
 				// Calculate the weight of the old cluster
 				old_weight = total_weight - new_weight;
-			  
+
 				// Calculate the mean of the old cluster using the 'combined mean' formula
 				old_mean.alpha = (total_weight * total_mean.alpha - new_weight * new_mean.alpha) / old_weight;
 				old_mean.L = (total_weight * total_mean.L - new_weight * new_mean.L) / old_weight;
 				old_mean.A = (total_weight * total_mean.A - new_weight * new_mean.A) / old_weight;
 				old_mean.B = (total_weight * total_mean.B - new_weight * new_mean.B) / old_weight;
 			}
-		
+
 			/* LOCAL K-MEANS END */
-		
+
 			/* Store the updated cluster sizes */
 			size[old_index] = tmp_num_points - new_size;
 			size[new_index] = new_size;
-		
-			if (new_index == num_colors - 1) {      
+
+			if (new_index == num_colors - 1) {
 				/* This is the last iteration. So, there is no need to determine the cluster to be split in the next iteration. */
 				break;
 			}
-		
+
 			/* Calculate the variance of the new cluster */
 			/* Alternative weighted variance formula: ( sum{w_i * x_i^2} / sum{w_i} ) - bar{x}^2 */
 			new_var.alpha = new_var.alpha / new_weight - sqr(new_mean.alpha);
 			new_var.L = new_var.L / new_weight - sqr(new_mean.L);
 			new_var.A = new_var.A / new_weight - sqr(new_mean.A);
 			new_var.B = new_var.B / new_weight - sqr(new_mean.B);
-		
+
 			/* Calculate the variance of the old cluster using the 'combined variance' formula */
 			auto& old_var = var[old_index];
 			old_var.alpha = ((total_weight * total_var.alpha -
 				new_weight * (new_var.alpha + sqr(new_mean.alpha - total_mean.alpha))) / old_weight) -
 				sqr(old_mean.alpha - total_mean.alpha);
-				
+
 			old_var.L = ((total_weight * total_var.L -
 				new_weight * (new_var.L + sqr(new_mean.L - total_mean.L))) / old_weight) -
 				sqr(old_mean.L - total_mean.L);
-		
+
 			old_var.A = ((total_weight * total_var.A -
 				new_weight * (new_var.A + sqr(new_mean.A - total_mean.A))) / old_weight) -
 				sqr(old_mean.A - total_mean.A);
-		
+
 			old_var.B = ((total_weight * total_var.B -
 				new_weight * (new_var.B + sqr(new_mean.B - total_mean.B))) / old_weight) -
 				sqr(old_mean.B - total_mean.B);
-		
+
 			/* Store the updated cluster weights */
 			weight[old_index] = old_weight;
 			weight[new_index] = new_weight;
-		
+
 			/* Store the cluster TSEs */
 			tse[old_index] = old_weight * (old_var.alpha + old_var.L + old_var.A + old_var.B);
 			tse[new_index] = new_weight * (new_var.alpha + new_var.L + new_var.A + new_var.B);
-		
+
 			/* STEP 4: DETERMINE THE NEXT CLUSTER TO BE SPLIT */
-		
+
 			/* Split the cluster with the maximum TSE */
 			max_val = DBL_MIN;
 			for (UINT ic = 0; ic <= new_index; ++ic) {
@@ -769,60 +770,76 @@ namespace DivQuant
 					old_index = ic;
 				}
 			}
-		
+
 			tmp_num_points = size[old_index];
-		
+
 			// Allocate tmp_data and point_index only after initial division and then reuse buffers
-		
+
 			if (tmp_buffer_used == 0) {
 				// When the initial input points are first split into 2 clusters, allocate tmp_data
 				// as a buffer large enough to hold the largest of the 2 initial clusters. This
 				// buffer is significantly smaller than the original input size and it can be
 				// reused for all smaller cluster sizes.
-				
+
 				int largerSize = size[0];
 				if (num_colors > 1 && size[1] > largerSize)
 					largerSize = size[1];
-		  
+
 				tmp_data = tmp_buffer;
-		  
+
 				tmp_buffer_used = largerSize;
-		  
+
 				// alloc and init to zero
 				point_index = make_unique<int[]>(largerSize);
 			}
-		
+
 			// Setup the points and their indexes in the next cluster to be split    
-			int count = 0;			
-		
+			int count = 0;
+
 			// Read 1 to N values from member array one at a time
 			for (int ip = 0; ip < num_points; ++ip) {
-				if (member[ip] == old_index) {   
+				if (member[ip] == old_index) {
 					tmp_data[count] = data[ip];
 					point_index[count++] = ip;
 				}
 			}
-			
+
 			if (count != tmp_num_points) {
 				cerr << "Cluster to be split is expected to be of size " << tmp_num_points << " not " << count << " !" << endl;
 				return;
 			}
 		}
-	  
+
 		/* Determine the final cluster centers */
 		int shift_amount = 8 - num_bits;
 		int num_empty = 0; /* # empty clusters */
 		UINT colortableOffset = 0;
-		for (UINT ic = 0; ic < num_colors; ++ic) {
-			if (size[ic] > 0) {
-				CIELABConvertor::Lab lab1;
-				lab1.alpha = rint(mean[ic].alpha);
-				lab1.L = mean[ic].L, lab1.A = mean[ic].A, lab1.B = mean[ic].B;
-				pPalette->Entries[colortableOffset++] = CIELABConvertor::LAB2RGB(lab1);
+		if (pPalette) {
+			for (UINT ic = 0; ic < num_colors; ++ic) {
+				if (size[ic] > 0) {
+					CIELABConvertor::Lab lab1;
+					lab1.alpha = rint(mean[ic].alpha);
+					lab1.L = mean[ic].L, lab1.A = mean[ic].A, lab1.B = mean[ic].B;
+					pPalette->Entries[colortableOffset++] = CIELABConvertor::LAB2RGB(lab1);
+				}
+				else {
+					/* Empty cluster */
+					++num_empty;
+				}
 			}
-			else {
-				/* Empty cluster */
-				++num_empty;
+		}
+		else if (pPal) {
+			for (UINT ic = 0; ic < num_colors; ++ic) {
+				if (size[ic] > 0) {
+					CIELABConvertor::Lab lab1;
+					lab1.alpha = rint(mean[ic].alpha);
+					lab1.L = mean[ic].L, lab1.A = mean[ic].A, lab1.B = mean[ic].B;
+					pPal[colortableOffset++] = CIELABConvertor::LAB2RGB(lab1);
+				}
+				else {
+					/* Empty cluster */
+					++num_empty;
+				}
 			}
 		}
 	  
@@ -872,12 +889,12 @@ namespace DivQuant
 		}
 	}
 
-	void DivQuantizer::quant_varpart_fast(const ARGB* inPixels, const UINT numPixels, ColorPalette* pPalette,
+	void DivQuantizer::quant_varpart_fast(const ARGB* inPixels, const UINT numPixels, ColorPalette* pPalette, vector<ARGB>* pPal,
 		const UINT numRows, const bool allPixelsUnique,
 		const int num_bits, const int dec_factor, const int max_iters)
 	{	  
 		const UINT numCols = numPixels / numRows;
-		UINT nMaxColors = pPalette->Count;
+		UINT nMaxColors = pPalette ? pPalette->Count : pPal->size();
 
 		auto inputPixels = make_unique<ARGB[]>(numPixels);
 		auto tmpPixels = make_unique<ARGB[]>(numPixels);
@@ -903,9 +920,9 @@ namespace DivQuant
 		}
 	  
 		if (nMaxColors <= 256)
-			DivQuantCluster<byte>(numPixels, inputPixels.get(), tmpPixels.get(), weightUniform, weightsPtr.get(), num_bits, max_iters, pPalette, nMaxColors);
+			DivQuantCluster<byte>(numPixels, inputPixels.get(), tmpPixels.get(), weightUniform, weightsPtr.get(), num_bits, max_iters, pPalette, nullptr, nMaxColors);
 		else
-			DivQuantCluster<UINT>(numPixels, inputPixels.get(), tmpPixels.get(), weightUniform, weightsPtr.get(), num_bits, max_iters, pPalette, nMaxColors);
+			DivQuantCluster<UINT>(numPixels, inputPixels.get(), tmpPixels.get(), weightUniform, weightsPtr.get(), num_bits, max_iters, nullptr, pPal->data(), nMaxColors);
 	}
 	
 	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
@@ -967,13 +984,170 @@ namespace DivQuant
 		return k;
 	}
 
+	short closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, const ARGB argb)
+	{
+		short k = 0;
+		Color c(argb);
+
+		double mindist = SHORT_MAX;
+		CIELABConvertor::Lab lab1, lab2;
+		getLab(c, lab1);
+
+		for (UINT i = 0; i < nMaxColors; i++) {
+			Color c2(pPalette[i]);
+			getLab(c2, lab2);
+
+			double curdist = sqr(c2.GetA() - c.GetA());
+			if (curdist > mindist)
+				continue;
+
+			if (nMaxColors < 256) {
+				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
+				curdist += sqr(deltaL_prime_div_k_L_S_L);
+				if (curdist > mindist)
+					continue;
+
+				double a1Prime, a2Prime, CPrime1, CPrime2;
+				double deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
+				curdist += sqr(deltaC_prime_div_k_L_S_L);
+				if (curdist > mindist)
+					continue;
+
+				double barCPrime, barhPrime;
+				double deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
+				curdist += sqr(deltaH_prime_div_k_L_S_L);
+				if (curdist > mindist)
+					continue;
+
+				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
+				if (curdist > mindist)
+					continue;
+			}
+			else {
+				curdist += sqr(lab2.L - lab1.L);
+				if (curdist > mindist)
+					continue;
+
+				curdist += sqr(lab2.A - lab1.A);
+				if (curdist > mindist)
+					continue;
+
+				curdist += sqr(lab2.B - lab1.B);
+				if (curdist > mindist)
+					continue;
+			}
+
+			mindist = curdist;
+			k = i;
+		}
+		return k;
+	}
+
+	bool dithering_image(const ARGB* pixels, const ARGB* pPalette, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height)
+	{
+		UINT pixelIndex = 0;
+		bool odd_scanline = false;
+		short *row0, *row1;
+		int a_pix, r_pix, g_pix, b_pix, dir, k;
+		const int DJ = 4;
+		const int DITHER_MAX = 20;
+		const int err_len = (width + 2) * DJ;
+		byte clamp[DJ * 256] = { 0 };
+		auto erowErr = make_unique<short[]>(err_len);
+		auto orowErr = make_unique<short[]>(err_len);
+		char limtb[512] = { 0 };
+		auto lim = &limtb[256];
+		auto erowerr = erowErr.get();
+		auto orowerr = orowErr.get();
+		int lookup[65536] = { 0 };
+
+		for (int i = 0; i < 256; i++) {
+			clamp[i] = 0;
+			clamp[i + 256] = static_cast<byte>(i);
+			clamp[i + 512] = BYTE_MAX;
+			clamp[i + 768] = BYTE_MAX;
+
+			limtb[i] = -DITHER_MAX;
+			limtb[i + 256] = DITHER_MAX;
+		}
+		for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
+			limtb[i + 256] = i;
+
+		for (int i = 0; i < height; i++) {
+			if (odd_scanline) {
+				dir = -1;
+				pixelIndex += (width - 1);
+				row0 = &orowerr[DJ];
+				row1 = &erowerr[width * DJ];
+			}
+			else {
+				dir = 1;
+				row0 = &erowerr[DJ];
+				row1 = &orowerr[width * DJ];
+			}
+			row1[0] = row1[1] = row1[2] = row1[3] = 0;
+			for (UINT j = 0; j < width; j++) {
+				Color c(pixels[pixelIndex]);
+
+				r_pix = clamp[((row0[0] + 0x1008) >> 4) + c.GetR()];
+				g_pix = clamp[((row0[1] + 0x1008) >> 4) + c.GetG()];
+				b_pix = clamp[((row0[2] + 0x1008) >> 4) + c.GetB()];
+				a_pix = clamp[((row0[3] + 0x1008) >> 4) + c.GetA()];
+
+				ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+				Color c1(argb);
+				int offset = getARGBIndex(c1, hasSemiTransparency, transparentPixelIndex);
+				if (!lookup[offset])
+					lookup[offset] = closestColorIndex(pPalette, nMaxColors, c.GetA() ? argb : pixels[pixelIndex]) + 1;				
+
+				Color c2(pPalette[lookup[offset] - 1]);
+				qPixels[pixelIndex] = getARGBIndex(c2, hasSemiTransparency, transparentPixelIndex);
+
+				r_pix = lim[r_pix - c2.GetR()];
+				g_pix = lim[g_pix - c2.GetG()];
+				b_pix = lim[b_pix - c2.GetB()];
+				a_pix = lim[a_pix - c2.GetA()];
+
+				k = r_pix * 2;
+				row1[0 - DJ] = r_pix;
+				row1[0 + DJ] += (r_pix += k);
+				row1[0] += (r_pix += k);
+				row0[0 + DJ] += (r_pix += k);
+
+				k = g_pix * 2;
+				row1[1 - DJ] = g_pix;
+				row1[1 + DJ] += (g_pix += k);
+				row1[1] += (g_pix += k);
+				row0[1 + DJ] += (g_pix += k);
+
+				k = b_pix * 2;
+				row1[2 - DJ] = b_pix;
+				row1[2 + DJ] += (b_pix += k);
+				row1[2] += (b_pix += k);
+				row0[2 + DJ] += (b_pix += k);
+
+				k = a_pix * 2;
+				row1[3 - DJ] = a_pix;
+				row1[3 + DJ] += (a_pix += k);
+				row1[3] += (a_pix += k);
+				row0[3 + DJ] += (a_pix += k);
+
+				row0 += DJ;
+				row1 -= DJ;
+				pixelIndex += dir;
+			}
+			if ((i % 2) == 1)
+				pixelIndex += (width + 1);
+
+			odd_scanline = !odd_scanline;
+		}
+		return true;
+	}
+
 	bool quantize_image(const ARGB* pixels, ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
 		if (dither)
-			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
-
-		if(nMaxColors >= 128)
-			return map_colors_mps(pixels, width * height, qPixels, pPalette);
+			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);		
 
 		UINT pixelIndex = 0;
 		for (int j = 0; j < height; ++j) {
@@ -983,7 +1157,7 @@ namespace DivQuant
 		return true;
 	}
 
-	bool DivQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
+	bool DivQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
@@ -995,7 +1169,12 @@ namespace DivQuant
 		auto qPixels = make_unique<short[]>(pixels.size());
 		if (nMaxColors > 256) {
 			hasSemiTransparency = false;
-			dither_image(pixels.data(), nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
+			vector<ARGB> palette(nMaxColors);
+			quant_varpart_fast(pixels.data(), pixels.size(), nullptr, &palette);
+			if (dither)
+				dithering_image(pixels.data(), palette.data(), hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
+			else
+				map_colors_mps(pixels.data(), pixels.size(), qPixels.get(), palette);
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
 

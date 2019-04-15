@@ -700,7 +700,7 @@ namespace EdgeAwareSQuant
 		return pDest->GetLastStatus() == Ok;
 	}
 
-	bool EdgeAwareSQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
+	bool EdgeAwareSQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
 		if (nMaxColors > 256)
 			nMaxColors = 256;

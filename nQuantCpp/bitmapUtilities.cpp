@@ -440,7 +440,7 @@ BOOL FillBitmapFileHeader(LPCVOID pDib, PBITMAPFILEHEADER pbmfh)
 	return TRUE;
 }
 
-bool dither_image(const ARGB* pixels, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, short* qPixels, const UINT width, const UINT height)
+bool dither_image(const ARGB* pixels, const bool& hasSemiTransparency, const int& transparentPixelIndex, short* qPixels, const UINT width, const UINT height)
 {
 	UINT pixelIndex = 0;
 	bool odd_scanline = false;

@@ -34,7 +34,9 @@ namespace PnnQuant
 		auto wg = bin1.gc;
 		auto wb = bin1.bc;
 		for (i = bin1.fw; i; i = bins[i].fw) {
-			double nerr = sqr(bins[i].ac - wa) + sqr(bins[i].rc - wr) + sqr(bins[i].gc - wg) + sqr(bins[i].bc - wb);
+			double nerr = sqr(bins[i].rc - wr) + sqr(bins[i].gc - wg) + sqr(bins[i].bc - wb);
+			if(hasSemiTransparency)
+				nerr += sqr(bins[i].ac - wa);
 			double n2 = bins[i].cnt;
 			nerr *= (n1 * n2) / (n1 + n2);
 			if (nerr >= err)
@@ -59,7 +61,8 @@ namespace PnnQuant
 			Color c(pixel);
 			int index = getARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex);
 			auto& tb = bins[index];
-			tb.ac += c.GetA();
+			if (hasSemiTransparency)
+				tb.ac += c.GetA();
 			tb.rc += c.GetR();
 			tb.gc += c.GetG();
 			tb.bc += c.GetB();
@@ -74,7 +77,8 @@ namespace PnnQuant
 				continue;
 
 			double d = 1.0 / (double)bins[i].cnt;
-			bins[i].ac *= d;
+			if (hasSemiTransparency)
+				bins[i].ac *= d;
 			bins[i].rc *= d;
 			bins[i].gc *= d;
 			bins[i].bc *= d;
@@ -141,7 +145,8 @@ namespace PnnQuant
 			n1 = tb.cnt;
 			n2 = nb.cnt;
 			double d = 1.0 / (n1 + n2);
-			tb.ac = d * rint(n1 * tb.ac + n2 * nb.ac);
+			if (hasSemiTransparency)
+				tb.ac = d * rint(n1 * tb.ac + n2 * nb.ac);
 			tb.rc = d * rint(n1 * tb.rc + n2 * nb.rc);
 			tb.gc = d * rint(n1 * tb.gc + n2 * nb.gc);
 			tb.bc = d * rint(n1 * tb.bc + n2 * nb.bc);
@@ -157,7 +162,7 @@ namespace PnnQuant
 		/* Fill palette */
 		short k = 0;
 		for (int i = 0;; ++k) {
-			auto alpha = rint(bins[i].ac);
+			auto alpha = hasSemiTransparency ? rint(bins[i].ac) : BYTE_MAX;
 			pPalette->Entries[k] = Color::MakeARGB(alpha, rint(bins[i].rc), rint(bins[i].gc), rint(bins[i].bc));
 			if (m_transparentPixelIndex >= 0 && pPalette->Entries[k] == m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[k]);
@@ -253,7 +258,7 @@ namespace PnnQuant
 		return true;
 	}	
 
-	bool PnnQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
+	bool PnnQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
@@ -265,7 +270,7 @@ namespace PnnQuant
 		auto qPixels = make_unique<short[]>(pixels.size());
 		if (nMaxColors > 256) {
 			hasSemiTransparency = false;
-			dither_image(pixels.data(), nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
+			dither_image(pixels.data(), hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
 		

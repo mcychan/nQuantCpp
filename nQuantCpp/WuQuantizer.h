@@ -29,6 +29,6 @@ namespace nQuant
 	class WuQuantizer
 	{
 		public:
-			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither = true, byte alphaThreshold = 0, byte alphaFader = 1);
+			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither = true, byte alphaThreshold = 0, byte alphaFader = 1);
 	};
 }

@@ -908,7 +908,7 @@ namespace SpatialQuant
 		return pDest->GetLastStatus() == Ok;
 	}
 
-	bool SpatialQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT nMaxColors, bool dither)
+	bool SpatialQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
 		if (nMaxColors > 256)
 			nMaxColors = 256;
