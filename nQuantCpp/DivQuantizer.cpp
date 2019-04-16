@@ -151,9 +151,9 @@ namespace DivQuant
 			cmap[i] = pixelVec[i];
 	}
 
-	bool map_colors_mps(const ARGB* inPixelsPtr, UINT numPixels, short* qPixels, vector<ARGB>& palette)
+	bool map_colors_mps(const ARGB* inPixelsPtr, UINT numPixels, short* qPixels, ColorPalette* pPalette)
 	{
-		const UINT colormapSize = palette.size();
+		const UINT colormapSize = pPalette->Count;
 		const int size_lut_init = 4 * BYTE_MAX + 1;
 		const int max_sum = 4 * BYTE_MAX;
   
@@ -161,7 +161,7 @@ namespace DivQuant
 	  
 		auto cmap = make_unique<Pixel<int>[]>(colormapSize);
 		for (UINT i = 0; i < colormapSize; ++i) {
-			Color c(palette[i]);
+			Color c(pPalette->Entries[i]);
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
 			
@@ -188,7 +188,7 @@ namespace DivQuant
 		sort_color(cmap.get(), colormapSize);
 
 		for (UINT i = 0; i < colormapSize; ++i)
-			palette[i] = cmap[i].argb;
+			pPalette->Entries[i] = cmap[i].argb;
 	  
 		// Calculate the LUT
 		int low = (colormapSize >= 2) ? (int) (0.5 * (cmap[0].weight + cmap[1].weight) + 0.5) : 1;
@@ -249,7 +249,7 @@ namespace DivQuant
 				}
 			}
 
-			Color c2(palette[index]);			
+			Color c2(pPalette->Entries[index]);			
 			qPixels[ik] = getARGBIndex(c2, hasSemiTransparency, m_transparentPixelIndex);
 		}
 		return true;
@@ -330,7 +330,7 @@ namespace DivQuant
 	// MT  : type of the member attribute, either byte or UINT
 	template <typename MT>
 	void DivQuantCluster(const int num_points, ARGB* data, ARGB* tmp_buffer, const double data_weight, double* weightsPtr,
-		const int num_bits, const int max_iters, ColorPalette* pPalette, ARGB* pPal, UINT& nMaxColors)
+		const int num_bits, const int max_iters, ColorPalette* pPalette, UINT& nMaxColors)
 	{
 		const UINT num_colors = nMaxColors;
 
@@ -813,35 +813,19 @@ namespace DivQuant
 		int shift_amount = 8 - num_bits;
 		int num_empty = 0; /* # empty clusters */
 		UINT colortableOffset = 0;
-		if (pPalette) {
-			for (UINT ic = 0; ic < num_colors; ++ic) {
-				if (size[ic] > 0) {
-					CIELABConvertor::Lab lab1;
-					lab1.alpha = rint(mean[ic].alpha);
-					lab1.L = mean[ic].L, lab1.A = mean[ic].A, lab1.B = mean[ic].B;
-					pPalette->Entries[colortableOffset++] = CIELABConvertor::LAB2RGB(lab1);
-				}
-				else {
-					/* Empty cluster */
-					++num_empty;
-				}
+		for (UINT ic = 0; ic < num_colors; ++ic) {
+			if (size[ic] > 0) {
+				CIELABConvertor::Lab lab1;
+				lab1.alpha = rint(mean[ic].alpha);
+				lab1.L = mean[ic].L, lab1.A = mean[ic].A, lab1.B = mean[ic].B;
+				pPalette->Entries[colortableOffset++] = CIELABConvertor::LAB2RGB(lab1);
+			}
+			else {
+				/* Empty cluster */
+				++num_empty;
 			}
 		}
-		else if (pPal) {
-			for (UINT ic = 0; ic < num_colors; ++ic) {
-				if (size[ic] > 0) {
-					CIELABConvertor::Lab lab1;
-					lab1.alpha = rint(mean[ic].alpha);
-					lab1.L = mean[ic].L, lab1.A = mean[ic].A, lab1.B = mean[ic].B;
-					pPal[colortableOffset++] = CIELABConvertor::LAB2RGB(lab1);
-				}
-				else {
-					/* Empty cluster */
-					++num_empty;
-				}
-			}
-		}
-	  
+			  
 		if (num_empty)
 			cerr << "# empty clusters: " << num_empty << endl;
 	  
@@ -888,12 +872,12 @@ namespace DivQuant
 		}
 	}
 
-	void DivQuantizer::quant_varpart_fast(const ARGB* inPixels, const UINT numPixels, ColorPalette* pPalette, vector<ARGB>* pPal,
+	void DivQuantizer::quant_varpart_fast(const ARGB* inPixels, const UINT numPixels, ColorPalette* pPalette,
 		const UINT numRows, const bool allPixelsUnique,
 		const int num_bits, const int dec_factor, const int max_iters)
 	{	  
 		const UINT numCols = numPixels / numRows;
-		UINT nMaxColors = pPalette ? pPalette->Count : pPal->size();
+		UINT nMaxColors = pPalette->Count;
 
 		auto inputPixels = make_unique<ARGB[]>(numPixels);
 		auto tmpPixels = make_unique<ARGB[]>(numPixels);
@@ -919,9 +903,9 @@ namespace DivQuant
 		}
 	  
 		if (nMaxColors <= 256)
-			DivQuantCluster<byte>(numPixels, inputPixels.get(), tmpPixels.get(), weightUniform, weightsPtr.get(), num_bits, max_iters, pPalette, nullptr, nMaxColors);
+			DivQuantCluster<byte>(numPixels, inputPixels.get(), tmpPixels.get(), weightUniform, weightsPtr.get(), num_bits, max_iters, pPalette, nMaxColors);
 		else
-			DivQuantCluster<UINT>(numPixels, inputPixels.get(), tmpPixels.get(), weightUniform, weightsPtr.get(), num_bits, max_iters, nullptr, pPal->data(), nMaxColors);
+			DivQuantCluster<UINT>(numPixels, inputPixels.get(), tmpPixels.get(), weightUniform, weightsPtr.get(), num_bits, max_iters, pPalette, nMaxColors);
 	}
 	
 	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
@@ -983,66 +967,7 @@ namespace DivQuant
 		return k;
 	}
 
-	short closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, const ARGB argb)
-	{
-		short k = 0;
-		Color c(argb);
-
-		double mindist = SHORT_MAX;
-		CIELABConvertor::Lab lab1, lab2;
-		getLab(c, lab1);
-
-		for (UINT i = 0; i < nMaxColors; i++) {
-			Color c2(pPalette[i]);
-			getLab(c2, lab2);
-
-			double curdist = sqr(c2.GetA() - c.GetA());
-			if (curdist > mindist)
-				continue;
-
-			if (nMaxColors < 256) {
-				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
-				curdist += sqr(deltaL_prime_div_k_L_S_L);
-				if (curdist > mindist)
-					continue;
-
-				double a1Prime, a2Prime, CPrime1, CPrime2;
-				double deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
-				curdist += sqr(deltaC_prime_div_k_L_S_L);
-				if (curdist > mindist)
-					continue;
-
-				double barCPrime, barhPrime;
-				double deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
-				curdist += sqr(deltaH_prime_div_k_L_S_L);
-				if (curdist > mindist)
-					continue;
-
-				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
-				if (curdist > mindist)
-					continue;
-			}
-			else {
-				curdist += sqr(lab2.L - lab1.L);
-				if (curdist > mindist)
-					continue;
-
-				curdist += sqr(lab2.A - lab1.A);
-				if (curdist > mindist)
-					continue;
-
-				curdist += sqr(lab2.B - lab1.B);
-				if (curdist > mindist)
-					continue;
-			}
-
-			mindist = curdist;
-			k = i;
-		}
-		return k;
-	}
-
-	bool dithering_image(const ARGB* pixels, const ARGB* pPalette, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height)
+	bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height)
 	{
 		UINT pixelIndex = 0;
 		bool odd_scanline = false;
@@ -1097,9 +1022,9 @@ namespace DivQuant
 				Color c1(argb);
 				int offset = getARGBIndex(c1, hasSemiTransparency, transparentPixelIndex);
 				if (!lookup[offset])
-					lookup[offset] = closestColorIndex(pPalette, nMaxColors, c.GetA() ? argb : pixels[pixelIndex]) + 1;				
+					lookup[offset] = nearestColorIndex(pPalette, nMaxColors, c.GetA() ? argb : pixels[pixelIndex]) + 1;
 
-				Color c2(pPalette[lookup[offset] - 1]);
+				Color c2(pPalette->Entries[lookup[offset] - 1]);
 				qPixels[pixelIndex] = getARGBIndex(c2, hasSemiTransparency, transparentPixelIndex);
 
 				r_pix = lim[r_pix - c2.GetR()];
@@ -1165,21 +1090,20 @@ namespace DivQuant
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
+		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPalette = (ColorPalette*)pPaletteBytes.get();
+		pPalette->Count = nMaxColors;
+
 		auto qPixels = make_unique<short[]>(pixels.size());
 		if (nMaxColors > 256) {
 			hasSemiTransparency = false;
-			vector<ARGB> palette(nMaxColors);
-			quant_varpart_fast(pixels.data(), pixels.size(), nullptr, &palette);
+			quant_varpart_fast(pixels.data(), pixels.size(), pPalette);
 			if (dither)
-				dithering_image(pixels.data(), palette.data(), hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
+				dithering_image(pixels.data(), pPalette, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
 			else
-				map_colors_mps(pixels.data(), pixels.size(), qPixels.get(), palette);
+				map_colors_mps(pixels.data(), pixels.size(), qPixels.get(), pPalette);
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
-		}
-
-		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
-		auto pPalette = (ColorPalette*)pPaletteBytes.get();
-		pPalette->Count = nMaxColors;
+		}		
 
 		if (nMaxColors > 2)
 			quant_varpart_fast(pixels.data(), pixels.size(), pPalette);			
