@@ -52,22 +52,27 @@ namespace MoDEQuant
 		unsigned short temp_k = nMaxColors;  //Record the ith pixel is divided into classes in the center of the temp_k
 		double idis = INT_MAX;
 		int nIndex = 0;
-		for (unsigned short k = 0; k < nMaxColors; ++k) {
+		for (unsigned short k = 0; k < nMaxColors; ++k, nIndex += SIDE) {
 			double iidis = sqr(data[nIndex] - c.GetR());
-			if (iidis < idis) {
-				iidis += sqr(data[nIndex + 1] - c.GetG());
-				if (iidis < idis) {
-					iidis += sqr(data[nIndex + 2] - c.GetB());
-					if (iidis < idis) {
-						iidis += hasSemiTransparency ? sqr(data[nIndex + 3] - c.GetA()) : 0;
-						if (iidis < idis) {
-							idis = iidis;
-							temp_k = k;   //Record the ith pixel is divided into classes in the center of the temp_k
-						}
-					}
-				}
+			if (iidis >= idis)
+				continue;
+
+			iidis += sqr(data[nIndex + 1] - c.GetG());
+			if (iidis >= idis)
+				continue;
+
+			iidis += sqr(data[nIndex + 2] - c.GetB());
+			if (iidis >= idis)
+				continue;
+
+			if (hasSemiTransparency) {
+				iidis += sqr(data[nIndex + 3] - c.GetA());
+				if (iidis >= idis)
+					continue;
 			}
-			nIndex += SIDE;
+
+			idis = iidis;
+			temp_k = k;   //Record the ith pixel is divided into classes in the center of the temp_k
 		}
 		return temp_k;
 	}
@@ -420,10 +425,8 @@ namespace MoDEQuant
 
 		/* Fill palette */
 		UINT j = 0;
-		for (unsigned short k = 0; k < nMaxColors; ++k) {
+		for (unsigned short k = 0; k < nMaxColors; ++k, j += SIDE)
 			pPalette->Entries[k] = Color::MakeARGB(hasSemiTransparency ? static_cast<byte>(bestx[j + 3]) : BYTE_MAX, static_cast<byte>(bestx[j]), static_cast<byte>(bestx[j + 1]), static_cast<byte>(bestx[j + 2]));
-			j += SIDE;
-		}
 
 		return 0;
 	}
