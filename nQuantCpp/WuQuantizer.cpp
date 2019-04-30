@@ -649,9 +649,8 @@ namespace nQuant
 
 		auto got = rightMatches.find(argb);
 		if (got == rightMatches.end()) {
-			UINT nMaxColors = pPalette->Count;
 			UINT mindist = SHORT_MAX;
-			for (UINT i = 0; i < nMaxColors; i++) {
+			for (UINT i = 0; i < pPalette->Count; i++) {
 				Color c2(pPalette->Entries[i]);
 				UINT curdist = sqr(c2.GetA() - c.GetA());
 				if (curdist > mindist)
@@ -683,14 +682,14 @@ namespace nQuant
 
 	void GetQuantizedPalette(const ColorData& data, ColorPalette* pPalette, const UINT colorCount, const byte alphaThreshold)
 	{
-		const UINT COLOR_SIZE = colorCount + 1;
-		auto alphas = make_unique<UINT[]>(COLOR_SIZE);
-		auto reds = make_unique<UINT[]>(COLOR_SIZE);
-		auto greens = make_unique<UINT[]>(COLOR_SIZE);
-		auto blues = make_unique<UINT[]>(COLOR_SIZE);
-		auto sums = make_unique<UINT[]>(COLOR_SIZE);
+		auto alphas = make_unique<UINT[]>(colorCount);
+		auto reds = make_unique<UINT[]>(colorCount);
+		auto greens = make_unique<UINT[]>(colorCount);
+		auto blues = make_unique<UINT[]>(colorCount);
+		auto sums = make_unique<UINT[]>(colorCount);
 
 		int pixelsCount = data.pixelsCount;
+		pPalette->Count = colorCount;
 
 		for (UINT pixelIndex = 0; pixelIndex < pixelsCount; pixelIndex++) {
 			auto argb = data.pixels[pixelIndex];
