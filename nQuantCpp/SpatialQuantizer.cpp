@@ -626,14 +626,12 @@ namespace SpatialQuant
 		UINT nMaxColor = palette.size();
 		int max_coarse_level = //1;
 			compute_max_coarse_level(image.get_width(), image.get_height());
-		auto p_coarse_variables = new array3d<double>(
+		auto p_coarse_variables = make_unique<array3d<double> >(
 			image.get_width() >> max_coarse_level,
 			image.get_height() >> max_coarse_level,
 			palette.size());
-		auto pp_coarse_variables = unique_ptr<array3d<double> >(p_coarse_variables);
-		// For syntactic convenience
-		auto& coarse_variables = *p_coarse_variables;
-		coarse_variables.fill_random();
+
+		p_coarse_variables->fill_random();
 
 		double temperature = initial_temperature;
 
@@ -684,10 +682,9 @@ namespace SpatialQuant
 		int iters_at_current_level = 0;
 		bool skip_palette_maintenance = false;
 		array2d<vector_fixed<double, 4> > s(palette.size(), palette.size());
-		compute_initial_s(s, coarse_variables, b_vec[coarse_level]);
-		auto p_palette_sum = make_unique<array2d< vector_fixed<double, 4> > >(coarse_variables.get_width(), coarse_variables.get_height());
-		auto j_palette_sum = p_palette_sum.get();
-		compute_initial_j_palette_sum(*j_palette_sum, coarse_variables, palette);
+		compute_initial_s(s, *p_coarse_variables, b_vec[coarse_level]);
+		auto p_palette_sum = make_unique<array2d< vector_fixed<double, 4> > >(p_coarse_variables->get_width(), p_coarse_variables->get_height());
+		compute_initial_j_palette_sum(*p_palette_sum, *p_coarse_variables, palette);
 
 		while (coarse_level >= 0 || temperature > final_temperature) {
 			// Need to reseat this reference in case we changed p_coarse_variables
@@ -728,7 +725,7 @@ namespace SpatialQuant
 							if (j_x < 0 || j_x >= coarse_variables.get_width())
 								continue;
 							auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
-							auto& j_pal = (*j_palette_sum)(j_x, j_y);
+							auto& j_pal = (*p_palette_sum)(j_x, j_y);
 							for (byte p = 0; p < length; ++p)
 								p_i[p] += b_ij[p] * j_pal[p];
 						}
@@ -756,7 +753,7 @@ namespace SpatialQuant
 						return false;
 
 					auto old_max_v = best_match_color(coarse_variables, i_x, i_y, palette.size());
-					auto& j_pal = (*j_palette_sum)(i_x, i_y);
+					auto& j_pal = (*p_palette_sum)(i_x, i_y);
 					for (UINT v = 0; v < palette.size(); v++) {
 						double new_val = meanfields[v] / meanfield_sum;
 						// Prevent the matrix S from becoming singular
@@ -808,7 +805,7 @@ namespace SpatialQuant
 					compute_initial_s(s, *p_coarse_variables, b_vec[coarse_level]);
 
 				refine_palette(s, coarse_variables, a, palette);
-				compute_initial_j_palette_sum(*j_palette_sum, coarse_variables, palette);
+				compute_initial_j_palette_sum(*p_palette_sum, coarse_variables, palette);
 			}
 
 			iters_at_current_level++;
@@ -816,14 +813,12 @@ namespace SpatialQuant
 			if ((temperature <= final_temperature || coarse_level > 0) && iters_at_current_level >= iters_per_level) {
 				if (--coarse_level < 0)
 					break;
-				auto p_new_coarse_variables = new array3d<double>(image.get_width() >> coarse_level, image.get_height() >> coarse_level, palette.size());
-				zoom_double(coarse_variables, *p_new_coarse_variables);
-				pp_coarse_variables.reset(p_new_coarse_variables);
-				p_coarse_variables = pp_coarse_variables.get();
+				unique_ptr<array3d<double> > p_old_coarse_variables(p_coarse_variables.release());
+				p_coarse_variables = make_unique<array3d<double> >(image.get_width() >> coarse_level, image.get_height() >> coarse_level, palette.size());
+				zoom_double(*p_old_coarse_variables, *p_coarse_variables);
 				iters_at_current_level = 0;
-				p_palette_sum.reset(new array2d<vector_fixed<double, 4> >(p_coarse_variables->get_width(), p_coarse_variables->get_height()));
-				j_palette_sum = p_palette_sum.get();
-				compute_initial_j_palette_sum(*j_palette_sum, *p_coarse_variables, palette);
+				p_palette_sum = make_unique<array2d<vector_fixed<double, 4> > >(p_coarse_variables->get_width(), p_coarse_variables->get_height());
+				compute_initial_j_palette_sum(*p_palette_sum, *p_coarse_variables, palette);
 				skip_palette_maintenance = true;
 			}
 			if (temperature > final_temperature)

@@ -376,8 +376,7 @@ namespace EdgeAwareSQuant
 		int max_coarse_level = 4;
 		int neiSize = 10;
 
-		auto ppIndexImg8 = make_unique<Mat<byte> >(weightMaps.get_height() >> max_coarse_level, weightMaps.get_width() >> max_coarse_level);
-		auto pIndexImg8 = ppIndexImg8.get();
+		auto pIndexImg8 = make_unique<Mat<byte> >(weightMaps.get_height() >> max_coarse_level, weightMaps.get_width() >> max_coarse_level);
 		fill_random_icm(*pIndexImg8, palette.size());
 
 		// Compute a_I^l, b_{IJ}^l according to  Puzicha's (18)
@@ -577,10 +576,9 @@ namespace EdgeAwareSQuant
 
 			if (--coarse_level < 0)
 				break;
-			auto pNewIndexImg8 = new Mat<byte>(weightMaps.get_height() >> coarse_level, weightMaps.get_width() >> coarse_level);
-			zoom_float_icm(*pIndexImg8, *pNewIndexImg8);
-			ppIndexImg8.reset(pNewIndexImg8);
-			pIndexImg8 = ppIndexImg8.get();
+			unique_ptr<Mat<byte> > pOldIndexImg8(pIndexImg8.release());
+			pIndexImg8 = make_unique<Mat<byte> >(weightMaps.get_height() >> coarse_level, weightMaps.get_width() >> coarse_level);
+			zoom_float_icm(*pOldIndexImg8, *pIndexImg8);
 		}
 
 		a_array.reset();
