@@ -813,7 +813,7 @@ namespace SpatialQuant
 			if ((temperature <= final_temperature || coarse_level > 0) && iters_at_current_level >= iters_per_level) {
 				if (--coarse_level < 0)
 					break;
-				unique_ptr<array3d<double> > p_old_coarse_variables(p_coarse_variables.release());
+				auto p_old_coarse_variables = move(p_coarse_variables);
 				p_coarse_variables = make_unique<array3d<double> >(image.get_width() >> coarse_level, image.get_height() >> coarse_level, palette.size());
 				zoom_double(*p_old_coarse_variables, *p_coarse_variables);
 				iters_at_current_level = 0;

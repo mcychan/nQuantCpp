@@ -576,7 +576,7 @@ namespace EdgeAwareSQuant
 
 			if (--coarse_level < 0)
 				break;
-			unique_ptr<Mat<byte> > pOldIndexImg8(pIndexImg8.release());
+			auto pOldIndexImg8 = move(pIndexImg8);
 			pIndexImg8 = make_unique<Mat<byte> >(weightMaps.get_height() >> coarse_level, weightMaps.get_width() >> coarse_level);
 			zoom_float_icm(*pOldIndexImg8, *pIndexImg8);
 		}
