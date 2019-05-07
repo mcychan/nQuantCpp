@@ -590,6 +590,9 @@ namespace nQuant
 	void BuildLookups(ColorPalette* pPalette, vector<Box>& cubes, const ColorData& data)
 	{
 		volatile UINT lookupsCount = 0;
+		if (m_transparentPixelIndex >= 0)
+			pPalette->Entries[lookupsCount++] = m_transparentColor;
+			
 		for (auto const& cube : cubes) {
 			auto weight = Volume(cube, data.weights.get());
 
@@ -602,6 +605,9 @@ namespace nQuant
 			byte blue = static_cast<byte>(Volume(cube, data.momentsBlue.get()) / weight);
 			pPalette->Entries[lookupsCount++] = Color::MakeARGB(alpha, red, green, blue);
 		}
+
+		if(lookupsCount < pPalette->Count)
+			pPalette->Count = lookupsCount;
 	}
 
 	short closestColorIndex(const ColorPalette* pPalette, ARGB argb, byte alphaThreshold)
@@ -694,7 +700,6 @@ namespace nQuant
 		auto sums = make_unique<UINT[]>(colorCount);
 
 		int pixelsCount = data.pixelsCount;
-		pPalette->Count = colorCount;
 
 		for (UINT pixelIndex = 0; pixelIndex < pixelsCount; pixelIndex++) {
 			auto argb = data.pixels[pixelIndex];
@@ -712,7 +717,8 @@ namespace nQuant
 		}
 		rightMatches.clear();
 
-		for (short paletteIndex = 0; paletteIndex < colorCount; paletteIndex++) {
+		short paletteIndex = (m_transparentPixelIndex < 0) ? 0 : 1;
+		for (; paletteIndex < colorCount; paletteIndex++) {
 			if (sums[paletteIndex] > 0) {
 				alphas[paletteIndex] /= sums[paletteIndex];
 				reds[paletteIndex] /= sums[paletteIndex];
