@@ -287,15 +287,18 @@ namespace nQuant
 		const UINT bitmapWidth = sourceImage->GetWidth();
 		const UINT bitmapHeight = sourceImage->GetHeight();
 
+		int pixelIndex = 0;
 		if (bitDepth <= 16) {
-			for (UINT y = 0; y < bitmapHeight; y++) {
-				for (UINT x = 0; x < bitmapWidth; x++) {
+			for (UINT y = 0; y < bitmapHeight; ++y) {
+				for (UINT x = 0; x < bitmapWidth; ++x, ++pixelIndex) {
 					Color color;
 					sourceImage->GetPixel(x, y, &color);
 					if (color.GetA() < BYTE_MAX) {
 						hasSemiTransparency = true;
-						if (color.GetA() == 0)
+						if (color.GetA() == 0) {
+							m_transparentPixelIndex = pixelIndex;
 							m_transparentColor = color.GetValue();
+						}
 					}
 					CompileColorData(colorData, color, alphaThreshold, alphaFader);
 				}
@@ -322,11 +325,11 @@ namespace nQuant
 		}
 
 		// First loop: gather color information
-		for (UINT y = 0; y < bitmapHeight; y++)	// For each row...
+		for (UINT y = 0; y < bitmapHeight; ++y)	// For each row...
 		{
 			auto pPixelSource = pRowSource;
 
-			for (UINT x = 0; x < bitmapWidth; x++)	// ...for each pixel...
+			for (UINT x = 0; x < bitmapWidth; ++x, ++pixelIndex)	// ...for each pixel...
 			{
 				byte pixelBlue = *pPixelSource++;
 				byte pixelGreen = *pPixelSource++;
@@ -336,8 +339,10 @@ namespace nQuant
 				Color color(Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue));
 				if (pixelAlpha < BYTE_MAX) {
 					hasSemiTransparency = true;
-					if (pixelAlpha == 0)
+					if (pixelAlpha == 0) {
+						m_transparentPixelIndex = pixelIndex;
 						m_transparentColor = color.GetValue();
+					}
 				}
 				CompileColorData(colorData, color, alphaThreshold, alphaFader);
 			}
@@ -715,15 +720,11 @@ namespace nQuant
 				blues[paletteIndex] /= sums[paletteIndex];
 			}
 
-			auto color = Color::MakeARGB(alphas[paletteIndex], reds[paletteIndex], greens[paletteIndex], blues[paletteIndex]);
-			pPalette->Entries[paletteIndex] = color;
-
-			if (m_transparentPixelIndex >= 0 && color == m_transparentColor)
-				swap(pPalette->Entries[0], pPalette->Entries[paletteIndex]);
+			pPalette->Entries[paletteIndex] = Color::MakeARGB(alphas[paletteIndex], reds[paletteIndex], greens[paletteIndex], blues[paletteIndex]);
 		}
 	}
 
-	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, short* qPixels, int width, int height, bool dither, byte alphaThreshold)
+	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, short* qPixels, const UINT width, const UINT height, const bool dither, byte alphaThreshold)
 	{
 		if (dither) {
 			bool odd_scanline = false;
@@ -853,21 +854,44 @@ namespace nQuant
 		pPalette->Count = nMaxColors;
 
 		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
-			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
+			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);		
 		
-		ColorData colorData(SIDESIZE, bitmapWidth, bitmapHeight);
-		BuildHistogram(colorData, pSource, alphaThreshold, alphaFader);
-		CalculateMoments(colorData);
-		vector<Box> cubes;
-		SplitData(cubes, nMaxColors, colorData);		
-
-		BuildLookups(pPalette, cubes, colorData);
-		cubes.clear();
-
-		GetQuantizedPalette(colorData, pPalette, nMaxColors, alphaThreshold);
-
 		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
-		quantize_image(colorData.GetPixels(), pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither, alphaThreshold);
+
+		if (nMaxColors > 2) {
+			ColorData colorData(SIDESIZE, bitmapWidth, bitmapHeight);
+			BuildHistogram(colorData, pSource, alphaThreshold, alphaFader);
+			CalculateMoments(colorData);
+			vector<Box> cubes;
+			SplitData(cubes, nMaxColors, colorData);
+
+			BuildLookups(pPalette, cubes, colorData);
+			cubes.clear();
+
+			GetQuantizedPalette(colorData, pPalette, nMaxColors, alphaThreshold);
+			quantize_image(colorData.GetPixels(), pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither, alphaThreshold);
+		}
+		else {
+			vector<ARGB> pixels(bitmapWidth * bitmapHeight);
+			GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
+			if (m_transparentPixelIndex >= 0) {
+				pPalette->Entries[0] = m_transparentColor;
+				pPalette->Entries[1] = Color::Black;
+			}
+			else {
+				pPalette->Entries[0] = Color::Black;
+				pPalette->Entries[1] = Color::White;
+			}	
+			quantize_image(pixels.data(), pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither, alphaThreshold);
+		}		
+		
+		if (m_transparentPixelIndex >= 0) {
+			UINT k = qPixels[m_transparentPixelIndex];
+			if (nMaxColors > 2)
+				pPalette->Entries[k] = m_transparentColor;
+			else if (pPalette->Entries[k] != m_transparentColor)
+				swap(pPalette->Entries[0], pPalette->Entries[1]);
+		}
 		closestMap.clear();
 		rightMatches.clear();
 
