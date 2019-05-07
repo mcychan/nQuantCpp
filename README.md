@@ -20,7 +20,8 @@ Reduced to 256 colors by Divisive hierarchical clustering algorithm<img src="htt
 Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/G1jkp.png" /><br>
 Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm<img src="https://i.stack.imgur.com/ry1oi.png" /><br>
 Reduced to 16 colors by Xialoin Wu's fast optimal color Quantization Algorithm<img src="https://i.stack.imgur.com/De9xw.png" /><br><br>
-Original photo<img src="https://i.stack.imgur.com/SE5x9.png" /><br>
+Original photo<br>
+<img src="https://i.stack.imgur.com/SE5x9.png" /><br>
 Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/GwSmK.png" /><br>
 Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<img src="https://i.stack.imgur.com/SB6NJ.png" /><br>
 
