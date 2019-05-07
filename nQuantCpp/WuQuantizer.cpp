@@ -693,12 +693,11 @@ namespace nQuant
 
 	void GetQuantizedPalette(const ColorData& data, ColorPalette* pPalette, const UINT colorCount, const byte alphaThreshold)
 	{
-		const UINT COLOR_SIZE = colorCount + 1;
-		auto alphas = make_unique<UINT[]>(COLOR_SIZE);
-		auto reds = make_unique<UINT[]>(COLOR_SIZE);
-		auto greens = make_unique<UINT[]>(COLOR_SIZE);
-		auto blues = make_unique<UINT[]>(COLOR_SIZE);
-		auto sums = make_unique<UINT[]>(COLOR_SIZE);
+		auto alphas = make_unique<UINT[]>(colorCount);
+		auto reds = make_unique<UINT[]>(colorCount);
+		auto greens = make_unique<UINT[]>(colorCount);
+		auto blues = make_unique<UINT[]>(colorCount);
+		auto sums = make_unique<UINT[]>(colorCount);
 
 		int pixelsCount = data.pixelsCount;
 
@@ -875,6 +874,7 @@ namespace nQuant
 			BuildLookups(pPalette, cubes, colorData);
 			cubes.clear();
 
+			nMaxColors = pPalette->Count;
 			GetQuantizedPalette(colorData, pPalette, nMaxColors, alphaThreshold);
 			quantize_image(colorData.GetPixels(), pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither, alphaThreshold);
 		}
