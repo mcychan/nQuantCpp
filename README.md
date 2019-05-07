@@ -15,13 +15,14 @@ The main features show up to discuss would be the error diffusion and dithering.
 
 Here some examples of output:
 
-Original image<img src="https://i.stack.imgur.com/fOcIL.png" /><br>
-Reduced to 256 colors by Xialoin Wu's fast optimal color Quantization Algorithm<img src="https://i.stack.imgur.com/DCMBt.png" /><br>
-Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/9lnWH.png" /><br>
-Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<img src="https://i.stack.imgur.com/RX2dK.png" /><br><br>
-Original photo<img src="https://i.stack.imgur.com/jFvEG.jpg" /><br>
-Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/yJIjQ.gif" />
-Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<img src="https://i.stack.imgur.com/dPTml.gif" />
+Original image<img src="http://i.imgur.com/h9ghTMB.png" /><br>
+Reduced to 256 colors by Divisive hierarchical clustering algorithm<img src="https://i.stack.imgur.com/viRTI.png" /><br>
+Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/G1jkp.png" /><br>
+Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm<img src="https://i.stack.imgur.com/ry1oi.png" /><br>
+Reduced to 16 colors by Xialoin Wu's fast optimal color Quantization Algorithm<img src="https://i.stack.imgur.com/De9xw.png" /><br><br>
+Original photo<img src="https://i.stack.imgur.com/SE5x9.png" /><br>
+Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/GwSmK.png" />
+Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<img src="https://i.stack.imgur.com/SB6NJ.png" />
 
 <p>Original image<br><img src="https://i.stack.imgur.com/F90bn.jpg" /><br>
 <b><a href="http://www.cs.joensuu.fi/sipu/pub/Threshold-JEI.pdf">Fast pairwise nearest neighbor based algorithm with CIELAB color space</a></b> with 16 colors<br>
