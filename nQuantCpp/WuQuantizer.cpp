@@ -693,15 +693,16 @@ namespace nQuant
 
 	void GetQuantizedPalette(const ColorData& data, ColorPalette* pPalette, const UINT colorCount, const byte alphaThreshold)
 	{
-		auto alphas = make_unique<UINT[]>(colorCount);
-		auto reds = make_unique<UINT[]>(colorCount);
-		auto greens = make_unique<UINT[]>(colorCount);
-		auto blues = make_unique<UINT[]>(colorCount);
-		auto sums = make_unique<UINT[]>(colorCount);
+		const UINT COLOR_SIZE = colorCount + 1;
+		auto alphas = make_unique<UINT[]>(COLOR_SIZE);
+		auto reds = make_unique<UINT[]>(COLOR_SIZE);
+		auto greens = make_unique<UINT[]>(COLOR_SIZE);
+		auto blues = make_unique<UINT[]>(COLOR_SIZE);
+		auto sums = make_unique<UINT[]>(COLOR_SIZE);
 
 		int pixelsCount = data.pixelsCount;
 
-		for (UINT pixelIndex = 0; pixelIndex < pixelsCount; pixelIndex++) {
+		for (UINT pixelIndex = 0; pixelIndex < pixelsCount; ++pixelIndex) {
 			auto argb = data.pixels[pixelIndex];
 			Color pixel(argb);
 			if (pixel.GetA() <= alphaThreshold)
@@ -718,7 +719,7 @@ namespace nQuant
 		rightMatches.clear();
 
 		short paletteIndex = (m_transparentPixelIndex < 0) ? 0 : 1;
-		for (; paletteIndex < colorCount; paletteIndex++) {
+		for (; paletteIndex < colorCount; ++paletteIndex) {
 			if (sums[paletteIndex] > 0) {
 				alphas[paletteIndex] /= sums[paletteIndex];
 				reds[paletteIndex] /= sums[paletteIndex];
