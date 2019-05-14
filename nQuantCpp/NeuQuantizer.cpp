@@ -271,8 +271,6 @@ namespace NeuralNet
 		short k = 0;
 
 		UINT nMaxColors = pPalette->Count;
-		if (nMaxColors > netsize)
-			nMaxColors = netsize;
 
 		for (; k < nMaxColors; ++k) {
 			CIELABConvertor::Lab lab1;
@@ -426,6 +424,7 @@ namespace NeuralNet
 			Clear();
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
+
 		quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
@@ -434,8 +433,8 @@ namespace NeuralNet
 			else if (pPalette->Entries[k] != m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[1]);
 		}
-		Clear();
 
+		Clear();
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
 	}
 }
