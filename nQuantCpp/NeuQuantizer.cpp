@@ -88,7 +88,7 @@ namespace NeuralNet
 
 	void SetUpArrays() {
 		network = make_unique<nq_pixel[]>(netsize);
-		netindex = make_unique<int[]>(256);
+		netindex = make_unique<int[]>(max(netsize, 256));
 		bias = make_unique<double[]>(netsize);
 		freq = make_unique<double[]>(netsize);
 		radpower = make_unique<double[]>(initrad);
@@ -400,9 +400,6 @@ namespace NeuralNet
 	// The work horse for NeuralNet color quantizing.
 	bool NeuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
-		if (nMaxColors > 256)
-			nMaxColors = 256;
-
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
 
@@ -412,9 +409,6 @@ namespace NeuralNet
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
-
-		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
-			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
 
 		netsize = nMaxColors;		// number of colours used
 		maxnetpos = netsize - 1;
@@ -426,6 +420,12 @@ namespace NeuralNet
 		Inxbuild(pPalette);
 
 		auto qPixels = make_unique<short[]>(pixels.size());
+		if (nMaxColors > 256) {
+			hasSemiTransparency = false;
+			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
+			Clear();
+			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
+		}
 		quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];

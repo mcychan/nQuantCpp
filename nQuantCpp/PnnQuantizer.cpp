@@ -265,16 +265,9 @@ namespace PnnQuant
 
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
-
-		auto qPixels = make_unique<short[]>(pixels.size());
-		if (nMaxColors > 256) {
-			hasSemiTransparency = false;
-			dither_image(pixels.data(), hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
-			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
-		}
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);		
 		
-		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
+		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
@@ -292,7 +285,14 @@ namespace PnnQuant
 			}
 		}
 
+		auto qPixels = make_unique<short[]>(pixels.size());
+		if (nMaxColors > 256) {
+			hasSemiTransparency = false;
+			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
+			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
+		}
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
 			if(nMaxColors > 2)

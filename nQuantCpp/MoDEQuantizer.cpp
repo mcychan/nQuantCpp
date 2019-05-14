@@ -525,14 +525,7 @@ namespace MoDEQuant
 		m_transparentPixelIndex = -1;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
-
-		if (nMaxColors > 256) {
-			hasSemiTransparency = false;
-			auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
-			dither_image(pixels.data(), hasSemiTransparency, m_transparentPixelIndex, qPixels.get(), bitmapWidth, bitmapHeight);
-			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
-		}
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);		
 
 		SIDE = hasSemiTransparency ? 4 : 3;
 		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
@@ -553,6 +546,12 @@ namespace MoDEQuant
 		}
 
 		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
+		if (nMaxColors > 256) {
+			hasSemiTransparency = false;
+			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
+			closestMap.clear();
+			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
+		}
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
