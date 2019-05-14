@@ -965,108 +965,7 @@ namespace DivQuant
 			k = i;
 		}
 		return k;
-	}
-
-	bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height)
-	{
-		UINT pixelIndex = 0;
-		bool odd_scanline = false;
-		short *row0, *row1;
-		int a_pix, r_pix, g_pix, b_pix, dir, k;
-		const int DJ = 4;
-		const int DITHER_MAX = 20;
-		const int err_len = (width + 2) * DJ;
-		byte clamp[DJ * 256] = { 0 };
-		auto erowErr = make_unique<short[]>(err_len);
-		auto orowErr = make_unique<short[]>(err_len);
-		char limtb[512] = { 0 };
-		auto lim = &limtb[256];
-		auto erowerr = erowErr.get();
-		auto orowerr = orowErr.get();
-		int lookup[65536] = { 0 };
-
-		for (int i = 0; i < 256; i++) {
-			clamp[i] = 0;
-			clamp[i + 256] = static_cast<byte>(i);
-			clamp[i + 512] = BYTE_MAX;
-			clamp[i + 768] = BYTE_MAX;
-
-			limtb[i] = -DITHER_MAX;
-			limtb[i + 256] = DITHER_MAX;
-		}
-		for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
-			limtb[i + 256] = i;
-
-		for (int i = 0; i < height; i++) {
-			if (odd_scanline) {
-				dir = -1;
-				pixelIndex += (width - 1);
-				row0 = &orowerr[DJ];
-				row1 = &erowerr[width * DJ];
-			}
-			else {
-				dir = 1;
-				row0 = &erowerr[DJ];
-				row1 = &orowerr[width * DJ];
-			}
-			row1[0] = row1[1] = row1[2] = row1[3] = 0;
-			for (UINT j = 0; j < width; j++) {
-				Color c(pixels[pixelIndex]);
-
-				r_pix = clamp[((row0[0] + 0x1008) >> 4) + c.GetR()];
-				g_pix = clamp[((row0[1] + 0x1008) >> 4) + c.GetG()];
-				b_pix = clamp[((row0[2] + 0x1008) >> 4) + c.GetB()];
-				a_pix = clamp[((row0[3] + 0x1008) >> 4) + c.GetA()];
-
-				ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-				Color c1(argb);
-				int offset = getARGBIndex(c1, hasSemiTransparency, transparentPixelIndex);
-				if (!lookup[offset])
-					lookup[offset] = nearestColorIndex(pPalette, nMaxColors, c.GetA() ? argb : pixels[pixelIndex]) + 1;
-
-				Color c2(pPalette->Entries[lookup[offset] - 1]);
-				qPixels[pixelIndex] = getARGBIndex(c2, hasSemiTransparency, transparentPixelIndex);
-
-				r_pix = lim[r_pix - c2.GetR()];
-				g_pix = lim[g_pix - c2.GetG()];
-				b_pix = lim[b_pix - c2.GetB()];
-				a_pix = lim[a_pix - c2.GetA()];
-
-				k = r_pix * 2;
-				row1[0 - DJ] = r_pix;
-				row1[0 + DJ] += (r_pix += k);
-				row1[0] += (r_pix += k);
-				row0[0 + DJ] += (r_pix += k);
-
-				k = g_pix * 2;
-				row1[1 - DJ] = g_pix;
-				row1[1 + DJ] += (g_pix += k);
-				row1[1] += (g_pix += k);
-				row0[1 + DJ] += (g_pix += k);
-
-				k = b_pix * 2;
-				row1[2 - DJ] = b_pix;
-				row1[2 + DJ] += (b_pix += k);
-				row1[2] += (b_pix += k);
-				row0[2 + DJ] += (b_pix += k);
-
-				k = a_pix * 2;
-				row1[3 - DJ] = a_pix;
-				row1[3 + DJ] += (a_pix += k);
-				row1[3] += (a_pix += k);
-				row0[3 + DJ] += (a_pix += k);
-
-				row0 += DJ;
-				row1 -= DJ;
-				pixelIndex += dir;
-			}
-			if ((i % 2) == 1)
-				pixelIndex += (width + 1);
-
-			odd_scanline = !odd_scanline;
-		}
-		return true;
-	}
+	}	
 
 	bool quantize_image(const ARGB* pixels, ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
@@ -1099,7 +998,7 @@ namespace DivQuant
 			hasSemiTransparency = false;
 			quant_varpart_fast(pixels.data(), pixels.size(), pPalette);
 			if (dither)
-				dithering_image(pixels.data(), pPalette, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
+				dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
 			else
 				map_colors_mps(pixels.data(), pixels.size(), qPixels.get(), pPalette);
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);

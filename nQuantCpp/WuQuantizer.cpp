@@ -610,7 +610,7 @@ namespace nQuant
 			pPalette->Count = lookupsCount;
 	}
 
-	short closestColorIndex(const ColorPalette* pPalette, ARGB argb, byte alphaThreshold)
+	short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
 		short k = 0;
 		Color c(argb);
@@ -651,7 +651,7 @@ namespace nQuant
 		return k;
 	}
 
-	short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, byte alphaThreshold)
+	short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const byte alphaThreshold)
 	{
 		Color c(argb);
 		short k = 0;
@@ -849,18 +849,12 @@ namespace nQuant
 	
 	bool WuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither, byte alphaThreshold, byte alphaFader)
 	{
-		if (nMaxColors > 256)
-			nMaxColors = 256;
-
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
 
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
-
-		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
-			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);		
 		
 		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
 
@@ -875,7 +869,15 @@ namespace nQuant
 			cubes.clear();
 
 			nMaxColors = pPalette->Count;
+			if (nMaxColors > 16 && nMaxColors <= 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
+				pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
+
 			GetQuantizedPalette(colorData, pPalette, nMaxColors, alphaThreshold);
+			if (nMaxColors > 256) {
+				hasSemiTransparency = false;
+				dithering_image(colorData.GetPixels(), pPalette, closestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
+				return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
+			}			
 			quantize_image(colorData.GetPixels(), pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither, alphaThreshold);
 		}
 		else {

@@ -710,7 +710,7 @@ namespace EdgeAwareSQuant
 		m_transparentPixelIndex = -1;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);		
 
 		// see equation (7) in the paper
 		Mat<float> saliencyMap(bitmapHeight, bitmapWidth);
@@ -724,6 +724,9 @@ namespace EdgeAwareSQuant
 		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
+
+		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
+			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
 
 		DivQuant::DivQuantizer divQuantizer;
 		divQuantizer.quant_varpart_fast(pixels.data(), pixels.size(), pPalette);

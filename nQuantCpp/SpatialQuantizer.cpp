@@ -1014,12 +1014,15 @@ namespace SpatialQuant
 				palette[i][p] = ((double)rand()) / RAND_MAX;
 		}
 
-		if (!spatial_color_quant(pixels, filter3_weights, quantized_image, palette))
-			return false;
-
 		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
+
+		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
+			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
+
+		if (!spatial_color_quant(pixels, filter3_weights, quantized_image, palette))
+			return false;		
 
 		if (nMaxColors > 2) {
 			/* Fill palette */
