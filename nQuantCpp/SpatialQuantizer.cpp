@@ -237,7 +237,7 @@ namespace SpatialQuant
 			auto& a = *this;
 
 			// Set result to identity matrix
-			for (int i = 0; i<get_width(); i++)
+			for (int i = 0; i<get_width(); ++i)
 				result(i, i) = 1;
 
 			// Reduce to echelon form, mirroring in result
@@ -289,7 +289,7 @@ namespace SpatialQuant
 			height = rhs.height;
 			depth = rhs.depth;
 			data = make_unique<T[]>(width * height * depth);
-			for (int i = 0; i< (width * height * depth); i++)
+			for (int i = 0; i< (width * height * depth); ++i)
 				data[i] = rhs.data[i];
 		}
 
@@ -304,7 +304,7 @@ namespace SpatialQuant
 		}
 
 		void fill_random() {
-			for (int i = 0; i< (width * height * depth); i++)
+			for (int i = 0; i< (width * height * depth); ++i)
 				data[i] = ((double)rand()) / RAND_MAX;
 		}
 
@@ -445,7 +445,7 @@ namespace SpatialQuant
 	vector<T> extract_vector_layer_1d(const vector<vector_fixed<T, length> >& s, short k)
 	{
 		vector<T> result(s.size());
-		for (UINT i = 0; i < s.size(); i++)
+		for (UINT i = 0; i < s.size(); ++i)
 			result[i] = s[i][k];
 
 		return result;
@@ -518,9 +518,9 @@ namespace SpatialQuant
 			for (int alpha = v; alpha < palette_size; ++alpha)
 				s(v, alpha) = zero_vector;
 		}
-		for (int i_y = 0; i_y<coarse_height; i_y++) {
+		for (int i_y = 0; i_y<coarse_height; ++i_y) {
 			int max_j_y = min(coarse_height, i_y - center_y + b.get_height());
-			for (int i_x = 0; i_x<coarse_width; i_x++) {
+			for (int i_x = 0; i_x<coarse_width; ++i_x) {
 				int max_j_x = min(coarse_width, i_x - center_x + b.get_width());
 				for (int j_y = max(0, i_y - center_y); j_y < max_j_y; ++j_y) {
 					for (int j_x = max(0, i_x - center_x); j_x < max_j_x; ++j_x) {
@@ -537,7 +537,7 @@ namespace SpatialQuant
 						}
 					}
 				}
-				for (int v = 0; v < palette_size; v++)
+				for (int v = 0; v < palette_size; ++v)
 					s(v, v) += coarse_variables(i_x, i_y, v) * center_b;
 			}
 		}
@@ -558,7 +558,7 @@ namespace SpatialQuant
 				auto delta_b_ij = delta * b_value(b, i_x, i_y, j_x, j_y);
 				if (i_x == j_x && i_y == j_y)
 					continue;
-				for (int v = 0; v <= alpha; v++) {
+				for (int v = 0; v <= alpha; ++v) {
 					auto mult = coarse_variables(i_x, i_y, v);
 					for(byte p = 0; p < length; ++p)
 						s(v, alpha)[p] += mult * delta_b_ij[p];
@@ -626,19 +626,18 @@ namespace SpatialQuant
 	}
 
 	bool spatial_color_quant(const vector<ARGB>& image, array2d<vector_fixed<double, 4> >& filter_weights,
-		array2d<UINT>& quantized_image, vector<vector_fixed<double, 4> >& palette,
+		short* quantized_image, const int bitmapWidth, vector<vector_fixed<double, 4> >& palette,
 		const double initial_temperature = 1.0, const double final_temperature = 0.001, const int temps_per_level = 3, const int repeats_per_temp = 1)
 	{
 		const int length = hasSemiTransparency ? 4 : 3;
-		const int bitmapWidth = quantized_image.get_width();
-		const int bitmapHeight = quantized_image.get_height();
+		const int bitmapHeight = image.size() / bitmapWidth;
 
 		UINT nMaxColor = palette.size();
 		int max_coarse_level = //1;
 			compute_max_coarse_level(bitmapWidth, bitmapHeight);
 		auto p_coarse_variables = make_unique<array3d<double> >(
-			quantized_image.get_width() >> max_coarse_level,
-			quantized_image.get_height() >> max_coarse_level,
+			bitmapWidth >> max_coarse_level,
+			bitmapHeight >> max_coarse_level,
 			palette.size());
 
 		p_coarse_variables->fill_random();
@@ -662,7 +661,7 @@ namespace SpatialQuant
 
 		int radius_width = (filter_weights.get_width() - 1) / 2, radius_height = (filter_weights.get_height() - 1) / 2;
 		int coarse_level;
-		for (coarse_level = 1; coarse_level <= max_coarse_level; coarse_level++) {
+		for (coarse_level = 1; coarse_level <= max_coarse_level; ++coarse_level) {
 			array2d<vector_fixed<double, 4> > bi(max(length, b_vec.back().get_width() - 2), max(length, b_vec.back().get_height() - 2));
 
 			for (int J_y = 0; J_y<bi.get_height(); ++J_y) {
@@ -792,11 +791,11 @@ namespace SpatialQuant
 						// The commented out loops are faster but cause a little bit of distortion
 						//for (int y=center_y-1; y<center_y+1; y++) {
 						//   for (int x=center_x-1; x<center_x+1; x++) {
-						for (int y = min(1, center_y - 1); y < max(b.get_height() - 1, center_y + 1); y++) {
+						for (int y = min(1, center_y - 1); y < max(b.get_height() - 1, center_y + 1); ++y) {
 							int j_y = y - center_y + i_y;
 							if (j_y < 0 || j_y >= coarse_variables.get_height())
 								continue;
-							for (int x = min(1, center_x - 1); x < max(b.get_width() - 1, center_x + 1); x++) {
+							for (int x = min(1, center_x - 1); x < max(b.get_width() - 1, center_x + 1); ++x) {
 								int j_x = x - center_x + i_x;
 								if (j_x < 0 || j_x >= coarse_variables.get_width())
 									continue;
@@ -834,90 +833,19 @@ namespace SpatialQuant
 			if (temperature > final_temperature)
 				temperature *= temperature_multiplier;
 		}
-
-		for (int i_x = 0; i_x < quantized_image.get_width(); ++i_x) {
-			for (int i_y = 0; i_y < quantized_image.get_height(); ++i_y)
-				quantized_image(i_x, i_y) = best_match_color(*p_coarse_variables, i_x, i_y, palette.size());
+		
+		for (int i_x = 0; i_x < bitmapWidth; ++i_x) {
+			for (int i_y = 0; i_y < bitmapHeight; ++i_y) {
+				int pixelIndex = i_y * bitmapWidth + i_x;
+				quantized_image[pixelIndex] = best_match_color(*p_coarse_variables, i_x, i_y, palette.size());
+			}
 		}
 
 		return true;
 	}
 
-	bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, array2d<UINT>& quantized_image)
-	{
-		pDest->SetPalette(pPalette);
-
-		BitmapData targetData;
-		UINT w = pDest->GetWidth();
-		UINT h = pDest->GetHeight();
-
-		Status status = pDest->LockBits(&Gdiplus::Rect(0, 0, w, h), ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
-		if (status != Ok) {
-			cerr << "Cannot write image" << endl;
-			return false;
-		}
-
-		auto pRowDest = (byte*)targetData.Scan0;
-		UINT strideDest;
-
-		// Compensate for possible negative stride
-		if (targetData.Stride > 0)
-			strideDest = targetData.Stride;
-		else {
-			pRowDest += h * targetData.Stride;
-			strideDest = -targetData.Stride;
-		}
-
-		UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
-		// Second loop: fill indexed bitmap
-		for (UINT y = 0; y < h; ++y) {	// For each row...
-			for (UINT x = 0; x < w; ++x) {	// ...for each pixel...
-				byte nibbles = 0;
-				byte index = static_cast<byte>(quantized_image(x, y));
-
-				switch (bpp)
-				{
-				case 8:
-					pRowDest[x] = index;
-					break;
-				case 4:
-					// First pixel is the high nibble. From and To indices are 0..16
-					nibbles = pRowDest[x / 2];
-					if ((x & 1) == 0) {
-						nibbles &= 0x0F;
-						nibbles |= (byte)(index << 4);
-					}
-					else {
-						nibbles &= 0xF0;
-						nibbles |= index;
-					}
-
-					pRowDest[x / 2] = nibbles;
-					break;
-				case 1:
-					// First pixel is MSB. From and To are 0 or 1.
-					int pos = x / 8;
-					byte mask = (byte)(128 >> (x & 7));
-					if (index == 0)
-						pRowDest[pos] &= (byte)~mask;
-					else
-						pRowDest[pos] |= mask;
-					break;
-				}
-			}
-
-			pRowDest += strideDest;
-		}
-
-		status = pDest->UnlockBits(&targetData);
-		return pDest->GetLastStatus() == Ok;
-	}
-
 	bool SpatialQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
-	{
-		if (nMaxColors > 256)
-			nMaxColors = 256;
-		
+	{		
 		const UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
@@ -945,13 +873,15 @@ namespace SpatialQuant
 					filter3_weights(i, j)[k] /= sum;
 			}
 		}
-
-		array2d<UINT> quantized_image(bitmapWidth, bitmapHeight);
+		
 		vector<vector_fixed<double, 4> > palette(nMaxColors);
 		for (UINT i = 0; i<nMaxColors; ++i) {
 			for (byte p = 0; p < length; ++p)
 				palette[i][p] = ((double)rand()) / RAND_MAX;
 		}
+
+		if (nMaxColors > 256)
+			nMaxColors = 256;
 
 		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
@@ -960,7 +890,8 @@ namespace SpatialQuant
 		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
 			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
 
-		if (!spatial_color_quant(pixels, filter3_weights, quantized_image, palette))
+		auto qPixels = make_unique<short[]>(pixels.size());
+		if (!spatial_color_quant(pixels, filter3_weights, qPixels.get(), bitmapWidth, palette))
 			return false;		
 
 		if (nMaxColors > 2) {
@@ -969,7 +900,7 @@ namespace SpatialQuant
 				pPalette->Entries[k] = Color::MakeARGB(hasSemiTransparency ? static_cast<byte>(BYTE_MAX * palette[k][3]) : BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[k][0]), static_cast<byte>(BYTE_MAX * palette[k][1]), static_cast<byte>(BYTE_MAX * palette[k][2]));
 			
 			if (m_transparentPixelIndex >= 0) {
-				UINT k = quantized_image[m_transparentPixelIndex];
+				UINT k = qPixels[m_transparentPixelIndex];
 				if (nMaxColors > 2)
 					pPalette->Entries[k] = m_transparentColor;
 				else if (pPalette->Entries[k] != m_transparentColor)
@@ -987,7 +918,7 @@ namespace SpatialQuant
 			}
 		}
 
-		return ProcessImagePixels(pDest, pPalette, quantized_image);
+		return ProcessImagePixels(pDest, pPalette, qPixels.get());
 	}
 
 }
