@@ -381,7 +381,7 @@ namespace SpatialQuant
 		return b(k_x, k_y);
 	}
 
-	void compute_a_image(const array2d<vector_fixed<double, 4> >& image, array2d<vector_fixed<double, 4> >& b, array2d<vector_fixed<double, 4> >& a)
+	void compute_a_image(const vector<ARGB>& image, array2d<vector_fixed<double, 4> >& b, array2d<vector_fixed<double, 4> >& a)
 	{
 		int radius_width = (b.get_width() - 1) / 2, radius_height = (b.get_height() - 1) / 2;
 		for (int i_y = 0; i_y < a.get_height(); i_y++) {
@@ -397,8 +397,15 @@ namespace SpatialQuant
 							j_x = 0;
 						if (j_x >= a.get_width())
 							break;
+						
+						Color jPixel(image[j_y * a.get_width() + j_x]);
+						vector_fixed<double, 4> pixel;
+						pixel[0] = jPixel.GetR() / 255.0f;
+						pixel[1] = jPixel.GetG() / 255.0f;
+						pixel[2] = jPixel.GetB() / 255.0f;
+						pixel[3] = jPixel.GetA() / 255.0f;
 
-						a(i_x, i_y) += b_value(b, i_x, i_y, j_x, j_y).direct_product(image(j_x, j_y));
+						a(i_x, i_y) += b_value(b, i_x, i_y, j_x, j_y).direct_product(pixel);
 					}
 				}
 				a(i_x, i_y) *= -2.0;
@@ -618,17 +625,20 @@ namespace SpatialQuant
 		}
 	}
 
-	bool spatial_color_quant(const array2d<vector_fixed<double, 4> >& image, array2d<vector_fixed<double, 4> >& filter_weights,
+	bool spatial_color_quant(const vector<ARGB>& image, array2d<vector_fixed<double, 4> >& filter_weights,
 		array2d<UINT>& quantized_image, vector<vector_fixed<double, 4> >& palette,
 		const double initial_temperature = 1.0, const double final_temperature = 0.001, const int temps_per_level = 3, const int repeats_per_temp = 1)
 	{
 		const int length = hasSemiTransparency ? 4 : 3;
+		const int bitmapWidth = quantized_image.get_width();
+		const int bitmapHeight = quantized_image.get_height();
+
 		UINT nMaxColor = palette.size();
 		int max_coarse_level = //1;
-			compute_max_coarse_level(image.get_width(), image.get_height());
+			compute_max_coarse_level(bitmapWidth, bitmapHeight);
 		auto p_coarse_variables = make_unique<array3d<double> >(
-			image.get_width() >> max_coarse_level,
-			image.get_height() >> max_coarse_level,
+			quantized_image.get_width() >> max_coarse_level,
+			quantized_image.get_height() >> max_coarse_level,
 			palette.size());
 
 		p_coarse_variables->fill_random();
@@ -642,7 +652,7 @@ namespace SpatialQuant
 			extended_neighborhood_height);
 		compute_b_array(filter_weights, b0);
 
-		array2d<vector_fixed<double, 4> > a0(image.get_width(), image.get_height());
+		array2d<vector_fixed<double, 4> > a0(bitmapWidth, bitmapHeight);
 		compute_a_image(image, b0, a0);
 
 		// Compute a_I^l, b_{IJ}^l according to (18)
@@ -669,7 +679,7 @@ namespace SpatialQuant
 			}
 			b_vec.emplace_back(bi);
 
-			array2d<vector_fixed<double, 4> > ai(image.get_width() >> coarse_level, image.get_height() >> coarse_level);
+			array2d<vector_fixed<double, 4> > ai(bitmapWidth >> coarse_level, bitmapHeight >> coarse_level);
 			sum_coarsen(a_vec.back(), ai);
 			a_vec.emplace_back(ai);
 		}
@@ -814,7 +824,7 @@ namespace SpatialQuant
 				if (--coarse_level < 0)
 					break;
 				auto p_old_coarse_variables = move(p_coarse_variables);
-				p_coarse_variables = make_unique<array3d<double> >(image.get_width() >> coarse_level, image.get_height() >> coarse_level, palette.size());
+				p_coarse_variables = make_unique<array3d<double> >(bitmapWidth >> coarse_level, bitmapHeight >> coarse_level, palette.size());
 				zoom_double(*p_old_coarse_variables, *p_coarse_variables);
 				iters_at_current_level = 0;
 				p_palette_sum = make_unique<array2d<vector_fixed<double, 4> > >(p_coarse_variables->get_width(), p_coarse_variables->get_height());
@@ -825,8 +835,8 @@ namespace SpatialQuant
 				temperature *= temperature_multiplier;
 		}
 
-		for (int i_x = 0; i_x < image.get_width(); i_x++) {
-			for (int i_y = 0; i_y < image.get_height(); i_y++)
+		for (int i_x = 0; i_x < quantized_image.get_width(); i_x++) {
+			for (int i_y = 0; i_y < quantized_image.get_height(); i_y++)
 				quantized_image(i_x, i_y) = best_match_color(*p_coarse_variables, i_x, i_y, palette.size());
 		}
 
@@ -915,78 +925,8 @@ namespace SpatialQuant
 		hasSemiTransparency = false;
 		m_transparentPixelIndex = -1;
 		int pixelIndex = 0;
-		array2d<vector_fixed<double, 4> > pixels(bitmapWidth, bitmapHeight);
-		if (bitDepth <= 16) {
-			for (UINT y = 0; y < bitmapHeight; y++) {
-				for (UINT x = 0; x < bitmapWidth; x++, pixelIndex++) {
-					Color color;
-					pSource->GetPixel(x, y, &color);
-					pixels(x, y)[0] = color.GetR() / ((double)BYTE_MAX);
-					pixels(x, y)[1] = color.GetG() / ((double)BYTE_MAX);
-					pixels(x, y)[2] = color.GetB() / ((double)BYTE_MAX);
-					pixels(x, y)[3] = color.GetA() / ((double)BYTE_MAX);
-
-					if (color.GetA() < BYTE_MAX) {
-						hasSemiTransparency = true;
-						m_transparentPixelIndex = pixelIndex;
-						if (color.GetA() == 0)
-							m_transparentColor = color.GetValue();
-					}
-
-				}
-			}
-		}
-
-		// Lock bits on 3x8 source bitmap
-		else {
-			BitmapData data;
-			Status status = pSource->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, pSource->GetPixelFormat(), &data);
-			if (status != Ok)
-				return false;
-
-			auto pRowSource = (byte*)data.Scan0;
-			UINT strideSource;
-
-			if (data.Stride > 0) strideSource = data.Stride;
-			else
-			{
-				// Compensate for possible negative stride
-				// (not needed for first loop, but we have to do it
-				// for second loop anyway)
-				pRowSource += bitmapHeight * data.Stride;
-				strideSource = -data.Stride;
-			}
-
-			int pixelIndex = 0;
-
-			// First loop: gather color information
-			for (UINT y = 0; y < bitmapHeight; y++) {	// For each row...
-				auto pPixelSource = pRowSource;
-
-				for (UINT x = 0; x < bitmapWidth; x++, pixelIndex++) {	// ...for each pixel...
-					byte pixelBlue = *pPixelSource++;
-					byte pixelGreen = *pPixelSource++;
-					byte pixelRed = *pPixelSource++;
-					byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
-
-					pixels(x, y)[0] = pixelRed / ((double)BYTE_MAX);
-					pixels(x, y)[1] = pixelGreen / ((double)BYTE_MAX);
-					pixels(x, y)[2] = pixelBlue / ((double)BYTE_MAX);
-					pixels(x, y)[3] = pixelAlpha / ((double)BYTE_MAX);
-
-					if (pixelAlpha < BYTE_MAX) {
-						hasSemiTransparency = true;
-						m_transparentPixelIndex = pixelIndex;
-						if (pixelAlpha == 0)
-							m_transparentColor = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
-					}
-				}
-
-				pRowSource += strideSource;
-			}
-
-			pSource->UnlockBits(&data);
-		}
+		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
 		const int length = hasSemiTransparency ? 4 : 3;
 		double dithering_level = 1.0;
