@@ -318,7 +318,6 @@ namespace Dl3Quant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
 		if (nMaxColors > 2) {
 			auto rgb_table3 = make_unique<CUBE3[]>(65536);
 			UINT tot_colors = build_table3(rgb_table3.get(), pixels);
@@ -344,6 +343,13 @@ namespace Dl3Quant
 			}
 		}
 
+		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
+		if (nMaxColors > 256) {
+			hasSemiTransparency = false;
+			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
+			closestMap.clear();
+			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
+		}
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		closestMap.clear();
 

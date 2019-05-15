@@ -989,6 +989,9 @@ namespace DivQuant
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
+		if (nMaxColors > 32768)
+			nMaxColors = 32768;
+
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;

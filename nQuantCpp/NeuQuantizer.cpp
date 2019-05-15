@@ -38,8 +38,8 @@ namespace NeuralNet
 	const int radiusbiasshift = 8;
 	const int radiusbias = 1 << radiusbiasshift;
 
-	short netsize = 256;		// number of colours used	
-	short maxnetpos = netsize - 1;
+	int netsize = 256;		// number of colours used	
+	int maxnetpos = netsize - 1;
 	int initrad = netsize >> 3;   // for 256 cols, radius starts at 32
 	double initradius = initrad * 1.0;
 	const int radiusdec = 30; // factor of 1/30 each cycle
@@ -63,7 +63,7 @@ namespace NeuralNet
 
 	unique_ptr<nq_pixel[]> network; // the network itself
 
-	unique_ptr<int[]> netindex; // for network lookup - really 256
+	unique_ptr<unsigned short[]> netindex; // for network lookup - really 256
 
 	unique_ptr<double[]> bias;  // bias and freq arrays for learning
 	unique_ptr<double[]> freq;
@@ -88,12 +88,12 @@ namespace NeuralNet
 
 	void SetUpArrays() {
 		network = make_unique<nq_pixel[]>(netsize);
-		netindex = make_unique<int[]>(max(netsize, 256));
+		netindex = make_unique<unsigned short[]>(max(netsize, 256));
 		bias = make_unique<double[]>(netsize);
 		freq = make_unique<double[]>(netsize);
 		radpower = make_unique<double[]>(initrad);
 
-		for (short i = specials; i < netsize; ++i) {
+		for (int i = specials; i < netsize; ++i) {
 			network[i].L = network[i].A = network[i].B = i / netsize;
 
 			/*  Sets alpha values at 0 for dark pixels. */
@@ -184,7 +184,7 @@ namespace NeuralNet
 		*/
 		double colimp = 1.0; //colorimportance(al); 
 
-		for (short i = 0; i < netsize; ++i) {
+		for (int i = 0; i < netsize; ++i) {
 			double bestbiasd_biased = bestbiasd + bias[i];
 
 			double a = network[i].L - L;
@@ -268,48 +268,46 @@ namespace NeuralNet
 	}
 
 	void Inxbuild(ColorPalette* pPalette) {
-		short k = 0;
+		UINT nMaxColors = pPalette->Count;		
 
-		UINT nMaxColors = pPalette->Count;
+		int previouscol = 0;
+		int startpos = 0;
 
-		for (; k < nMaxColors; ++k) {
-			CIELABConvertor::Lab lab1;
-			lab1.alpha = round_biased(network[k].al);
-			lab1.L = network[k].L, lab1.A = network[k].A, lab1.B = network[k].B;
-			pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
-		}
-
-		short previouscol = 0;
-		short startpos = 0;
-
-		for (short i = 0; i < nMaxColors; ++i) {
+		for (int i = 0; i < nMaxColors; ++i) {
 			Color c(pPalette->Entries[i]);
-			short smallpos = i;
-			short smallval = c.GetG();			// index on g
+			int smallpos = i;
+			auto smallval = network[i].L;			// index on L
 											// find smallest in i..netsize-1
-			for (short j = i + 1; j < nMaxColors; ++j) {
-				Color c2(pPalette->Entries[j]);
-				if (c2.GetG() < smallval) {		// index on g				
+			for (int j = i + 1; j < nMaxColors; ++j) {
+				if (network[j].L < smallval) {		// index on L				
 					smallpos = j;
-					smallval = c2.GetG();	// index on g
+					smallval = network[j].L;	// index on L
 				}
 			}
 			// swap p (i) and q (smallpos) entries
 			if (i != smallpos)
-				swap(pPalette->Entries[smallpos], pPalette->Entries[i]);
+				swap(network[smallpos], network[i]);
 
 			// smallval entry is now in position i
 			if (smallval != previouscol) {
 				netindex[previouscol] = (startpos + i) >> 1;
-				for (short j = previouscol + 1; j < smallval; ++j)
+				for (int j = previouscol + 1; j < smallval; ++j)
 					netindex[j] = i;
 				previouscol = smallval;
 				startpos = i;
 			}
 		}
+
 		netindex[previouscol] = (startpos + maxnetpos) >> 1;
 		for (int j = previouscol + 1; j < netsize; ++j)
-			netindex[j] = maxnetpos; // really 256
+			netindex[j] = maxnetpos;
+
+		for (UINT k = 0; k < nMaxColors; ++k) {
+			CIELABConvertor::Lab lab1;
+			lab1.alpha = round_biased(network[k].al);
+			lab1.L = network[k].L, lab1.A = network[k].A, lab1.B = network[k].B;
+			pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
+		}
 	}
 
 	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
@@ -403,6 +401,9 @@ namespace NeuralNet
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
+
+		if (nMaxColors > 32768)
+			nMaxColors = 32768;
 
 		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
