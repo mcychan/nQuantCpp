@@ -48,7 +48,7 @@
 
 namespace Dl3Quant
 {
-	const double PR = .2126, PG = .7152, PB = .0722;
+	double PR = .2126, PG = .7152, PB = .0722;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
@@ -351,6 +351,8 @@ namespace Dl3Quant
 			closestMap.clear();
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
+		if (hasSemiTransparency)
+			PR = PG = PB = 1;
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		closestMap.clear();
 
