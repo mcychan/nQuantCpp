@@ -11,6 +11,7 @@ Copyright (c) 2018-2019 Miller Cy Chan
 
 namespace PnnQuant
 {
+	const double PR = .2126, PG = .7152, PB = .0722;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
@@ -179,22 +180,22 @@ namespace PnnQuant
 		short k = 0;
 		Color c(argb);
 
-		UINT mindist = INT_MAX;
+		double mindist = INT_MAX;
 		for (short i = 0; i < nMaxColors; i++) {
 			Color c2(pPalette->Entries[i]);
-			UINT curdist = sqr(c2.GetA() - c.GetA());
+			double curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
 
-			curdist += sqr(c2.GetR() - c.GetR());
+			curdist += PR * sqr(c2.GetR() - c.GetR());
 			if (curdist > mindist)
 				continue;
 
-			curdist += sqr(c2.GetG() - c.GetG());
+			curdist += PG * sqr(c2.GetG() - c.GetG());
 			if (curdist > mindist)
 				continue;
 
-			curdist += sqr(c2.GetB() - c.GetB());
+			curdist += PB * sqr(c2.GetB() - c.GetB());
 			if (curdist > mindist)
 				continue;
 
@@ -215,7 +216,7 @@ namespace PnnQuant
 
 			for (; k < nMaxColors; k++) {
 				Color c2(pPalette->Entries[k]);
-				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
+				closest[4] = abs(c.GetA() - c2.GetA()) + PR * abs(c.GetR() - c2.GetR()) + PG * abs(c.GetG() - c2.GetG()) + PB * abs(c.GetB() - c2.GetB());
 				if (closest[4] < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];

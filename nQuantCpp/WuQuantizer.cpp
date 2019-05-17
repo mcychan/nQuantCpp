@@ -35,6 +35,7 @@ namespace nQuant
 	const byte SIDEPIXSHIFT = 3;
 	const byte MAXSIDEINDEX = 256 / (1 << SIDEPIXSHIFT);
 	const byte SIDESIZE = MAXSIDEINDEX + 1;
+	const double PR = .2126, PG = .7152, PB = .0722;
 	const UINT TOTAL_SIDESIZE = SIDESIZE * SIDESIZE * SIDESIZE * SIDESIZE;
 
 	bool hasSemiTransparency = false;
@@ -623,7 +624,7 @@ namespace nQuant
 
 			for (; k < nMaxColors; k++) {
 				Color c2(pPalette->Entries[k]);
-				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
+				closest[4] = abs(c.GetA() - c2.GetA()) + PR * abs(c.GetR() - c2.GetR()) + PG * abs(c.GetG() - c2.GetG()) + PB * abs(c.GetB() - c2.GetB());
 				if (closest[4] < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];
@@ -660,22 +661,22 @@ namespace nQuant
 
 		auto got = rightMatches.find(argb);
 		if (got == rightMatches.end()) {
-			UINT mindist = SHORT_MAX;
+			double mindist = INT_MAX;
 			for (UINT i = 0; i < pPalette->Count; i++) {
 				Color c2(pPalette->Entries[i]);
-				UINT curdist = sqr(c2.GetA() - c.GetA());
+				double curdist = sqr(c2.GetA() - c.GetA());
 				if (curdist > mindist)
 					continue;
 
-				curdist += sqr(c2.GetR() - c.GetR());
+				curdist += PR * sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
 
-				curdist += sqr(c2.GetG() - c.GetG());
+				curdist += PG * sqr(c2.GetG() - c.GetG());
 				if (curdist > mindist)
 					continue;
 
-				curdist += sqr(c2.GetB() - c.GetB());
+				curdist += PB * sqr(c2.GetB() - c.GetB());
 				if (curdist > mindist)
 					continue;
 
