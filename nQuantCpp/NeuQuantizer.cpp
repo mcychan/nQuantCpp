@@ -20,8 +20,8 @@ namespace NeuralNet
 	* NEUQUANT Neural-Net quantization algorithm by Anthony Dekker, 1994.
 	* See "Kohonen neural networks for optimal colour quantization"
 	* in "Network: Computation in Neural Systems" Vol. 5 (1994) pp 351-367.
-	* for a discussion of the algorithm.
-	* See also  http://www.acm.org/~dekker/NEUQUANT.HTML
+	* for research paper of the algorithm.
+	* See also  https://www.researchgate.net/publication/232079905_Kohonen_neural_networks_for_optimal_colour_quantization
 	*
 	* Any party obtaining a copy of these files from the author, directly or
 	* indirectly, is granted, free of charge, a full and unrestricted irrevocable,
@@ -53,10 +53,10 @@ namespace NeuralNet
 	const int gammashift = 10;                  /* gamma = 1024 */
 	const double gamma = (double)(1 << gammashift);
 	const int betashift = 10;
-	const double beta = (1.0 / (1 << betashift));/* beta = 1/1024 */
+	const double beta = (1.0 / (double)(1 << betashift));/* beta = 1/1024 */
 	const double betagamma = (double)(1 << (gammashift - betashift));
 
-	struct nq_pixel                        /* ABGRc */
+	struct nq_pixel
 	{
 		double al, L, A, B;
 	};
@@ -98,7 +98,7 @@ namespace NeuralNet
 
 			/*  Sets alpha values at 0 for dark pixels. */
 			if (i < 16)
-				network[i].al = (i * 16);
+				network[i].al = i * 16.0;
 			else
 				network[i].al = BYTE_MAX;
 
@@ -177,7 +177,7 @@ namespace NeuralNet
 		/* bias[i] = gamma*((1/netsize)-freq[i]) */
 
 		UINT bestpos = 0, bestbiaspos = bestpos;
-		double bestd = 1 << 30, bestbiasd = bestd;
+		double bestd = INT_MAX, bestbiasd = bestd;
 
 		/* Using colorimportance(al) here was causing problems with images that were close to monocolor.
 		See bug reports: 3149791, 2938728, 2896731 and 2938710
@@ -208,9 +208,9 @@ namespace NeuralNet
 				}
 			}
 
-			double betafreq = freq[i] / (1 << betashift);
+			double betafreq = freq[i] * beta;
 			freq[i] -= betafreq;
-			bias[i] += betafreq * (1 << gammashift);
+			bias[i] += betafreq * gamma;
 		}
 		freq[bestpos] += beta;
 		bias[bestpos] -= betagamma;
