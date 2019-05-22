@@ -359,12 +359,12 @@ namespace nQuant
 		const UINT SIDESIZE_3 = SIDESIZE * SIDESIZE * SIDESIZE;
 		for (byte alphaIndex = 1; alphaIndex <= MAXSIDEINDEX; ++alphaIndex)
 		{
-			UINT xarea[SIDESIZE_3] = { 0 };
-			UINT xareaAlpha[SIDESIZE_3] = { 0 };
-			UINT xareaRed[SIDESIZE_3] = { 0 };
-			UINT xareaGreen[SIDESIZE_3] = { 0 };
-			UINT xareaBlue[SIDESIZE_3] = { 0 };
-			float xarea2[SIDESIZE_3] = { 0 };
+			auto xarea = make_unique<UINT[]>(SIDESIZE_3);
+			auto xareaAlpha = make_unique<UINT[]>(SIDESIZE_3);
+			auto xareaRed = make_unique<UINT[]>(SIDESIZE_3);
+			auto xareaGreen = make_unique<UINT[]>(SIDESIZE_3);
+			auto xareaBlue = make_unique<UINT[]>(SIDESIZE_3);
+			auto xarea2 = make_unique<float[]>(SIDESIZE_3);
 
 			for (byte redIndex = 1; redIndex <= MAXSIDEINDEX; ++redIndex)
 			{
@@ -620,11 +620,9 @@ namespace nQuant
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = SHORT_MAX;
 
-			UINT nMaxColors = pPalette->Count;
-
 			for (; k < nMaxColors; k++) {
 				Color c2(pPalette->Entries[k]);
-				closest[4] = abs(c.GetA() - c2.GetA()) + PR * abs(c.GetR() - c2.GetR()) + PG * abs(c.GetG() - c2.GetG()) + PB * abs(c.GetB() - c2.GetB());
+				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
 				if (closest[4] < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];

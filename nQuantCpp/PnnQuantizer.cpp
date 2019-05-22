@@ -216,7 +216,7 @@ namespace PnnQuant
 
 			for (; k < nMaxColors; k++) {
 				Color c2(pPalette->Entries[k]);
-				closest[4] = abs(c.GetA() - c2.GetA()) + PR * abs(c.GetR() - c2.GetR()) + PG * abs(c.GetG() - c2.GetG()) + PB * abs(c.GetB() - c2.GetB());
+				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
 				if (closest[4] < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];
