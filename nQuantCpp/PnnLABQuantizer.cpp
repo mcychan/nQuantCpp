@@ -12,6 +12,7 @@ Copyright (c) 2018-2019 Miller Cy Chan
 
 namespace PnnLABQuant
 {
+	double PR = .2126, PG = .7152, PB = .0722;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
@@ -21,7 +22,7 @@ namespace PnnLABQuant
 	struct pnnbin {
 		double ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
 		int cnt = 0;
-		int nn, fw, bk, tm, mtm;
+		int nn = 0, fw = 0, bk = 0, tm = 0, mtm = 0;
 	};
 
 	void getLab(const Color& c, CIELABConvertor::Lab& lab1)
@@ -64,7 +65,7 @@ namespace PnnLABQuant
 	int PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors)
 	{
 		auto bins = make_unique<pnnbin[]>(65536);
-		int heap[65537] = { 0 };
+		auto heap = make_unique<int[]>(65537);
 		double err, n1, n2;
 
 		/* Build histogram */
@@ -193,53 +194,24 @@ namespace PnnLABQuant
 		short k = 0;
 		Color c(argb);
 
-		double mindist = SHORT_MAX;
-		CIELABConvertor::Lab lab1, lab2;
-		getLab(c, lab1);
-
-		for (UINT i = 0; i < nMaxColors; i++) {
+		double mindist = INT_MAX;
+		for (short i = 0; i < nMaxColors; i++) {
 			Color c2(pPalette->Entries[i]);
-			getLab(c2, lab2);
-
 			double curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
 
-			if (nMaxColors < 256) {
-				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
-				curdist += sqr(deltaL_prime_div_k_L_S_L);
-				if (curdist > mindist)
-					continue;
+			curdist += PR * sqr(c2.GetR() - c.GetR());
+			if (curdist > mindist)
+				continue;
 
-				double a1Prime, a2Prime, CPrime1, CPrime2;
-				double deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
-				curdist += sqr(deltaC_prime_div_k_L_S_L);
-				if (curdist > mindist)
-					continue;
+			curdist += PG * sqr(c2.GetG() - c.GetG());
+			if (curdist > mindist)
+				continue;
 
-				double barCPrime, barhPrime;
-				double deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
-				curdist += sqr(deltaH_prime_div_k_L_S_L);
-				if (curdist > mindist)
-					continue;
-
-				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
-				if (curdist > mindist)
-					continue;
-			}
-			else {
-				curdist += sqr(lab2.L - lab1.L);
-				if (curdist > mindist)
-					continue;
-
-				curdist += sqr(lab2.A - lab1.A);
-				if (curdist > mindist)
-					continue;
-
-				curdist += sqr(lab2.B - lab1.B);
-				if (curdist > mindist)
-					continue;
-			}
+			curdist += PB * sqr(c2.GetB() - c.GetB());
+			if (curdist > mindist)
+				continue;
 
 			mindist = curdist;
 			k = i;
@@ -336,6 +308,8 @@ namespace PnnLABQuant
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
+		if (hasSemiTransparency)
+			PR = PG = PB = 1;
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];

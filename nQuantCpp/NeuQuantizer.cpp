@@ -33,6 +33,7 @@ namespace NeuralNet
 	* that this copyright notice remain intact.
 	*/
 
+	double PR = .2126, PG = .7152, PB = .0722;
 	const short specials = 3;		// number of reserved colours used
 	const int ncycles = 115;			// no. of learning cycles
 	const int radiusbiasshift = 8;
@@ -315,53 +316,24 @@ namespace NeuralNet
 		short k = 0;
 		Color c(argb);
 
-		double mindist = SHORT_MAX;
-		CIELABConvertor::Lab lab1, lab2;
-		getLab(c, lab1);
-
-		for (UINT i = 0; i < nMaxColors; i++) {
+		double mindist = INT_MAX;
+		for (short i = 0; i < nMaxColors; i++) {
 			Color c2(pPalette->Entries[i]);
-			getLab(c2, lab2);
-
 			double curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
 
-			if (nMaxColors < 256) {
-				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
-				curdist += sqr(deltaL_prime_div_k_L_S_L);
-				if (curdist > mindist)
-					continue;
+			curdist += PR * sqr(c2.GetR() - c.GetR());
+			if (curdist > mindist)
+				continue;
 
-				double a1Prime, a2Prime, CPrime1, CPrime2;
-				double deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
-				curdist += sqr(deltaC_prime_div_k_L_S_L);
-				if (curdist > mindist)
-					continue;
+			curdist += PG * sqr(c2.GetG() - c.GetG());
+			if (curdist > mindist)
+				continue;
 
-				double barCPrime, barhPrime;
-				double deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
-				curdist += sqr(deltaH_prime_div_k_L_S_L);
-				if (curdist > mindist)
-					continue;
-
-				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
-				if (curdist > mindist)
-					continue;
-			}
-			else {
-				curdist += sqr(lab2.L - lab1.L);
-				if (curdist > mindist)
-					continue;
-
-				curdist += sqr(lab2.A - lab1.A);
-				if (curdist > mindist)
-					continue;
-
-				curdist += sqr(lab2.B - lab1.B);
-				if (curdist > mindist)
-					continue;
-			}
+			curdist += PB * sqr(c2.GetB() - c.GetB());
+			if (curdist > mindist)
+				continue;
 
 			mindist = curdist;
 			k = i;
@@ -426,6 +398,8 @@ namespace NeuralNet
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
 
+		if (hasSemiTransparency)
+			PR = PG = PB = 1;
 		quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];

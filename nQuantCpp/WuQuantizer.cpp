@@ -842,8 +842,8 @@ namespace nQuant
 			return true;
 		}
 
-		for (int i = 0; i < (width * height); i++)
-			qPixels[i] = closestColorIndex(pPalette, pixels[i], alphaThreshold);
+		for (int i = 0; i < (width * height); ++i)
+			qPixels[i] = closestColorIndex(pPalette, pPalette->Count, pixels[i]);
 
 		return true;
 	}

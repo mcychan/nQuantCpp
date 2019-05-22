@@ -20,7 +20,7 @@ namespace PnnQuant
 	struct pnnbin {
 		double ac = 0, rc = 0, gc = 0, bc = 0, err = 0;
 		int cnt = 0;
-		int nn, fw, bk, tm, mtm;
+		int nn = 0, fw = 0, bk = 0, tm = 0, mtm = 0;
 	};
 
 	void find_nn(pnnbin* bins, int idx)
@@ -52,7 +52,7 @@ namespace PnnQuant
 	int pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors, bool quan_sqrt)
 	{
 		auto bins = make_unique<pnnbin[]>(65536);
-		int heap[65537] = { 0 };
+		auto heap = make_unique<int[]>(65537);
 		double err, n1, n2;
 
 		/* Build histogram */
