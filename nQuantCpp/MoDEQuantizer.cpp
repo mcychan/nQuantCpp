@@ -17,6 +17,7 @@ Copyright (c) 2018 - 2019 Miller Cy Chan
 
 namespace MoDEQuant
 {
+	double PR = .2126, PG = .7152, PB = .0722;
 	const double a1 = 0.1, a2 = 0.05, a3 = 0.01;  // Linear combination parameters
 	const unsigned short K_number = 10;    // Number of cluster iterations
 	const double K_probability = 0.05; // Probability of cluster iteration for each individual
@@ -443,15 +444,15 @@ namespace MoDEQuant
 			if (curdist > mindist)
 				continue;
 
-			curdist += sqr(c2.GetR() - c.GetR());
+			curdist += PR * sqr(c2.GetR() - c.GetR());
 			if (curdist > mindist)
 				continue;
 
-			curdist += sqr(c2.GetG() - c.GetG());
+			curdist += PG * sqr(c2.GetG() - c.GetG());
 			if (curdist > mindist)
 				continue;
 
-			curdist += sqr(c2.GetB() - c.GetB());
+			curdist += PB * sqr(c2.GetB() - c.GetB());
 			if (curdist > mindist)
 				continue;
 
@@ -552,6 +553,9 @@ namespace MoDEQuant
 			closestMap.clear();
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
+
+		if (hasSemiTransparency)
+			PR = PG = PB = 1;
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
