@@ -45,10 +45,20 @@ namespace NeuralNet
 	double initradius = initrad * 1.0;
 	const int radiusdec = 30; // factor of 1/30 each cycle
 
+	const short normal_learning_extension_factor = 2; /* normally learn twice as long */
+	const short extra_long_colour_threshold = 40; /* learn even longer when under 40 */
+	const short extra_long_divisor = 8; /* fraction of netsize for extra learning */
+
 	const int alphabiasshift = 10;			// alpha starts at 1
 	const int initalpha = 1 << alphabiasshift; // biased by 10 bits
 	const int alpharadbshift = alphabiasshift + radiusbiasshift;
 	const double alpharadbias = (double)(1 << alpharadbshift);
+	const double exclusion_threshold = 0.5;
+
+	const short REPEL_THRESHOLD = 16;          /* See repel_coincident()... */
+	const short REPEL_STEP_DOWN = 1;              /* ... for an explanation of... */
+	const short REPEL_STEP_UP = 4;                 /* ... how these points work. */
+	unique_ptr<unsigned short[]> repel_points;
 
 	/* defs for freq and bias */
 	const int gammashift = 10;                  /* gamma = 1024 */
@@ -70,10 +80,6 @@ namespace NeuralNet
 	unique_ptr<double[]> freq;
 	unique_ptr<double[]> radpower;
 
-	// four primes near 500 - assume no image has a length so large
-	// that it is divisible by all four primes
-
-	const int primes[] = { 499, 491, 487, 503 };
 	double gamma_correction = 1.0;         // 1.0/2.2 usually
 
 	bool hasSemiTransparency = false;
@@ -87,9 +93,20 @@ namespace NeuralNet
 		return (1.0 - transparency * transparency);
 	}
 
+	/* posneg(x) returns +1 if x is positive or zero, or -1 otherwise.
+	*
+	* XXX Posneg could be turned into a vector function in various ways.
+	*/
+	inline double posneg(double x) {
+		if (x < 0)
+			return -1.0;		
+		return 1.0;
+	}
+
 	void SetUpArrays() {
 		network = make_unique<nq_pixel[]>(netsize);
 		netindex = make_unique<unsigned short[]>(max(netsize, 256));
+		repel_points = make_unique<unsigned short[]>(max(netsize, 256));
 		bias = make_unique<double[]>(netsize);
 		freq = make_unique<double[]>(netsize);
 		radpower = make_unique<double[]>(initrad);
@@ -151,54 +168,133 @@ namespace NeuralNet
 
 		UINT j = i + 1;
 		int k = i - 1;
-		auto q = radpower.get();
+		auto learning_rate_table = radpower.get();
 		while ((j <= hi) || (k >= lo)) {
-			double a = (*(++q)) / alpharadbias;
+			double learning_rate = (*(++learning_rate_table)) / alpharadbias;
 			if (j <= hi) {
-				network[j].al -= a * (network[j].al - al);
-				network[j].L -= a * (network[j].L - L);
-				network[j].A -= a * (network[j].A - A);
-				network[j].B -= a * (network[j].B - B);
+				network[j].al -= learning_rate * (network[j].al - al);
+				network[j].L -= learning_rate * (network[j].L - L);
+				network[j].A -= learning_rate * (network[j].A - A);
+				network[j].B -= learning_rate * (network[j].B - B);
 				j++;
 			}
 			if (k >= lo) {
-				network[k].al -= a * (network[k].al - al);
-				network[k].L -= a * (network[k].L - L);
-				network[k].A -= a * (network[k].A - A);
-				network[k].B -= a * (network[k].B - B);
+				network[k].al -= learning_rate * (network[k].al - al);
+				network[k].L -= learning_rate * (network[k].L - L);
+				network[k].A -= learning_rate * (network[k].A - A);
+				network[k].B -= learning_rate * (network[k].B - B);
 				k--;
 			}
 		}
 	}
 
-	UINT Contest(byte al, double L, double A, double B) {
+	/* Repelcoincident(i) traverses the entire neural network, identifies any neurons that are close in colour to neuron i, and
+	 * moves them away from neuron i.  Our definition of 'close' is being within exclusion_threshold of neuron i in each component.
+	 *
+	 * Because Repelcoincident() can be cpu-intensive, each neuron is given repel points (in the repel_points array) to limit how
+	 * often a full repel pass is made.  Each time neuron i gets a full repel pass, it gets REPEL_STEP_UP points.  When the number
+	 * of points it has exceeds REPEL_THRESHOLD, we stop doing full repel passes, and deduct REPEL_STEP_DOWN points instead.
+	 * Eventually the number of repel points will eventually oscillate around the threshold.  With current settings, that means
+	 * that only every 4th function call will result in a full pass.
+ 	*/
+	void Repelcoincident(int i) {
+		/* Use brute force to precompute the distance vectors between our neuron and each neuron. */
+
+		if (repel_points[i] > REPEL_THRESHOLD) {
+			repel_points[i] -= REPEL_STEP_DOWN;
+			return;
+		}
+
+		auto diffs = make_unique<nq_pixel[]>(netsize);
+		for (int vdx = 0; vdx < netsize; ++vdx) {
+			diffs[vdx].al = abs(network[vdx].al - network[i].al);
+			diffs[vdx].L = abs(network[vdx].L - network[i].L);
+			diffs[vdx].A = abs(network[vdx].A - network[i].A);
+			diffs[vdx].B = abs(network[vdx].B - network[i].B);
+		}
+
+
+		/* Identify which neurons are too close to neuron[i] and shift them away.
+		 * */
+
+		 /* repel_step is the amount we move the neurons away by in each component.
+		  * radpower[0]/alpharadbias is similar to the proportion alterneigh uses.
+		  * */
+		double repel_step = exclusion_threshold * (radpower[0] / alpharadbias);
+
+		for (int j = 0; j < netsize; ++j) {
+
+			if (diffs[j].al < exclusion_threshold
+				&& diffs[j].L < exclusion_threshold
+				&& diffs[j].A < exclusion_threshold
+				&& diffs[j].B < exclusion_threshold
+				) {
+
+				nq_pixel repel_vec;
+				repel_vec.al = posneg(diffs[j].al), repel_vec.L = posneg(diffs[j].L), repel_vec.A = posneg(diffs[j].A), repel_vec.B = posneg(diffs[j].B);
+
+				network[j].al += repel_vec.al * repel_step;
+				network[j].L += repel_vec.L * repel_step;
+				network[j].A += repel_vec.A * repel_step;
+				network[j].B += repel_vec.B * repel_step;
+			}
+		}
+
+		repel_points[i] += REPEL_STEP_UP;
+	}
+
+	int Contest(byte al, double L, double A, double B) {
+		/* Calculate the component-wise differences between target_pix colour and every colour in the network, and weight according
+		* to component relevance.
+		*/
+		auto diffs = make_unique<nq_pixel[]>(netsize);
+		for (int vdx = 0; vdx < netsize; ++vdx) {
+			diffs[vdx].al = abs(network[vdx].al - al);
+			diffs[vdx].L = abs(network[vdx].L - L);
+			diffs[vdx].A = abs(network[vdx].A - A);
+			diffs[vdx].B = abs(network[vdx].B - B);
+		}
+
 		/* finds closest neuron (min dist) and updates freq */
 		/* finds best neuron (min dist-bias) and returns position */
 		/* for frequently chosen neurons, freq[i] is high and bias[i] is negative */
 		/* bias[i] = gamma*((1/netsize)-freq[i]) */
 
-		UINT bestpos = 0, bestbiaspos = bestpos;
+		int bestpos = 0, bestbiaspos = bestpos;
 		double bestd = INT_MAX, bestbiasd = bestd;
 
 		/* Using colorimportance(al) here was causing problems with images that were close to monocolor.
 		See bug reports: 3149791, 2938728, 2896731 and 2938710
 		*/
-		double colimp = 1.0; //colorimportance(al); 
+		bool perfect = false; /* Is bestpos a perfect match for the colour. */
 
 		for (int i = 0; i < netsize; ++i) {
-			double bestbiasd_biased = bestbiasd + bias[i];
+			if (!perfect) {
+				double bestbiasd_biased = bestbiasd + bias[i];
+				double dist = 0;
 
-			double a = network[i].L - L;
-			double dist = abs(a) * colimp;
-			a = network[i].A - A;
-			dist += abs(a) * colimp;
+				/*Detect perfect matches. */
+				if (diffs[i].al < exclusion_threshold
+					&& diffs[i].L < exclusion_threshold
+					&& diffs[i].A < exclusion_threshold
+					&& diffs[i].B < exclusion_threshold
+					) {
+					perfect = true;
 
-			if (dist < bestd || dist < bestbiasd_biased) {
-				a = network[i].B - B;
-				dist += abs(a) * colimp;
-				a = network[i].al - al;
-				dist += abs(a);
+					/* If we don't have a perfect match, the distance between the
+						* target and the neuron is the manhattan distance. */
+				}
+				else {
+					dist = diffs[i].L;
+					dist += diffs[i].A;
 
+					if (dist < bestd || dist < bestbiasd_biased) {
+						dist += diffs[i].B;
+						dist += diffs[i].al;						
+					}
+				}
+
+				/* See if the current neuron is better. */
 				if (dist < bestd) {
 					bestd = dist;
 					bestpos = i;
@@ -209,12 +305,22 @@ namespace NeuralNet
 				}
 			}
 
+			/* Age (decay) the current neurons bias and freq values. */
 			double betafreq = freq[i] * beta;
 			freq[i] -= betafreq;
 			bias[i] += betafreq * gamma;
 		}
+
+		/* Increase the freq and bias values for the chosen neuron. */
 		freq[bestpos] += beta;
 		bias[bestpos] -= betagamma;
+		
+		/* If our bestpos pixel is a 'perfect' match, we return bestpos, not bestbiaspos.  That is, we only decide to look at
+		* bestbiaspos if the current target pixel wasn't a good enough match with the bestpos neuron, and there is some hope that
+		* we can train the bestbiaspos neuron to become a better match. */
+		if (perfect)
+			return -bestpos - 1;  /* flag this was a perfect match */
+
 		return bestbiaspos;
 	}
 
@@ -230,16 +336,24 @@ namespace NeuralNet
 			delta = 1;        /* kludge to fix */
 		double alpha = initalpha;
 		double radius = initradius;
+		if (netsize <= 2 * initradius)
+			radius = netsize / 2;
 
-		UINT rad = (UINT)radius;
+		UINT rad = (UINT) radius;
 		if (rad <= 1)
 			rad = 0;
 
 		for (UINT i = 0; i < rad; ++i)
 			radpower[i] = floor(alpha * (((sqr(rad) - sqr(i)) * radiusbias) / sqr(rad)));
 
+		UINT step = ((float)rand() / (float)RAND_MAX) * lengthcount;
+
+		int learning_extension = normal_learning_extension_factor;
+		if (netsize < extra_long_colour_threshold)
+			learning_extension = 2 + ((extra_long_colour_threshold - netsize) / extra_long_divisor);
+
 		UINT i = 0;
-		while (i < samplepixels) {
+		while (i < learning_extension * samplepixels) {
 			Color c(pixels[pos]);
 
 			byte al = c.GetA();
@@ -248,16 +362,22 @@ namespace NeuralNet
 
 			auto j = Contest(al, lab1.L, lab1.A, lab1.B);
 
-			Altersingle(alpha, j, al, lab1.L, lab1.A, lab1.B);
-			if (rad)
-				Alterneigh(rad, j, al, lab1.L, lab1.A, lab1.B);   /* alter neighbours */
+			/* Determine if the colour was a perfect match.  j contains a factor encoded boolean. Horrible code to extract it. */
+			bool was_perfect = (j < 0);
+			j = (j < 0 ? -(j + 1) : j);
 
-			pos += primes[stepIndex++ % 4];
+			Altersingle(alpha, j, al, lab1.L, lab1.A, lab1.B);
+			if (rad && !was_perfect)
+				Alterneigh(rad, j, al, lab1.L, lab1.A, lab1.B);   /* alter neighbours */
+			else if (rad && was_perfect)
+				Repelcoincident(j);  /* repel neighbours in colour space */
+
+			pos += step;
 			while (pos >= lengthcount)
 				pos -= lengthcount;
 
 			if (++i % delta == 0) {                    /* FPE here if delta=0*/
-				alpha -= alpha / (double)alphadec;
+				alpha -= alpha / (learning_extension * (double) alphadec);
 				radius -= radius / (double)radiusdec;
 				rad = (UINT)radius;
 				if (rad <= 1)
@@ -334,6 +454,9 @@ namespace NeuralNet
 			curdist += PB * sqr(c2.GetB() - c.GetB());
 			if (curdist > mindist)
 				continue;
+
+			if (curdist == 0)
+				return k;
 
 			mindist = curdist;
 			k = i;
