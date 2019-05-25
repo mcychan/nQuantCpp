@@ -437,28 +437,52 @@ namespace NeuralNet
 		Color c(argb);
 
 		double mindist = INT_MAX;
+		CIELABConvertor::Lab lab1, lab2;
+		getLab(c, lab1);
+
 		for (short i = 0; i < nMaxColors; i++) {
 			Color c2(pPalette->Entries[i]);
-			double curdist = sqr(c2.GetA() - c.GetA());
-			if (curdist > mindist)
-				continue;
+			if (nMaxColors > 32) {
+				double curdist = sqr(c2.GetA() - c.GetA());
+				if (curdist > mindist)
+					continue;
 
-			curdist += PR * sqr(c2.GetR() - c.GetR());
-			if (curdist > mindist)
-				continue;
+				curdist += PR * sqr(c2.GetR() - c.GetR());
+				if (curdist > mindist)
+					continue;
 
-			curdist += PG * sqr(c2.GetG() - c.GetG());
-			if (curdist > mindist)
-				continue;
+				curdist += PG * sqr(c2.GetG() - c.GetG());
+				if (curdist > mindist)
+					continue;
 
-			curdist += PB * sqr(c2.GetB() - c.GetB());
-			if (curdist > mindist)
-				continue;
+				curdist += PB * sqr(c2.GetB() - c.GetB());
+				if (curdist > mindist)
+					continue;
 
-			if (curdist == 0)
-				return k;
+				mindist = curdist;
+			}
+			else {
+				getLab(c2, lab2);
 
-			mindist = curdist;
+				double curdist = sqr(c2.GetA() - c.GetA());
+				if (curdist > mindist)
+					continue;
+
+				curdist += sqr(lab2.L - lab1.L);
+				if (curdist > mindist)
+					continue;
+
+				curdist += sqr(lab2.A - lab1.A);
+				if (curdist > mindist)
+					continue;
+
+				curdist += sqr(lab2.B - lab1.B);
+				if (curdist > mindist)
+					continue;
+
+				mindist = curdist;
+			}
+			
 			k = i;
 		}
 		return k;
