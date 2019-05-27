@@ -34,7 +34,7 @@ namespace DivQuant
 
 	struct Bucket
 	{
-		byte value = 0;
+		BYTE value = 0;
 		ARGB argb = Color::Transparent;
 		shared_ptr<Bucket> next;
 	};
@@ -256,7 +256,7 @@ namespace DivQuant
 		return true;
 	}
 
-	// MT  : type of the member attribute, either byte or UINT
+	// MT  : type of the member attribute, either BYTE or UINT
 	template <typename MT>
 	void DivQuantClusterInitMeanAndVar(const int num_points, const ARGB* data, const double data_weight, double* weightsPtr, Pixel<double>& total_mean, Pixel<double>& total_var)
 	{
@@ -328,7 +328,7 @@ namespace DivQuant
 	// roughly equally sized clusters until N clusters is reached or the
 	// clusters can be divided no more.
 
-	// MT  : type of the member attribute, either byte or UINT
+	// MT  : type of the member attribute, either BYTE or UINT
 	template <typename MT>
 	void DivQuantCluster(const int num_points, ARGB* data, ARGB* tmp_buffer, const double data_weight, double* weightsPtr,
 		const int num_bits, const int max_iters, ColorPalette* pPalette, UINT& nMaxColors)
@@ -340,7 +340,7 @@ namespace DivQuant
 
 		int tmp_buffer_used = 0; // Capacity in num points that can be stored in tmp_data
 
-		// The member array is either byte or UINT.
+		// The member array is either BYTE or UINT.
 		auto member = make_unique<MT[]>(num_points);
 
 
@@ -412,7 +412,7 @@ namespace DivQuant
 
 			/* Determine the axis with the greatest variance */
 			max_val = total_var.alpha;
-			byte cut_axis = 0; /* index of the cutting axis */
+			BYTE cut_axis = 0; /* index of the cutting axis */
 			cut_pos = total_mean.alpha;
 			if (max_val < total_var.L) {
 				max_val = total_var.L;
@@ -833,7 +833,7 @@ namespace DivQuant
 		nMaxColors = num_colors - num_empty;
 	}
 	
-	static inline bool validate_num_bits(const byte num_bits)
+	static inline bool validate_num_bits(const BYTE num_bits)
 	{
 		return (0 < num_bits && num_bits <= 8);
 	}
@@ -845,16 +845,16 @@ namespace DivQuant
 	// works properly when inPixels and outPixels are the same buffer to support in
 	// place processing.
 	void cut_bits(const ARGB* inPixels, const UINT numPixels, ARGB* outPixels,
-		const byte num_bits_alpha, const byte num_bits_red, const byte num_bits_green, const byte num_bits_blue)
+		const BYTE num_bits_alpha, const BYTE num_bits_red, const BYTE num_bits_green, const BYTE num_bits_blue)
 	{  
 		if (!validate_num_bits(num_bits_alpha) || !validate_num_bits(num_bits_red) ||
 			!validate_num_bits(num_bits_green) || !validate_num_bits(num_bits_blue))
 			return;
   
-		byte shift_alpha = 8 - num_bits_alpha;
-		byte shift_red = 8 - num_bits_red;
-		byte shift_green = 8 - num_bits_green;
-		byte shift_blue = 8 - num_bits_blue;
+		BYTE shift_alpha = 8 - num_bits_alpha;
+		BYTE shift_red = 8 - num_bits_red;
+		BYTE shift_green = 8 - num_bits_green;
+		BYTE shift_blue = 8 - num_bits_blue;
   
 		if (shift_alpha == shift_red && shift_alpha == shift_green && shift_alpha == shift_blue) {
 			// Shift and mask pixels as whole words when the shift amount
@@ -904,7 +904,7 @@ namespace DivQuant
 		}
 	  
 		if (nMaxColors <= 256)
-			DivQuantCluster<byte>(numPixels, inputPixels.get(), tmpPixels.get(), weightUniform, weightsPtr.get(), num_bits, max_iters, pPalette, nMaxColors);
+			DivQuantCluster<BYTE>(numPixels, inputPixels.get(), tmpPixels.get(), weightUniform, weightsPtr.get(), num_bits, max_iters, pPalette, nMaxColors);
 		else
 			DivQuantCluster<UINT>(numPixels, inputPixels.get(), tmpPixels.get(), weightUniform, weightsPtr.get(), num_bits, max_iters, pPalette, nMaxColors);
 	}
@@ -991,7 +991,7 @@ namespace DivQuant
 		if (nMaxColors > 32768)
 			nMaxColors = 32768;
 
-		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 

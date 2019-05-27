@@ -29,6 +29,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <deque>
 #include <algorithm>
 #include <numeric>
+#include <random>
 #include <math.h>
 #include <time.h>
 #include <limits>
@@ -45,8 +46,6 @@ namespace SpatialQuant
 	public:
 		vector_fixed()
 		{
-			for (int i = 0; i<length; ++i)
-				data[i] = 0;
 		}
 
 		vector_fixed(const vector_fixed<T, length>& rhs)
@@ -145,7 +144,7 @@ namespace SpatialQuant
 		}
 
 	private:
-		T data[length];
+		T data[length] = { 0 };
 	};
 
 	template <typename T, int length>
@@ -332,7 +331,8 @@ namespace SpatialQuant
 	void random_permutation(int count, vector<int>& result) {
 		result.resize(count);
 		iota(result.begin(), result.end(), 0);
-		random_shuffle(result.begin(), result.end());
+		auto rng = default_random_engine{};
+		shuffle(result.begin(), result.end(), rng);
 	}
 
 	void random_permutation_2d(int width, int height, deque<pair<int, int> >& result) {
@@ -531,7 +531,7 @@ namespace SpatialQuant
 							auto v1 = coarse_variables(i_x, i_y, v);
 							for (int alpha = v; alpha<palette_size; ++alpha) {
 								auto mult = v1 * coarse_variables(j_x, j_y, alpha);
-								for (byte p = 0; p < length; ++p)
+								for (BYTE p = 0; p < length; ++p)
 									s(v, alpha)[p] += mult * b_ij[p];
 							}
 						}
@@ -560,12 +560,12 @@ namespace SpatialQuant
 					continue;
 				for (int v = 0; v <= alpha; ++v) {
 					auto mult = coarse_variables(i_x, i_y, v);
-					for(byte p = 0; p < length; ++p)
+					for(BYTE p = 0; p < length; ++p)
 						s(v, alpha)[p] += mult * delta_b_ij[p];
 				}
 				for (int v = alpha; v<palette_size; ++v) {
 					auto mult = coarse_variables(i_x, i_y, v);
-					for (byte p = 0; p < length; ++p)
+					for (BYTE p = 0; p < length; ++p)
 						s(alpha, v)[p] += mult * delta_b_ij[p];
 				}
 			}
@@ -605,7 +605,7 @@ namespace SpatialQuant
 				palette[v][k] = val;
 
 				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k > 1) {
-					auto argb = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[v][0]), static_cast<byte>(BYTE_MAX * palette[v][1]), static_cast<byte>(BYTE_MAX * palette[v][2]));
+					auto argb = Color::MakeARGB(BYTE_MAX, static_cast<BYTE>(BYTE_MAX * palette[v][0]), static_cast<BYTE>(BYTE_MAX * palette[v][1]), static_cast<BYTE>(BYTE_MAX * palette[v][2]));
 					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
 						swap(palette[0], palette[v]);
 				}
@@ -735,7 +735,7 @@ namespace SpatialQuant
 								continue;
 							auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 							auto& j_pal = (*p_palette_sum)(j_x, j_y);
-							for (byte p = 0; p < length; ++p)
+							for (BYTE p = 0; p < length; ++p)
 								p_i[p] += b_ij[p] * j_pal[p];
 						}
 					}
@@ -774,7 +774,7 @@ namespace SpatialQuant
 						UINT index = i_y * coarse_variables.get_width() + i_x;
 
 						coarse_variables(i_x, i_y, v) = new_val;
-						for (byte p = 0; p < length; ++p)
+						for (BYTE p = 0; p < length; ++p)
 							j_pal[p] += delta_m_iv * palette[v][p];
 
 						if (abs(delta_m_iv) > 0.001 && !skip_palette_maintenance)
@@ -876,14 +876,14 @@ namespace SpatialQuant
 		
 		vector<vector_fixed<double, 4> > palette(nMaxColors);
 		for (UINT i = 0; i<nMaxColors; ++i) {
-			for (byte p = 0; p < length; ++p)
+			for (BYTE p = 0; p < length; ++p)
 				palette[i][p] = ((double)rand()) / RAND_MAX;
 		}
 
 		if (nMaxColors > 256)
 			nMaxColors = 256;
 
-		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
+		auto pPaletteBytes = make_unique<BYTE[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
@@ -897,7 +897,7 @@ namespace SpatialQuant
 		if (nMaxColors > 2) {
 			/* Fill palette */
 			for (UINT k = 0; k<nMaxColors; ++k)
-				pPalette->Entries[k] = Color::MakeARGB(hasSemiTransparency ? static_cast<byte>(BYTE_MAX * palette[k][3]) : BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[k][0]), static_cast<byte>(BYTE_MAX * palette[k][1]), static_cast<byte>(BYTE_MAX * palette[k][2]));
+				pPalette->Entries[k] = Color::MakeARGB(hasSemiTransparency ? static_cast<BYTE>(BYTE_MAX * palette[k][3]) : BYTE_MAX, static_cast<BYTE>(BYTE_MAX * palette[k][0]), static_cast<BYTE>(BYTE_MAX * palette[k][1]), static_cast<BYTE>(BYTE_MAX * palette[k][2]));
 			
 			if (m_transparentPixelIndex >= 0) {
 				UINT k = qPixels[m_transparentPixelIndex];

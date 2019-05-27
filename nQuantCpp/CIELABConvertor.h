@@ -5,7 +5,7 @@ class CIELABConvertor
 
 public:
 	struct Lab {
-		byte alpha = BYTE_MAX;
+		BYTE alpha = BYTE_MAX;
 		double A = 0.0;
 		double B = 0.0;
 		double L = 0.0;

@@ -146,7 +146,7 @@ namespace NeuralNet
 		return (UINT)temp;
 	}
 
-	void Altersingle(double alpha, UINT i, byte al, double L, double A, double B) {
+	void Altersingle(double alpha, UINT i, BYTE al, double L, double A, double B) {
 		double colorimp = 1.0;//0.5;// + 0.7 * colorimportance(al);
 
 		alpha /= initalpha;
@@ -158,7 +158,7 @@ namespace NeuralNet
 		network[i].B -= colorimp * alpha * (network[i].B - B);
 	}
 
-	void Alterneigh(UINT rad, UINT i, byte al, double L, double A, double B) {
+	void Alterneigh(UINT rad, UINT i, BYTE al, double L, double A, double B) {
 		int lo = i - rad;
 		if (lo < 0)
 			lo = 0;
@@ -243,7 +243,7 @@ namespace NeuralNet
 		repel_points[i] += REPEL_STEP_UP;
 	}
 
-	int Contest(byte al, double L, double A, double B) {
+	int Contest(BYTE al, double L, double A, double B) {
 		/* Calculate the component-wise differences between target_pix colour and every colour in the network, and weight according
 		* to component relevance.
 		*/
@@ -356,7 +356,7 @@ namespace NeuralNet
 		while (i < learning_extension * samplepixels) {
 			Color c(pixels[pos]);
 
-			byte al = c.GetA();
+			BYTE al = c.GetA();
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
 
@@ -524,7 +524,7 @@ namespace NeuralNet
 		if (nMaxColors > 32768)
 			nMaxColors = 32768;
 
-		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 

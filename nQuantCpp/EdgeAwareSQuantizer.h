@@ -12,8 +12,6 @@ namespace EdgeAwareSQuant
 	public:
 		vector_fixed()
 		{
-			for (int i = 0; i<length; i++)
-				data[i] = 0;
 		}
 
 		vector_fixed(const vector_fixed<T, length>& rhs)
@@ -112,7 +110,7 @@ namespace EdgeAwareSQuant
 		}
 
 	private:
-		T data[length];
+		T data[length] = { 0 };
 	};
 
 	template <typename T, int length>

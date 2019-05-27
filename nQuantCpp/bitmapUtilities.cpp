@@ -450,7 +450,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	const int DJ = 4;
 	const int DITHER_MAX = 20;
 	const int err_len = (width + 2) * DJ;
-	byte clamp[DJ * 256] = { 0 };
+	BYTE clamp[DJ * 256] = { 0 };
 	auto erowErr = make_unique<short[]>(err_len);
 	auto orowErr = make_unique<short[]>(err_len);
 	char limtb[512] = { 0 };
@@ -461,7 +461,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 
 	for (int i = 0; i < 256; i++) {
 		clamp[i] = 0;
-		clamp[i + 256] = static_cast<byte>(i);
+		clamp[i + 256] = static_cast<BYTE>(i);
 		clamp[i + 512] = BYTE_MAX;
 		clamp[i + 768] = BYTE_MAX;
 
@@ -551,7 +551,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 	const int DJ = 4;
 	const int DITHER_MAX = 20;
 	const int err_len = (width + 2) * DJ;
-	byte clamp[DJ * 256] = { 0 };
+	BYTE clamp[DJ * 256] = { 0 };
 	auto erowErr = make_unique<short[]>(err_len);
 	auto orowErr = make_unique<short[]>(err_len);
 	char limtb[512] = { 0 };
@@ -562,7 +562,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 
 	for (int i = 0; i < 256; i++) {
 		clamp[i] = 0;
-		clamp[i + 256] = static_cast<byte>(i);
+		clamp[i + 256] = static_cast<BYTE>(i);
 		clamp[i + 512] = BYTE_MAX;
 		clamp[i + 768] = BYTE_MAX;
 
@@ -664,7 +664,7 @@ bool ProcessImagePixels(Bitmap* pDest, const short* qPixels, const int& transpar
 
 	int pixelIndex = 0;
 
-	auto pRowDest = (byte*)targetData.Scan0;
+	auto pRowDest = (LPBYTE)targetData.Scan0;
 	UINT strideDest;
 
 	// Compensate for possible negative stride
@@ -679,8 +679,8 @@ bool ProcessImagePixels(Bitmap* pDest, const short* qPixels, const int& transpar
 	for (UINT y = 0; y < h; y++) {	// For each row...
 		for (UINT x = 0; x < w * 2;) {
 			auto argb = static_cast<unsigned short>(qPixels[pixelIndex++]);
-			pRowDest[x++] = static_cast<byte>(argb & 0xFF);
-			pRowDest[x++] = static_cast<byte>(argb >> 8);
+			pRowDest[x++] = static_cast<BYTE>(argb & 0xFF);
+			pRowDest[x++] = static_cast<BYTE>(argb >> 8);
 		}
 		pRowDest += strideDest;
 	}
@@ -705,7 +705,7 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const short
 
 	int pixelIndex = 0;
 
-	auto pRowDest = (byte*)targetData.Scan0;
+	auto pRowDest = (LPBYTE)targetData.Scan0;
 	UINT strideDest;
 
 	// Compensate for possible negative stride
@@ -720,8 +720,8 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const short
 	// Second loop: fill indexed bitmap
 	for (UINT y = 0; y < h; y++) {	// For each row...
 		for (UINT x = 0; x < w; x++) {	// ...for each pixel...
-			byte nibbles = 0;
-			byte index = static_cast<byte>(qPixels[pixelIndex++]);
+			BYTE nibbles = 0;
+			BYTE index = static_cast<BYTE>(qPixels[pixelIndex++]);
 
 			switch (bpp)
 			{
@@ -733,7 +733,7 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const short
 				nibbles = pRowDest[x / 2];
 				if ((x & 1) == 0) {
 					nibbles &= 0x0F;
-					nibbles |= (byte)(index << 4);
+					nibbles |= (BYTE)(index << 4);
 				}
 				else {
 					nibbles &= 0xF0;
@@ -745,9 +745,9 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const short
 			case 1:
 				// First pixel is MSB. From and To are 0 or 1.
 				int pos = x / 8;
-				byte mask = (byte)(128 >> (x & 7));
+				BYTE mask = (BYTE)(128 >> (x & 7));
 				if (index == 0)
-					pRowDest[pos] &= (byte)~mask;
+					pRowDest[pos] &= (BYTE)~mask;
 				else
 					pRowDest[pos] |= mask;
 				break;
@@ -795,7 +795,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 		if (status != Ok)
 			return false;
 
-		auto pRowSource = (byte*)data.Scan0;
+		auto pRowSource = (LPBYTE)data.Scan0;
 		UINT strideSource;
 
 		if (data.Stride > 0) strideSource = data.Stride;
@@ -813,10 +813,10 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 			auto pPixelSource = pRowSource;
 
 			for (UINT x = 0; x < bitmapWidth; x++) {	// ...for each pixel...
-				byte pixelBlue = *pPixelSource++;
-				byte pixelGreen = *pPixelSource++;
-				byte pixelRed = *pPixelSource++;
-				byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
+				BYTE pixelBlue = *pPixelSource++;
+				BYTE pixelGreen = *pPixelSource++;
+				BYTE pixelRed = *pPixelSource++;
+				BYTE pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
 
 				auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
 				if (pixelAlpha < BYTE_MAX) {

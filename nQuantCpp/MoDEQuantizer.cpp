@@ -23,13 +23,13 @@ namespace MoDEQuant
 	const double K_probability = 0.05; // Probability of cluster iteration for each individual
 	const unsigned short N = 100;           //  population size
 	const double Max_diff = 100.0; // Maximum variation	
-	const byte high = BYTE_MAX;
-	const byte low = 0;        // the initial bounding region
+	const BYTE high = BYTE_MAX;
+	const BYTE low = 0;        // the initial bounding region
 	const int my_gens = 200;   //the generation number
 	const int LOOP = 5;        //loop number
 	const int seed[50] = { 20436,18352,10994,26845,24435,29789,28299,11375,10222,9885,25855,4282,22102,29385,16014,32018,3200,11252,6227,5939,8712,12504,25965,6101,30359,1295,29533,19841,14690,2695,3503,16802,18931,28464,1245,13279,5676,8951,7280,24488,6537,27128,9320,16399,24997,24303,16862,17882,15360,31216 };
 
-	byte SIDE = 3;
+	BYTE SIDE = 3;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
@@ -292,7 +292,7 @@ namespace MoDEQuant
 
 	int moDEquan(const vector<ARGB>& pixels, ColorPalette* pPalette, const unsigned short nMaxColors)
 	{
-		const byte INCR_STEP = 5;
+		const BYTE INCR_STEP = 5;
 		const float INCR_PERC = INCR_STEP * 100.0f / (my_gens * LOOP);
 		const clock_t begin = clock();
 		cout << std::setprecision(1) << std::fixed;
@@ -427,7 +427,7 @@ namespace MoDEQuant
 		/* Fill palette */
 		UINT j = 0;
 		for (unsigned short k = 0; k < nMaxColors; ++k, j += SIDE)
-			pPalette->Entries[k] = Color::MakeARGB(hasSemiTransparency ? static_cast<byte>(bestx[j + 3]) : BYTE_MAX, static_cast<byte>(bestx[j]), static_cast<byte>(bestx[j + 1]), static_cast<byte>(bestx[j + 2]));
+			pPalette->Entries[k] = Color::MakeARGB(hasSemiTransparency ? static_cast<BYTE>(bestx[j + 3]) : BYTE_MAX, static_cast<BYTE>(bestx[j]), static_cast<BYTE>(bestx[j + 1]), static_cast<BYTE>(bestx[j + 2]));
 
 		return 0;
 	}
@@ -529,7 +529,7 @@ namespace MoDEQuant
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);		
 
 		SIDE = hasSemiTransparency ? 4 : 3;
-		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
+		auto pPaletteBytes = make_unique<BYTE[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 

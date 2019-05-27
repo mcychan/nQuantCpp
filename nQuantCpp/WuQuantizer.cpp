@@ -32,9 +32,9 @@ namespace nQuant
 	/// 2 = value error of 4; Takes ~64MB for color tables; ~3 seconds
 	/// RAM usage roughly estimated with: ( ( 256 >> SidePixShift ) ^ 4 ) * 60
 	/// Default SidePixShift = 3
-	const byte SIDEPIXSHIFT = 3;
-	const byte MAXSIDEINDEX = 256 / (1 << SIDEPIXSHIFT);
-	const byte SIDESIZE = MAXSIDEINDEX + 1;
+	const BYTE SIDEPIXSHIFT = 3;
+	const BYTE MAXSIDEINDEX = 256 / (1 << SIDEPIXSHIFT);
+	const BYTE SIDESIZE = MAXSIDEINDEX + 1;
 	const double PR = .2126, PG = .7152, PB = .0722;
 	const UINT TOTAL_SIDESIZE = SIDESIZE * SIDESIZE * SIDESIZE * SIDESIZE;
 
@@ -45,23 +45,23 @@ namespace nQuant
 	unordered_map<ARGB, UINT> rightMatches;
 
 	struct Box {
-		byte AlphaMinimum = 0;
-		byte AlphaMaximum = 0;
-		byte RedMinimum = 0;
-		byte RedMaximum = 0;
-		byte GreenMinimum = 0;
-		byte GreenMaximum = 0;
-		byte BlueMinimum = 0;
-		byte BlueMaximum = 0;
+		BYTE AlphaMinimum = 0;
+		BYTE AlphaMaximum = 0;
+		BYTE RedMinimum = 0;
+		BYTE RedMaximum = 0;
+		BYTE GreenMinimum = 0;
+		BYTE GreenMaximum = 0;
+		BYTE BlueMinimum = 0;
+		BYTE BlueMaximum = 0;
 		UINT Size = 0;
 	};
 
 	struct CubeCut {
 		bool valid;
-		byte position;
+		BYTE position;
 		float value;
 
-		CubeCut(bool isValid, byte cutPoint, float result) {
+		CubeCut(bool isValid, BYTE cutPoint, float result) {
 			valid = isValid;
 			position = cutPoint;
 			value = result;
@@ -103,11 +103,11 @@ namespace nQuant
 		}
 	};
 
-	inline UINT Index(byte red, byte green, byte blue) {
+	inline UINT Index(BYTE red, BYTE green, BYTE blue) {
 		return red + green * SIDESIZE + blue * SIDESIZE * SIDESIZE;
 	}
 
-	inline UINT Index(byte alpha, byte red, byte green, byte blue) {
+	inline UINT Index(BYTE alpha, BYTE red, BYTE green, BYTE blue) {
 		return alpha + red * SIDESIZE + green * SIDESIZE * SIDESIZE + blue * SIDESIZE * SIDESIZE * SIDESIZE;
 	}
 
@@ -151,7 +151,7 @@ namespace nQuant
 				moment[Index(cube.AlphaMinimum, cube.RedMinimum, cube.GreenMinimum, cube.BlueMinimum)]);
 	}
 
-	inline float Top(const Box& cube, Pixel direction, byte position, long* moment)
+	inline float Top(const Box& cube, Pixel direction, BYTE position, long* moment)
 	{
 		switch (direction)
 		{
@@ -249,23 +249,23 @@ namespace nQuant
 		}
 	}
 
-	void CompileColorData(ColorData& colorData, const Color& color, const byte alphaThreshold, const byte alphaFader)
+	void CompileColorData(ColorData& colorData, const Color& color, const BYTE alphaThreshold, const BYTE alphaFader)
 	{
-		byte pixelBlue = color.GetB();
-		byte pixelGreen = color.GetG();
-		byte pixelRed = color.GetR();
-		byte pixelAlpha = color.GetA();
+		BYTE pixelBlue = color.GetB();
+		BYTE pixelGreen = color.GetG();
+		BYTE pixelRed = color.GetR();
+		BYTE pixelAlpha = color.GetA();
 
-		byte indexAlpha = static_cast<byte>((pixelAlpha >> SIDEPIXSHIFT) + 1);
-		byte indexRed = static_cast<byte>((pixelRed >> SIDEPIXSHIFT) + 1);
-		byte indexGreen = static_cast<byte>((pixelGreen >> SIDEPIXSHIFT) + 1);
-		byte indexBlue = static_cast<byte>((pixelBlue >> SIDEPIXSHIFT) + 1);
+		BYTE indexAlpha = static_cast<BYTE>((pixelAlpha >> SIDEPIXSHIFT) + 1);
+		BYTE indexRed = static_cast<BYTE>((pixelRed >> SIDEPIXSHIFT) + 1);
+		BYTE indexGreen = static_cast<BYTE>((pixelGreen >> SIDEPIXSHIFT) + 1);
+		BYTE indexBlue = static_cast<BYTE>((pixelBlue >> SIDEPIXSHIFT) + 1);
 
 		if (pixelAlpha > alphaThreshold) {
 			if (pixelAlpha < BYTE_MAX) {
 				short alpha = pixelAlpha + (pixelAlpha % alphaFader);
-				pixelAlpha = static_cast<byte>(alpha > BYTE_MAX ? BYTE_MAX : alpha);
-				indexAlpha = static_cast<byte>((pixelAlpha >> 3) + 1);
+				pixelAlpha = static_cast<BYTE>(alpha > BYTE_MAX ? BYTE_MAX : alpha);
+				indexAlpha = static_cast<BYTE>((pixelAlpha >> 3) + 1);
 			}
 
 			const int index = Index(indexAlpha, indexRed, indexGreen, indexBlue);
@@ -282,7 +282,7 @@ namespace nQuant
 		colorData.AddPixel(Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue));
 	}
 
-	void BuildHistogram(ColorData& colorData, Bitmap* sourceImage, byte alphaThreshold, byte alphaFader)
+	void BuildHistogram(ColorData& colorData, Bitmap* sourceImage, BYTE alphaThreshold, BYTE alphaFader)
 	{
 		const UINT bitDepth = GetPixelFormatSize(sourceImage->GetPixelFormat());
 		const UINT bitmapWidth = sourceImage->GetWidth();
@@ -312,7 +312,7 @@ namespace nQuant
 		if (status != Ok)
 			return;
 
-		auto pRowSource = (byte*)data.Scan0;
+		auto pRowSource = (LPBYTE)data.Scan0;
 		UINT strideSource;
 
 		if (data.Stride > 0) strideSource = data.Stride;
@@ -332,10 +332,10 @@ namespace nQuant
 
 			for (UINT x = 0; x < bitmapWidth; ++x, ++pixelIndex)	// ...for each pixel...
 			{
-				byte pixelBlue = *pPixelSource++;
-				byte pixelGreen = *pPixelSource++;
-				byte pixelRed = *pPixelSource++;
-				byte pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
+				BYTE pixelBlue = *pPixelSource++;
+				BYTE pixelGreen = *pPixelSource++;
+				BYTE pixelRed = *pPixelSource++;
+				BYTE pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
 
 				Color color(Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue));
 				if (pixelAlpha < BYTE_MAX) {
@@ -357,7 +357,7 @@ namespace nQuant
 	void CalculateMoments(ColorData& data)
 	{
 		const UINT SIDESIZE_3 = SIDESIZE * SIDESIZE * SIDESIZE;
-		for (byte alphaIndex = 1; alphaIndex <= MAXSIDEINDEX; ++alphaIndex)
+		for (BYTE alphaIndex = 1; alphaIndex <= MAXSIDEINDEX; ++alphaIndex)
 		{
 			auto xarea = make_unique<UINT[]>(SIDESIZE_3);
 			auto xareaAlpha = make_unique<UINT[]>(SIDESIZE_3);
@@ -366,7 +366,7 @@ namespace nQuant
 			auto xareaBlue = make_unique<UINT[]>(SIDESIZE_3);
 			auto xarea2 = make_unique<float[]>(SIDESIZE_3);
 
-			for (byte redIndex = 1; redIndex <= MAXSIDEINDEX; ++redIndex)
+			for (BYTE redIndex = 1; redIndex <= MAXSIDEINDEX; ++redIndex)
 			{
 				UINT area[SIDESIZE] = { 0 };
 				UINT areaAlpha[SIDESIZE] = { 0 };
@@ -375,7 +375,7 @@ namespace nQuant
 				UINT areaBlue[SIDESIZE] = { 0 };
 				float area2[SIDESIZE] = { 0 };
 
-				for (byte greenIndex = 1; greenIndex <= MAXSIDEINDEX; ++greenIndex) {
+				for (BYTE greenIndex = 1; greenIndex <= MAXSIDEINDEX; ++greenIndex) {
 					volatile UINT line = 0;
 					volatile UINT lineAlpha = 0;
 					volatile UINT lineRed = 0;
@@ -383,7 +383,7 @@ namespace nQuant
 					volatile UINT lineBlue = 0;
 					volatile float line2 = 0.0f;
 
-					for (byte blueIndex = 1; blueIndex <= MAXSIDEINDEX; ++blueIndex) {
+					for (BYTE blueIndex = 1; blueIndex <= MAXSIDEINDEX; ++blueIndex) {
 						const UINT index = Index(alphaIndex, redIndex, greenIndex, blueIndex);
 						line += data.weights[index];
 						lineAlpha += data.momentsAlpha[index];
@@ -421,7 +421,7 @@ namespace nQuant
 		}
 	}
 
-	CubeCut Maximize(const ColorData& data, const Box& cube, Pixel direction, byte first, byte last, UINT wholeAlpha, UINT wholeRed, UINT wholeGreen, UINT wholeBlue, UINT wholeWeight)
+	CubeCut Maximize(const ColorData& data, const Box& cube, Pixel direction, BYTE first, BYTE last, UINT wholeAlpha, UINT wholeRed, UINT wholeGreen, UINT wholeBlue, UINT wholeWeight)
 	{
 		auto bottomAlpha = Bottom(cube, direction, data.momentsAlpha.get());
 		auto bottomRed = Bottom(cube, direction, data.momentsRed.get());
@@ -431,7 +431,7 @@ namespace nQuant
 
 		volatile bool valid = false;
 		volatile auto result = 0.0f;
-		volatile byte cutPoint = 0;
+		volatile BYTE cutPoint = 0;
 
 #pragma omp parallel for
 		for (int position = first; position < last; ++position)
@@ -477,10 +477,10 @@ namespace nQuant
 		auto wholeBlue = Volume(first, data.momentsBlue.get());
 		auto wholeWeight = Volume(first, data.weights.get());
 
-		auto maxAlpha = Maximize(data, first, Alpha, static_cast<byte>(first.AlphaMinimum + 1), first.AlphaMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
-		auto maxRed = Maximize(data, first, Red, static_cast<byte>(first.RedMinimum + 1), first.RedMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
-		auto maxGreen = Maximize(data, first, Green, static_cast<byte>(first.GreenMinimum + 1), first.GreenMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
-		auto maxBlue = Maximize(data, first, Blue, static_cast<byte>(first.BlueMinimum + 1), first.BlueMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
+		auto maxAlpha = Maximize(data, first, Alpha, static_cast<BYTE>(first.AlphaMinimum + 1), first.AlphaMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
+		auto maxRed = Maximize(data, first, Red, static_cast<BYTE>(first.RedMinimum + 1), first.RedMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
+		auto maxGreen = Maximize(data, first, Green, static_cast<BYTE>(first.GreenMinimum + 1), first.GreenMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
+		auto maxBlue = Maximize(data, first, Blue, static_cast<BYTE>(first.BlueMinimum + 1), first.BlueMaximum, wholeAlpha, wholeRed, wholeGreen, wholeBlue, wholeWeight);
 
 		Pixel direction = Blue;
 		if ((maxAlpha.value >= maxRed.value) && (maxAlpha.value >= maxGreen.value) && (maxAlpha.value >= maxBlue.value)) {
@@ -600,10 +600,10 @@ namespace nQuant
 			if (weight <= 0)
 				continue;
 
-			byte alpha = static_cast<byte>(Volume(cube, data.momentsAlpha.get()) / weight);
-			byte red = static_cast<byte>(Volume(cube, data.momentsRed.get()) / weight);
-			byte green = static_cast<byte>(Volume(cube, data.momentsGreen.get()) / weight);
-			byte blue = static_cast<byte>(Volume(cube, data.momentsBlue.get()) / weight);
+			BYTE alpha = static_cast<BYTE>(Volume(cube, data.momentsAlpha.get()) / weight);
+			BYTE red = static_cast<BYTE>(Volume(cube, data.momentsRed.get()) / weight);
+			BYTE green = static_cast<BYTE>(Volume(cube, data.momentsGreen.get()) / weight);
+			BYTE blue = static_cast<BYTE>(Volume(cube, data.momentsBlue.get()) / weight);
 			pPalette->Entries[lookupsCount++] = Color::MakeARGB(alpha, red, green, blue);
 		}
 
@@ -650,7 +650,7 @@ namespace nQuant
 		return k;
 	}
 
-	short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const byte alphaThreshold)
+	short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const BYTE alphaThreshold)
 	{
 		Color c(argb);
 		short k = 0;
@@ -690,7 +690,7 @@ namespace nQuant
 		return k;
 	}
 
-	void GetQuantizedPalette(const ColorData& data, ColorPalette* pPalette, const UINT colorCount, const byte alphaThreshold)
+	void GetQuantizedPalette(const ColorData& data, ColorPalette* pPalette, const UINT colorCount, const BYTE alphaThreshold)
 	{
 		auto alphas = make_unique<UINT[]>(colorCount);
 		auto reds = make_unique<UINT[]>(colorCount);
@@ -729,15 +729,15 @@ namespace nQuant
 		}
 	}
 
-	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, short* qPixels, const UINT width, const UINT height, const bool dither, byte alphaThreshold)
+	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, short* qPixels, const UINT width, const UINT height, const bool dither, BYTE alphaThreshold)
 	{
 		if (dither) {
 			bool odd_scanline = false;
 			short *thisrowerr, *nextrowerr;
-			constexpr byte DJ = 4;
-			constexpr byte DITHER_MAX = 20;
+			constexpr BYTE DJ = 4;
+			constexpr BYTE DITHER_MAX = 20;
 			const int err_len = (width + 2) * DJ;
-			byte range_tbl[DJ * 256] = { 0 };
+			BYTE range_tbl[DJ * 256] = { 0 };
 			auto range = &range_tbl[256];
 			auto erowErr = make_unique<short[]>(err_len);
 			auto orowErr = make_unique<short[]>(err_len);
@@ -748,7 +748,7 @@ namespace nQuant
 
 			for (int i = 0; i < 256; i++) {
 				range_tbl[i] = 0;
-				range_tbl[i + 256] = static_cast<byte>(i);
+				range_tbl[i + 256] = static_cast<BYTE>(i);
 				range_tbl[i + 512] = BYTE_MAX;
 				range_tbl[i + 768] = BYTE_MAX;
 			}
@@ -846,12 +846,12 @@ namespace nQuant
 		return true;
 	}
 	
-	bool WuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither, byte alphaThreshold, byte alphaFader)
+	bool WuQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither, BYTE alphaThreshold, BYTE alphaFader)
 	{
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
 
-		auto pPaletteBytes = make_unique<byte[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 		

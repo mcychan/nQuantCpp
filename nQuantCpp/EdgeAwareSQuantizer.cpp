@@ -33,6 +33,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <algorithm>
 #include <unordered_map>
 #include <numeric>
+#include <random>
 #include <math.h>
 #include <time.h>
 #include <limits>
@@ -104,7 +105,7 @@ namespace EdgeAwareSQuant
 		return result;
 	}
 
-	void fill_random_icm(Mat<byte>& indexImg8, int palette_size) {
+	void fill_random_icm(Mat<BYTE>& indexImg8, int palette_size) {
 		for (int i = 0; i < indexImg8.get_height(); ++i) {
 			for (int j = 0; j < indexImg8.get_width(); ++j) {
 				int ran_val = float(rand()) / RAND_MAX * (palette_size - 1);
@@ -120,7 +121,8 @@ namespace EdgeAwareSQuant
 	void random_permutation(int count, vector<int>& result) {
 		result.resize(count);
 		iota(result.begin(), result.end(), 0);
-		random_shuffle(result.begin(), result.end());
+		auto rng = default_random_engine{};
+		shuffle(result.begin(), result.end(), rng);
 	}
 
 	void random_permutation_2d(int width, int height, deque<pair<int, int> >& result) {
@@ -262,7 +264,7 @@ namespace EdgeAwareSQuant
 		}
 	}
 
-	void zoom_float_icm(const Mat<byte>& smallVal, Mat<byte>& big)
+	void zoom_float_icm(const Mat<BYTE>& smallVal, Mat<BYTE>& big)
 	{
 		for (int y = 0; y < big.get_height(); ++y) {
 			int small_y = y / 2.0;
@@ -277,7 +279,7 @@ namespace EdgeAwareSQuant
 		}
 	}
 
-	void compute_initial_s_ea_icm(array2d<vector_fixed<float, 4> >& s, const Mat<byte>& indexImg8, Mat<Mat<float> >& b)
+	void compute_initial_s_ea_icm(array2d<vector_fixed<float, 4> >& s, const Mat<BYTE>& indexImg8, Mat<Mat<float> >& b)
 	{
 		const int length = hasSemiTransparency ? 4 : 3;
 		int palette_size = s.get_width();
@@ -305,19 +307,19 @@ namespace EdgeAwareSQuant
 						auto b_ij = b_value_ea(b, i_x, i_y, j_x, j_y);
 						int v = indexImg8(i_y, i_x);
 						int alpha = indexImg8(j_y, j_x);
-						for (byte p = 0; p < length; ++p)
+						for (BYTE p = 0; p < length; ++p)
 							s(v, alpha)[p] += b_ij;
 					}
 				}
 				int v = indexImg8(i_y, i_x);
 				auto b_ii = b_value_ea(b, i_x, i_y, i_x, i_y);
-				for (byte p = 0; p < length; ++p)
+				for (BYTE p = 0; p < length; ++p)
 					s(v, v)[p] += b_ii;
 			}
 		}
 	}
 
-	void refine_palette_icm_mat(array2d<vector_fixed<float, 4> >& s, const Mat<byte>& indexImg8,
+	void refine_palette_icm_mat(array2d<vector_fixed<float, 4> >& s, const Mat<BYTE>& indexImg8,
 		const array2d<vector_fixed<float, 4> >& a, vector<vector_fixed<float, 4> >& palette, int& palatte_changed)
 	{
 		// We only computed the half of S above the diagonal - reflect it
@@ -359,7 +361,7 @@ namespace EdgeAwareSQuant
 				palette[v][k] = val;
 
 				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k > 1) {
-					auto argb = Color::MakeARGB(BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[v][0]), static_cast<byte>(BYTE_MAX * palette[v][1]), static_cast<byte>(BYTE_MAX * palette[v][2]));
+					auto argb = Color::MakeARGB(BYTE_MAX, static_cast<BYTE>(BYTE_MAX * palette[v][0]), static_cast<BYTE>(BYTE_MAX * palette[v][1]), static_cast<BYTE>(BYTE_MAX * palette[v][2]));
 					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
 						swap(palette[0], palette[v]);
 				}
@@ -378,7 +380,7 @@ namespace EdgeAwareSQuant
 		int max_coarse_level = 4;
 		int neiSize = 10;
 
-		auto pIndexImg8 = make_unique<Mat<byte> >(bitmapHeight >> max_coarse_level, bitmapWidth >> max_coarse_level);
+		auto pIndexImg8 = make_unique<Mat<BYTE> >(bitmapHeight >> max_coarse_level, bitmapWidth >> max_coarse_level);
 		fill_random_icm(*pIndexImg8, palette.size());
 
 		// Compute a_I^l, b_{IJ}^l according to  Puzicha's (18)
@@ -461,11 +463,11 @@ namespace EdgeAwareSQuant
 			vector<vector<pair<float, int> > > centroidDist(paletteSize, vector<pair<float, int> >(paletteSize, pair<float, int>(0.0f, -1)));
 			for (int l1 = 0; l1 < palette.size(); l1++) {
 				for (int l2 = l1; l2 < palette.size(); l2++) {
-					Color c(hasSemiTransparency ? static_cast<byte>(BYTE_MAX * palette[l1][3]) : BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[l1][0]), static_cast<byte>(BYTE_MAX * palette[l1][1]), static_cast<byte>(BYTE_MAX * palette[l1][2]));
+					Color c(hasSemiTransparency ? static_cast<BYTE>(BYTE_MAX * palette[l1][3]) : BYTE_MAX, static_cast<BYTE>(BYTE_MAX * palette[l1][0]), static_cast<BYTE>(BYTE_MAX * palette[l1][1]), static_cast<BYTE>(BYTE_MAX * palette[l1][2]));
 					CIELABConvertor::Lab lab1;
 					getLab(c, lab1);
 
-					Color c2(hasSemiTransparency ? static_cast<byte>(BYTE_MAX * palette[l2][3]) : BYTE_MAX, static_cast<byte>(BYTE_MAX * palette[l2][0]), static_cast<byte>(BYTE_MAX * palette[l2][1]), static_cast<byte>(BYTE_MAX * palette[l2][2]));
+					Color c2(hasSemiTransparency ? static_cast<BYTE>(BYTE_MAX * palette[l2][3]) : BYTE_MAX, static_cast<BYTE>(BYTE_MAX * palette[l2][0]), static_cast<BYTE>(BYTE_MAX * palette[l2][1]), static_cast<BYTE>(BYTE_MAX * palette[l2][2]));
 					CIELABConvertor::Lab lab2;
 					getLab(c2, lab2);
 
@@ -524,7 +526,7 @@ namespace EdgeAwareSQuant
 									continue;
 								auto b_ij = b_value_ea(b, i_x, i_y, j_x, j_y);
 								auto& pixelIndex = pIndexImg8->at(j_y, j_x);
-								for (byte p = 0; p < length; ++p)
+								for (BYTE p = 0; p < length; ++p)
 									p_i[p] += b_ij * palette[pixelIndex][p];
 							}
 						}
@@ -579,7 +581,7 @@ namespace EdgeAwareSQuant
 			if (--coarse_level < 0)
 				break;
 			auto pOldIndexImg8 = move(pIndexImg8);
-			pIndexImg8 = make_unique<Mat<byte> >(bitmapHeight >> coarse_level, bitmapWidth >> coarse_level);
+			pIndexImg8 = make_unique<Mat<BYTE> >(bitmapHeight >> coarse_level, bitmapWidth >> coarse_level);
 			zoom_float_icm(*pOldIndexImg8, *pIndexImg8);
 		}
 
@@ -653,7 +655,7 @@ namespace EdgeAwareSQuant
 		if (nMaxColors > 256)
 			nMaxColors = 256;
 
-		auto pPaletteBytes = make_unique<byte[]>(pDest->GetPaletteSize());
+		auto pPaletteBytes = make_unique<BYTE[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
@@ -682,7 +684,7 @@ namespace EdgeAwareSQuant
 		if (nMaxColors > 2) {
 			/* Fill palette */
 			for (UINT k = 0; k < nMaxColors; ++k)
-				pPalette->Entries[k] = Color::MakeARGB(static_cast<byte>(BYTE_MAX * palette[k][3]), static_cast<byte>(BYTE_MAX * palette[k][0]), static_cast<byte>(BYTE_MAX * palette[k][1]), static_cast<byte>(BYTE_MAX * palette[k][2]));
+				pPalette->Entries[k] = Color::MakeARGB(static_cast<BYTE>(BYTE_MAX * palette[k][3]), static_cast<BYTE>(BYTE_MAX * palette[k][0]), static_cast<BYTE>(BYTE_MAX * palette[k][1]), static_cast<BYTE>(BYTE_MAX * palette[k][2]));
 
 			if (m_transparentPixelIndex >= 0) {
 				UINT k = qPixels[m_transparentPixelIndex];

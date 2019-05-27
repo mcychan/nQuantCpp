@@ -24,11 +24,11 @@ namespace nQuant
 /**
   Xiaolin Wu color quantization algorithm
 */
-	enum Pixel : byte { Blue, Green, Red, Alpha };
+	enum Pixel : BYTE { Blue, Green, Red, Alpha };
 
 	class WuQuantizer
 	{
 		public:
-			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither = true, byte alphaThreshold = 0, byte alphaFader = 1);
+			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither = true, BYTE alphaThreshold = 0, BYTE alphaFader = 1);
 	};
 }
