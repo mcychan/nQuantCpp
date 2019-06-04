@@ -457,7 +457,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	auto lim = &limtb[256];
 	auto erowerr = erowErr.get();
 	auto orowerr = orowErr.get();
-	short lookup[65536] = { 0 };
+	auto lookup = make_unique<short[]>(65536);
 
 	for (int i = 0; i < 256; i++) {
 		clamp[i] = 0;
@@ -558,7 +558,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 	auto lim = &limtb[256];
 	auto erowerr = erowErr.get();
 	auto orowerr = orowErr.get();
-	int lookup[65536] = { 0 };
+	auto lookup = make_unique<int[]>(65536);
 
 	for (int i = 0; i < 256; i++) {
 		clamp[i] = 0;
