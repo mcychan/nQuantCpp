@@ -626,7 +626,7 @@ namespace SpatialQuant
 	}
 
 	bool spatial_color_quant(const vector<ARGB>& image, array2d<vector_fixed<double, 4> >& filter_weights,
-		short* quantized_image, const int bitmapWidth, vector<vector_fixed<double, 4> >& palette,
+		unsigned short* quantized_image, const int bitmapWidth, vector<vector_fixed<double, 4> >& palette,
 		const double initial_temperature = 1.0, const double final_temperature = 0.001, const int temps_per_level = 3, const int repeats_per_temp = 1)
 	{
 		const int length = hasSemiTransparency ? 4 : 3;
@@ -890,7 +890,7 @@ namespace SpatialQuant
 		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
 			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
 
-		auto qPixels = make_unique<short[]>(pixels.size());
+		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		if (!spatial_color_quant(pixels, filter3_weights, qPixels.get(), bitmapWidth, palette))
 			return false;		
 

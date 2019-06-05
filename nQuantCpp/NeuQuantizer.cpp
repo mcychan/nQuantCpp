@@ -431,16 +431,16 @@ namespace NeuralNet
 		}
 	}
 
-	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		short k = 0;
+		unsigned short k = 0;
 		Color c(argb);
 
 		double mindist = INT_MAX;
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 
-		for (short i = 0; i < nMaxColors; i++) {
+		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
 			if (nMaxColors > 32) {
 				double curdist = sqr(c2.GetA() - c.GetA());
@@ -488,7 +488,7 @@ namespace NeuralNet
 		return k;
 	}
 
-	bool quantize_image(const vector<ARGB>& pixels, const ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
+	bool quantize_image(const vector<ARGB>& pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
 		if (dither)
 			return dither_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
@@ -521,9 +521,6 @@ namespace NeuralNet
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
-		if (nMaxColors > 32768)
-			nMaxColors = 32768;
-
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
@@ -537,7 +534,7 @@ namespace NeuralNet
 		Learn(dither ? 5 : 1, pixels);
 		Inxbuild(pPalette);
 
-		auto qPixels = make_unique<short[]>(pixels.size());
+		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		if (nMaxColors > 256) {
 			hasSemiTransparency = false;
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);

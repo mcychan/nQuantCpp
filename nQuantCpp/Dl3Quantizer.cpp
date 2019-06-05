@@ -52,7 +52,7 @@ namespace Dl3Quant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	unordered_map<ARGB, vector<short> > closestMap;
+	unordered_map<ARGB, vector<unsigned short> > closestMap;
 
 	using namespace std;
 
@@ -214,13 +214,13 @@ namespace Dl3Quant
 		}
 	}
 
-	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		short k = 0;
+		unsigned short k = 0;
 		Color c(argb);
 
 		double mindist = INT_MAX;
-		for (short i = 0; i < nMaxColors; i++) {
+		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
 			double curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
@@ -244,11 +244,11 @@ namespace Dl3Quant
 		return k;
 	}
 
-	short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		short k = 0;
+		unsigned short k = 0;
 		Color c(argb);
-		vector<short> closest(5);
+		vector<unsigned short> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = SHORT_MAX;
@@ -283,7 +283,7 @@ namespace Dl3Quant
 		return k;
 	}
 
-	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
+	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
 		if (dither)
 			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
@@ -300,7 +300,7 @@ namespace Dl3Quant
 
 	void GetQuantizedPalette(ColorPalette* pPalette, const CUBE3* rgb_table3)
 	{
-		for (short k = 0; k < pPalette->Count; ++k) {
+		for (UINT k = 0; k < pPalette->Count; ++k) {
 			UINT sum = rgb_table3[k].pixel_count;
 			if (sum > 0)
 				pPalette->Entries[k] = Color::MakeARGB(rgb_table3[k].aa, rgb_table3[k].rr, rgb_table3[k].gg, rgb_table3[k].bb);
@@ -344,7 +344,7 @@ namespace Dl3Quant
 			}
 		}
 
-		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
+		auto qPixels = make_unique<unsigned short[]>(bitmapWidth * bitmapHeight);
 		if (nMaxColors > 256) {
 			hasSemiTransparency = false;
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);

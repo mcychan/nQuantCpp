@@ -189,16 +189,16 @@ namespace PnnLABQuant
 		return 0;
 	}
 
-	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		short k = 0;
+		unsigned short k = 0;
 		Color c(argb);
 
 		double mindist = INT_MAX;
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 
-		for (short i = 0; i < nMaxColors; i++) {
+		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
 			if (nMaxColors > 32) {
 				double curdist = sqr(c2.GetA() - c.GetA());
@@ -246,9 +246,9 @@ namespace PnnLABQuant
 		return k;
 	}
 	
-	short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		short k = 0;
+		UINT k = 0;
 		Color c(argb);
 		vector<double> closest(5);
 		auto got = closestMap.find(argb);
@@ -257,7 +257,7 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab1, lab2;
 			getLab(c, lab1);
-			for (; k < nMaxColors; k++) {
+			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
 				getLab(c2, lab2);
 				closest[4] = sqr(lab2.alpha - lab1.alpha) + CIELABConvertor::CIEDE2000(lab2, lab1);
@@ -289,7 +289,7 @@ namespace PnnLABQuant
 		return k;
 	}
 
-	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
+	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
 		if (dither) 
 			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
@@ -329,7 +329,7 @@ namespace PnnLABQuant
 			}
 		}
 		
-		auto qPixels = make_unique<short[]>(pixels.size());
+		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		if (nMaxColors > 256) {
 			hasSemiTransparency = false;
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);

@@ -440,7 +440,7 @@ BOOL FillBitmapFileHeader(LPCVOID pDib, PBITMAPFILEHEADER pbmfh)
 	return TRUE;
 }
 
-bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height)
+bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height)
 {
 	UINT pixelIndex = 0;
 	
@@ -542,7 +542,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	return true;
 }
 
-bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height)
+bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height)
 {
 	UINT pixelIndex = 0;
 	bool odd_scanline = false;
@@ -643,7 +643,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 	return true;
 }
 
-bool ProcessImagePixels(Bitmap* pDest, const short* qPixels, const int& transparentPixelIndex)
+bool ProcessImagePixels(Bitmap* pDest, const unsigned short* qPixels, const int& transparentPixelIndex)
 {
 	UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
 	if (bpp < 16)
@@ -678,7 +678,7 @@ bool ProcessImagePixels(Bitmap* pDest, const short* qPixels, const int& transpar
 	// Second loop: fill indexed bitmap
 	for (UINT y = 0; y < h; y++) {	// For each row...
 		for (UINT x = 0; x < w * 2;) {
-			auto argb = static_cast<unsigned short>(qPixels[pixelIndex++]);
+			auto argb = qPixels[pixelIndex++];
 			pRowDest[x++] = static_cast<BYTE>(argb & 0xFF);
 			pRowDest[x++] = static_cast<BYTE>(argb >> 8);
 		}
@@ -689,7 +689,7 @@ bool ProcessImagePixels(Bitmap* pDest, const short* qPixels, const int& transpar
 	return pDest->GetLastStatus() == Ok;
 }
 
-bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const short* qPixels)
+bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsigned short* qPixels)
 {
 	pDest->SetPalette(pPalette);
 

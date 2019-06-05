@@ -370,7 +370,7 @@ namespace EdgeAwareSQuant
 	}
 
 	void spatial_color_quant_ea_icm_saliency(const vector<ARGB>& image, Mat<Mat<float> >& weightMaps, Mat<float> saliencyMap,
-		short* quantized_image, vector<vector_fixed<float, 4> >& palette,
+		unsigned short* quantized_image, vector<vector_fixed<float, 4> >& palette,
 		const float initial_temperature = 1.0, const float final_temperature = 0.00001, const int temps_per_level = 1, const int repeats_per_temp = 1, const int filter_radius = 1)
 	{
 		const int length = hasSemiTransparency ? 4 : 3;
@@ -677,7 +677,7 @@ namespace EdgeAwareSQuant
 
 		Mat<Mat<float> > weightMaps(bitmapHeight, bitmapWidth);
 		filter_bila(pixels, weightMaps);
-		auto qPixels = make_unique<short[]>(pixels.size());
+		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		spatial_color_quant_ea_icm_saliency(pixels, weightMaps, saliencyMap, qPixels.get(), palette);
 		pixelMap.clear();
 

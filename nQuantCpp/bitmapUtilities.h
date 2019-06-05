@@ -58,15 +58,15 @@ BOOL FixBitmapHeight(PVOID pDib, ULONG nSize, BOOL bTopDown);
 
 BOOL FillBitmapFileHeader(LPCVOID pDib, PBITMAPFILEHEADER pbmfh);
 
-typedef short (*DitherFn)(const ColorPalette*, const UINT nMaxColors, const ARGB);
+typedef unsigned short (*DitherFn)(const ColorPalette*, const UINT nMaxColors, const ARGB);
 
-bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height);
+bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height);
 
-bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height);
+bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height);
 
-bool ProcessImagePixels(Bitmap* pDest, const short* qPixels, const int& transparentPixelIndex);
+bool ProcessImagePixels(Bitmap* pDest, const unsigned short* qPixels, const int& transparentPixelIndex);
 
-bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const short* qPixels);
+bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsigned short* qPixels);
 
 bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency, int& transparentPixelIndex, ARGB& transparentColor);
 

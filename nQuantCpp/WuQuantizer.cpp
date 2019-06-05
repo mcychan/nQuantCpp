@@ -41,7 +41,7 @@ namespace nQuant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	unordered_map<ARGB, vector<short> > closestMap;
+	unordered_map<ARGB, vector<unsigned short> > closestMap;
 	unordered_map<ARGB, UINT> rightMatches;
 
 	struct Box {
@@ -611,11 +611,11 @@ namespace nQuant
 			pPalette->Count = lookupsCount;
 	}
 
-	short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		short k = 0;
+		UINT k = 0;
 		Color c(argb);
-		vector<short> closest(5);
+		vector<unsigned short> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = SHORT_MAX;
@@ -650,10 +650,10 @@ namespace nQuant
 		return k;
 	}
 
-	short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const BYTE alphaThreshold)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const BYTE alphaThreshold)
 	{
 		Color c(argb);
-		short k = 0;
+		unsigned short k = 0;
 		if (c.GetA() <= alphaThreshold)
 			return k;
 
@@ -729,7 +729,7 @@ namespace nQuant
 		}
 	}
 
-	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, short* qPixels, const UINT width, const UINT height, const bool dither, BYTE alphaThreshold)
+	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, unsigned short* qPixels, const UINT width, const UINT height, const bool dither, BYTE alphaThreshold)
 	{
 		if (dither) {
 			bool odd_scanline = false;
@@ -855,7 +855,7 @@ namespace nQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 		
-		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
+		auto qPixels = make_unique<unsigned short[]>(bitmapWidth * bitmapHeight);
 
 		if (nMaxColors > 2) {
 			ColorData colorData(SIDESIZE, bitmapWidth, bitmapHeight);

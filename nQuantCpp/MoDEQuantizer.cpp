@@ -33,7 +33,7 @@ namespace MoDEQuant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	unordered_map<ARGB, vector<short> > closestMap;
+	unordered_map<ARGB, vector<unsigned short> > closestMap;
 
 	inline double __declspec (naked) __fastcall _sqrt(double n)
 	{
@@ -432,13 +432,13 @@ namespace MoDEQuant
 		return 0;
 	}
 
-	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		short k = 0;
+		unsigned short k = 0;
 		Color c(argb);
 
 		UINT mindist = INT_MAX;
-		for (short i = 0; i < nMaxColors; i++) {
+		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
 			UINT curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
@@ -462,11 +462,11 @@ namespace MoDEQuant
 		return k;
 	}
 
-	short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		short k = 0;
+		UINT k = 0;
 		Color c(argb);
-		vector<short> closest(5);
+		vector<unsigned short> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = INT_MAX;
@@ -501,7 +501,7 @@ namespace MoDEQuant
 		return k;
 	}
 
-	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
+	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
 		if (dither)
 			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
@@ -546,7 +546,7 @@ namespace MoDEQuant
 			}
 		}
 
-		auto qPixels = make_unique<short[]>(bitmapWidth * bitmapHeight);
+		auto qPixels = make_unique<unsigned short[]>(bitmapWidth * bitmapHeight);
 		if (nMaxColors > 256) {
 			hasSemiTransparency = false;
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);

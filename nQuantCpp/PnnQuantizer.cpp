@@ -15,7 +15,7 @@ namespace PnnQuant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	unordered_map<ARGB, vector<short> > closestMap;
+	unordered_map<ARGB, vector<unsigned short> > closestMap;
 
 	struct pnnbin {
 		double ac = 0, rc = 0, gc = 0, bc = 0, err = 0;
@@ -161,7 +161,7 @@ namespace PnnQuant
 		}
 
 		/* Fill palette */
-		short k = 0;
+		UINT k = 0;
 		for (int i = 0;; ++k) {
 			auto alpha = hasSemiTransparency ? rint(bins[i].ac) : BYTE_MAX;
 			pPalette->Entries[k] = Color::MakeARGB(alpha, rint(bins[i].rc), rint(bins[i].gc), rint(bins[i].bc));
@@ -175,13 +175,13 @@ namespace PnnQuant
 		return 0;
 	}
 
-	short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		short k = 0;
+		unsigned short k = 0;
 		Color c(argb);
 
 		double mindist = INT_MAX;
-		for (short i = 0; i < nMaxColors; i++) {
+		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
 			double curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
@@ -205,16 +205,16 @@ namespace PnnQuant
 		return k;
 	}
 
-	short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
-		short k = 0;
+		UINT k = 0;
 		Color c(argb);
-		vector<short> closest(5);
+		vector<unsigned short> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = SHORT_MAX;
 
-			for (; k < nMaxColors; k++) {
+			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
 				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
 				if (closest[4] < closest[2]) {
@@ -244,7 +244,7 @@ namespace PnnQuant
 		return k;
 	}
 
-	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, short* qPixels, const UINT width, const UINT height, const bool dither)
+	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{		
 		if (dither) 
 			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
@@ -286,7 +286,7 @@ namespace PnnQuant
 			}
 		}
 
-		auto qPixels = make_unique<short[]>(pixels.size());
+		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		if (nMaxColors > 256) {
 			hasSemiTransparency = false;
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
