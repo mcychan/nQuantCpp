@@ -38,23 +38,46 @@ namespace PnnLABQuant
 
 	void find_nn(pnnbin* bins, int idx)
 	{
-		int i, nn = 0;
-		double err = 1e100;
+		int nn = 0;
+		double err = INT_MAX;
 
 		auto& bin1 = bins[idx];
 		auto n1 = bin1.cnt;
-		auto wa = bin1.ac;
-		auto wL = bin1.Lc;
-		auto wA = bin1.Ac;
-		auto wB = bin1.Bc;
-		for (i = bin1.fw; i; i = bins[i].fw) {
-			double nerr, n2;
+		CIELABConvertor::Lab lab1;
+		lab1.alpha = bin1.ac, lab1.L = bin1.Lc, lab1.A = bin1.Ac, lab1.B = bin1.Bc;
+		for (int i = bin1.fw; i; i = bins[i].fw) {			
+			double n2 = bins[i].cnt;
+			double nerr2 = (n1 * n2) / (n1 + n2);
+			if (nerr2 >= err)
+				continue;
 
-			nerr = sqr(bins[i].ac - wa) + sqr(bins[i].Lc - wL) + sqr(bins[i].Ac - wA) + sqr(bins[i].Bc - wB);
-			n2 = bins[i].cnt;
-			nerr *= (n1 * n2) / (n1 + n2);
+			CIELABConvertor::Lab lab2;
+			lab2.alpha = bins[i].ac, lab2.L = bins[i].Lc, lab2.A = bins[i].Ac, lab2.B = bins[i].Bc;
+			double nerr = nerr2 * sqr(lab2.alpha - lab1.alpha);
 			if (nerr >= err)
 				continue;
+
+			double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
+			nerr += nerr2 * sqr(deltaL_prime_div_k_L_S_L);
+			if (nerr >= err)
+				continue;
+
+			double a1Prime, a2Prime, CPrime1, CPrime2;
+			double deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
+			nerr += nerr2 * sqr(deltaC_prime_div_k_L_S_L);
+			if (nerr >= err)
+				continue;
+
+			double barCPrime, barhPrime;
+			double deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
+			nerr += nerr2 * sqr(deltaH_prime_div_k_L_S_L);
+			if (nerr >= err)
+				continue;
+
+			nerr += nerr2 * CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
+			if (nerr >= err)
+				continue;
+
 			err = nerr;
 			nn = i;
 		}
@@ -97,7 +120,8 @@ namespace PnnLABQuant
 			bins[i].Lc *= d;
 			bins[i].Ac *= d;
 			bins[i].Bc *= d;
-			bins[maxbins++] = bins[i];
+			bins[maxbins] = bins[i];
+			++maxbins;
 		}
 
 		for (int i = 0; i < maxbins - 1; i++) {
@@ -297,8 +321,8 @@ namespace PnnLABQuant
 		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		UINT pixelIndex = 0;
 		for (int j = 0; j < height; ++j) {
-			for (int i = 0; i < width; ++i)
-				qPixels[pixelIndex++] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
+			for (int i = 0; i < width; ++i, ++pixelIndex)
+				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 		return true;
 	}

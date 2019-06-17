@@ -120,9 +120,9 @@ namespace DivQuant
 		double norm_factor = 1.0 / (ceil(numRows / (double) dec_factor) * ceil(numCols / (double) dec_factor));
   
 		for (int index = 0, hash = 0; hash < COLOR_HASH_SIZE; ++hash) {
-			for (auto bucket = hash_table[hash]; bucket.get() != nullptr; bucket = bucket->next) {
+			for (auto bucket = hash_table[hash]; bucket.get() != nullptr; bucket = bucket->next, ++index) {
 				outPixels[index] = bucket->argb;      
-				weights[index++] = norm_factor * bucket->value;
+				weights[index] = norm_factor * bucket->value;
 			}
 		}
   
@@ -800,7 +800,8 @@ namespace DivQuant
 			for (int ip = 0; ip < num_points; ++ip) {
 				if (member[ip] == old_index) {
 					tmp_data[count] = data[ip];
-					point_index[count++] = ip;
+					point_index[count] = ip;
+					++count;
 				}
 			}
 
@@ -819,7 +820,8 @@ namespace DivQuant
 				CIELABConvertor::Lab lab1;
 				lab1.alpha = rint(mean[ic].alpha);
 				lab1.L = mean[ic].L, lab1.A = mean[ic].A, lab1.B = mean[ic].B;
-				pPalette->Entries[colortableOffset++] = CIELABConvertor::LAB2RGB(lab1);
+				pPalette->Entries[colortableOffset] = CIELABConvertor::LAB2RGB(lab1);
+				++colortableOffset;
 			}
 			else {
 				/* Empty cluster */
@@ -946,15 +948,24 @@ namespace DivQuant
 				if (curdist > mindist)
 					continue;
 
-				curdist += sqr(lab2.L - lab1.L);
+				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
+				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
 
-				curdist += sqr(lab2.A - lab1.A);
+				double a1Prime, a2Prime, CPrime1, CPrime2;
+				double deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
+				curdist += sqr(deltaC_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
 
-				curdist += sqr(lab2.B - lab1.B);
+				double barCPrime, barhPrime;
+				double deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
+				curdist += sqr(deltaH_prime_div_k_L_S_L);
+				if (curdist > mindist)
+					continue;
+
+				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
 
@@ -972,9 +983,9 @@ namespace DivQuant
 			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);		
 
 		UINT pixelIndex = 0;
-		for (int j = 0; j < height; ++j) {
-			for (int i = 0; i < width; ++i)
-				qPixels[pixelIndex++] = nearestColorIndex(pPalette, nMaxColors, pixels[pixelIndex]);
+		for (UINT j = 0; j < height; ++j) {
+			for (UINT i = 0; i < width; ++i, ++pixelIndex)
+				qPixels[pixelIndex] = nearestColorIndex(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 		return true;
 	}
@@ -987,9 +998,6 @@ namespace DivQuant
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
-
-		//if (nMaxColors > 32768)
-			//nMaxColors = 32768;
 
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
