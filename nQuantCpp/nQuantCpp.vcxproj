@@ -22,20 +22,20 @@
     <ProjectGuid>{D9959AF4-B098-4444-AD33-B377E98A187C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>nQuantCpp</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>false</UseOfMfc>
@@ -43,14 +43,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
@@ -157,6 +157,7 @@
     <ClInclude Include="DivQuantizer.h" />
     <ClInclude Include="Dl3Quantizer.h" />
     <ClInclude Include="EdgeAwareSQuantizer.h" />
+    <ClInclude Include="MedianCut.h" />
     <ClInclude Include="MoDEQuantizer.h" />
     <ClInclude Include="NeuQuantizer.h" />
     <ClInclude Include="nQuantCpp.h" />
@@ -174,6 +175,7 @@
     <ClCompile Include="DivQuantizer.cpp" />
     <ClCompile Include="Dl3Quantizer.cpp" />
     <ClCompile Include="EdgeAwareSQuantizer.cpp" />
+    <ClCompile Include="MedianCut.cpp" />
     <ClCompile Include="MoDEQuantizer.cpp" />
     <ClCompile Include="NeuQuantizer.cpp" />
     <ClCompile Include="nQuantCpp.cpp" />
