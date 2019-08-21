@@ -1027,7 +1027,7 @@ namespace DivQuant
 			}
 		}
 
-		if (hasSemiTransparency)
+		if (hasSemiTransparency || nMaxColors <= 32)
 			PR = PG = PB = 1;
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		if (m_transparentPixelIndex >= 0) {

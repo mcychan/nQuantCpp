@@ -35,12 +35,12 @@ namespace nQuant
 	const BYTE SIDEPIXSHIFT = 3;
 	const BYTE MAXSIDEINDEX = 256 / (1 << SIDEPIXSHIFT);
 	const BYTE SIDESIZE = MAXSIDEINDEX + 1;
-	const double PR = .2126, PG = .7152, PB = .0722;
 	const UINT TOTAL_SIDESIZE = SIDESIZE * SIDESIZE * SIDESIZE * SIDESIZE;
 
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
+	double PR = .2126, PG = .7152, PB = .0722;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 	unordered_map<ARGB, UINT> rightMatches;
 
@@ -99,7 +99,8 @@ namespace nQuant
 
 		inline void AddPixel(ARGB pixel)
 		{
-			pixels[pixelFillingCounter++] = pixel;
+			pixels[pixelFillingCounter] = pixel;
+			++pixelFillingCounter;
 		}
 	};
 
@@ -591,8 +592,10 @@ namespace nQuant
 	void BuildLookups(ColorPalette* pPalette, vector<Box>& cubes, const ColorData& data)
 	{
 		volatile UINT lookupsCount = 0;
-		if (m_transparentPixelIndex >= 0)
-			pPalette->Entries[lookupsCount++] = m_transparentColor;
+		if (m_transparentPixelIndex >= 0) {
+			pPalette->Entries[lookupsCount] = m_transparentColor;
+			++lookupsCount;
+		}
 			
 		for (auto const& cube : cubes) {
 			auto weight = Volume(cube, data.weights.get());
@@ -604,7 +607,8 @@ namespace nQuant
 			BYTE red = static_cast<BYTE>(Volume(cube, data.momentsRed.get()) / weight);
 			BYTE green = static_cast<BYTE>(Volume(cube, data.momentsGreen.get()) / weight);
 			BYTE blue = static_cast<BYTE>(Volume(cube, data.momentsBlue.get()) / weight);
-			pPalette->Entries[lookupsCount++] = Color::MakeARGB(alpha, red, green, blue);
+			pPalette->Entries[lookupsCount] = Color::MakeARGB(alpha, red, green, blue);
+			++lookupsCount;
 		}
 
 		if(lookupsCount < pPalette->Count)
@@ -856,6 +860,8 @@ namespace nQuant
 		pPalette->Count = nMaxColors;
 		
 		auto qPixels = make_unique<unsigned short[]>(bitmapWidth * bitmapHeight);
+		if (nMaxColors <= 32)
+			PR = PG = PB = 1;
 
 		if (nMaxColors > 2) {
 			ColorData colorData(SIDESIZE, bitmapWidth, bitmapHeight);

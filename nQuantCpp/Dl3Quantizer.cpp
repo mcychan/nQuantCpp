@@ -131,7 +131,8 @@ namespace Dl3Quant
 		for (int i = 0; i < 65536; ++i) {
 			if (rgb_table3[i].pixel_count > 0) {
 				setARGB(rgb_table3[i]);
-				rgb_table3[tot_colors++] = rgb_table3[i];
+				rgb_table3[tot_colors] = rgb_table3[i];
+				++tot_colors;
 			}
 		}
 		return tot_colors;
@@ -291,8 +292,8 @@ namespace Dl3Quant
 		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		UINT pixelIndex = 0;
 		for (int j = 0; j < height; ++j) {
-			for (int i = 0; i < width; ++i)
-				qPixels[pixelIndex++] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
+			for (int i = 0; i < width; ++i, ++pixelIndex)
+				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 
 		return true;
@@ -351,7 +352,7 @@ namespace Dl3Quant
 			closestMap.clear();
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
-		if (hasSemiTransparency)
+		if (hasSemiTransparency || nMaxColors <= 32)
 			PR = PG = PB = 1;
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		closestMap.clear();
