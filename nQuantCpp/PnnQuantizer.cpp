@@ -85,7 +85,8 @@ namespace PnnQuant
 			bins[i].bc *= d;
 			if (quan_sqrt)
 				bins[i].cnt = sqrt(bins[i].cnt);
-			bins[maxbins++] = bins[i];
+			bins[maxbins] = bins[i];
+			++maxbins;
 		}
 
 		for (int i = 0; i < maxbins - 1; i++) {
@@ -252,8 +253,8 @@ namespace PnnQuant
 		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		UINT pixelIndex = 0;
 		for (int j = 0; j < height; ++j) {
-			for (int i = 0; i < width; ++i)
-				qPixels[pixelIndex++] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
+			for (int i = 0; i < width; ++i, ++pixelIndex)
+				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 
 		return true;
@@ -292,7 +293,7 @@ namespace PnnQuant
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
-		if (hasSemiTransparency)
+		if (hasSemiTransparency || nMaxColors <= 32)
 			PR = PG = PB = 1;
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 
