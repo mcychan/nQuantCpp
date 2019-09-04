@@ -73,13 +73,6 @@ namespace Dl3Quant
 		rec.bb = (rec.b + v2) / v;
 	}
 
-	/* inline double __declspec (naked) __fastcall _sqrt(double n)
-	{
-		_asm fld qword ptr[esp + 4]
-			_asm fsqrt
-		_asm ret 8
-	} */
-
 	double calc_err(CUBE3* rgb_table3, const int* squares3, const UINT& c1, const UINT& c2)
 	{
 		UINT P1 = rgb_table3[c1].pixel_count;

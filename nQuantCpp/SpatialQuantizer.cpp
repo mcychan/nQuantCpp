@@ -40,6 +40,13 @@ namespace SpatialQuant
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
 
+	inline double __declspec (naked) __fastcall _sqrt(double n)
+	{
+		_asm fld qword ptr[esp + 4]
+			_asm fsqrt
+		_asm ret 8
+	}
+
 	template <typename T, int length>
 	class vector_fixed
 	{
@@ -861,7 +868,7 @@ namespace SpatialQuant
 		double sum = 0.0;
 		for (int i = 0; i < 3; ++i) {
 			for (int j = 0; j < 3; ++j) {
-				double value = exp(-sqrt((double)((i - 2)*(i - 2) + (j - 2)*(j - 2))) / (dithering_level * dithering_level));
+				double value = exp(-_sqrt((double)((i - 2)*(i - 2) + (j - 2)*(j - 2))) / (dithering_level * dithering_level));
 				for (short k = 0; k < length; ++k)
 					sum += filter3_weights(i, j)[k] = value;
 			}
