@@ -66,12 +66,16 @@ inline constexpr double rad2Deg(const double rad)
 	return ((180.0 / M_PI) * rad);
 }
 
-inline double __declspec (naked) __fastcall _sqrt(double n)
-{
-	_asm fld qword ptr[esp + 4]
-		_asm fsqrt
-	_asm ret 8
-}
+#ifdef _WIN64
+	#define _sqrt sqrt
+#else
+	inline double __declspec (naked) __fastcall _sqrt(double n)
+	{
+		_asm fld qword ptr[esp + 4]
+			_asm fsqrt
+		_asm ret 8
+	}
+#endif // _WIN64
 
 double CIELABConvertor::L_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2)
 {

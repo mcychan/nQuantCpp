@@ -89,16 +89,16 @@ namespace PnnQuant
 			++maxbins;
 		}
 
-		for (int i = 0; i < maxbins - 1; i++) {
+		for (int i = 0; i < maxbins - 1; ++i) {
 			bins[i].fw = i + 1;
 			bins[i + 1].bk = i;
 		}
-		// !!! Already zeroed out by calloc()
+
 		//	bins[0].bk = bins[i].fw = 0;
 
 		int h, l, l2;
 		/* Initialize nearest neighbors and build heap of them */
-		for (int i = 0; i < maxbins; i++) {
+		for (int i = 0; i < maxbins; ++i) {
 			find_nn(bins.get(), i);
 			/* Push slot on heap */
 			err = bins[i].err;

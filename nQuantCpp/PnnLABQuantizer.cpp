@@ -53,7 +53,8 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab2;
 			lab2.alpha = bins[i].ac, lab2.L = bins[i].Lc, lab2.A = bins[i].Ac, lab2.B = bins[i].Bc;
-			double nerr = nerr2 * sqr(lab2.alpha - lab1.alpha);
+			double alphaDiff = lab2.alpha - lab1.alpha;
+			double nerr = nerr2 * sqr(alphaDiff) * alphaDiff / 3.0;
 			if (nerr >= err)
 				continue;
 
@@ -124,16 +125,16 @@ namespace PnnLABQuant
 			++maxbins;
 		}
 
-		for (int i = 0; i < maxbins - 1; i++) {
+		for (int i = 0; i < maxbins - 1; ++i) {
 			bins[i].fw = i + 1;
 			bins[i + 1].bk = i;
 		}
-		// !!! Already zeroed out by calloc()
+
 		//	bins[0].bk = bins[i].fw = 0;
 
 		int h, l, l2;
 		/* Initialize nearest neighbors and build heap of them */
-		for (int i = 0; i < maxbins; i++) {
+		for (int i = 0; i < maxbins; ++i) {
 			find_nn(bins.get(), i);
 			/* Push slot on heap */
 			err = bins[i].err;

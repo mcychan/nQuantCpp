@@ -35,12 +35,16 @@ namespace MoDEQuant
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 
+#ifdef _WIN64
+	#define _sqrt sqrt
+#else
 	inline double __declspec (naked) __fastcall _sqrt(double n)
 	{
 		_asm fld qword ptr[esp + 4]
 			_asm fsqrt
 		_asm ret 8
 	}
+#endif // _WIN64
 
 	inline double rand1()
 	{
