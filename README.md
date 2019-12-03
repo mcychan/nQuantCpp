@@ -42,6 +42,6 @@ nQuantCpp will quantize yourImage.jpg and create yourImage-PNNLABquant16.png in 
 
 The readers can see coding of the error diffusion and dithering are quite similar among the above quantization algorithms. 
 Each algorithm has its own advantages. I share the source of color quantization to invite further discussion and improvements.
-Such source code are written in C++ to gain best performance. It is readable and convertible to c#, java, or javascript.
+Such source code are written in C++ to gain best performance. It is readable and convertible to <a href="https://github.com/mcychan/nQuant.cs">c#</a>, <a href="https://github.com/mcychan/nQuant.j2se">java</a>, or <a href="https://github.com/mcychan/PnnQuant.js">javascript</a>.
 Welcome for C++ experts for further improvement or provide color quantization algorithms better than the above algorithms.
 Please send email to miller.chan@gmail.com to report issues or give suggestions.
