@@ -33,10 +33,11 @@ namespace MoDEQuant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
+	unordered_map<ARGB, unsigned short> cacheMap;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 
 #ifdef _WIN64
-	#define _sqrt sqrt
+#define _sqrt sqrt
 #else
 	inline double __declspec (naked) __fastcall _sqrt(double n)
 	{
@@ -53,37 +54,44 @@ namespace MoDEQuant
 
 	unsigned short find_nn(const vector<double>& data, const Color& c)
 	{
-		const unsigned short nMaxColors = data.size() / SIDE;
-		unsigned short temp_k = nMaxColors;  //Record the ith pixel is divided into classes in the center of the temp_k
-		double idis = INT_MAX;
-		int nIndex = 0;
-		for (unsigned short k = 0; k < nMaxColors; ++k, nIndex += SIDE) {
-			double iidis = sqr(data[nIndex] - c.GetR());
-			if (iidis >= idis)
-				continue;
-
-			iidis += sqr(data[nIndex + 1] - c.GetG());
-			if (iidis >= idis)
-				continue;
-
-			iidis += sqr(data[nIndex + 2] - c.GetB());
-			if (iidis >= idis)
-				continue;
-
-			if (hasSemiTransparency) {
-				iidis += sqr(data[nIndex + 3] - c.GetA());
+		auto argb = c.GetValue();
+		auto got = cacheMap.find(argb);
+		if (got == cacheMap.end()) {
+			const unsigned short nMaxColors = data.size() / SIDE;
+			unsigned short temp_k = nMaxColors;  //Record the ith pixel is divided into classes in the center of the temp_k
+			double idis = INT_MAX;
+			int nIndex = 0;
+			for (unsigned short k = 0; k < nMaxColors; ++k, nIndex += SIDE) {
+				double iidis = sqr(data[nIndex] - c.GetR());
 				if (iidis >= idis)
 					continue;
-			}
 
-			idis = iidis;
-			temp_k = k;   //Record the ith pixel is divided into classes in the center of the temp_k
+				iidis += sqr(data[nIndex + 1] - c.GetG());
+				if (iidis >= idis)
+					continue;
+
+				iidis += sqr(data[nIndex + 2] - c.GetB());
+				if (iidis >= idis)
+					continue;
+
+				if (hasSemiTransparency) {
+					iidis += sqr(data[nIndex + 3] - c.GetA());
+					if (iidis >= idis)
+						continue;
+				}
+
+				idis = iidis;
+				temp_k = k;   //Record the ith pixel is divided into classes in the center of the temp_k
+			}
+			cacheMap[argb] = temp_k;
+			return temp_k;
 		}
-		return temp_k;
+		return got->second;
 	}
 
 	void updateCentroids(vector<double>& data, double* temp_x, const int* temp_x_number)
 	{
+		cacheMap.clear();
 		const unsigned short nMaxColors = data.size() / SIDE;
 
 		for (unsigned short i = 0; i < nMaxColors; ++i) { //update classes and centroids
@@ -530,7 +538,7 @@ namespace MoDEQuant
 		m_transparentPixelIndex = -1;
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);		
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
 		SIDE = hasSemiTransparency ? 4 : 3;
 		auto pPaletteBytes = make_unique<BYTE[]>(pDest->GetPaletteSize());
@@ -554,6 +562,7 @@ namespace MoDEQuant
 		if (nMaxColors > 256) {
 			hasSemiTransparency = false;
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
+			cacheMap.clear();
 			closestMap.clear();
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
@@ -568,6 +577,7 @@ namespace MoDEQuant
 			else if (pPalette->Entries[k] != m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[1]);
 		}
+		cacheMap.clear();
 		closestMap.clear();
 
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
