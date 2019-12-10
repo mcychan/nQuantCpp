@@ -580,19 +580,18 @@ namespace EdgeAwareSQuant
 
 			if (--coarse_level < 0)
 				break;
-			auto pOldIndexImg8 = move(pIndexImg8);
-			pIndexImg8 = make_unique<Mat<BYTE> >(bitmapHeight >> coarse_level, bitmapWidth >> coarse_level);
+			auto pOldIndexImg8 = make_unique<Mat<BYTE> >(bitmapHeight >> coarse_level, bitmapWidth >> coarse_level);
+			swap(pOldIndexImg8, pIndexImg8);
 			zoom_float_icm(*pOldIndexImg8, *pIndexImg8);
 		}
 
 		a_array.reset();
 		b_array.reset();
 
-		for (int i_x = 0; i_x < bitmapWidth; ++i_x) {
-			for (int i_y = 0; i_y < bitmapHeight; ++i_y) {
-				int pixelIndex = i_y * bitmapWidth + i_x;
-				quantized_image[pixelIndex] = pIndexImg8->at(i_y, i_x);
-			}
+		int pixelIndex = 0;
+		for (int i_y = 0; i_y < bitmapHeight; ++i_y) {
+			for (int i_x = 0; i_x < bitmapWidth; ++i_x)
+				quantized_image[pixelIndex++] = pIndexImg8->at(i_y, i_x);
 		}
 	}
 
