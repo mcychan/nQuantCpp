@@ -509,7 +509,8 @@ namespace EdgeAwareSQuant
 					// Compute 2*sum(j in extended neighborhood of i, j != i) b_ij
 					while (!visit_queue.empty()) {
 						// pick a pixel every time
-						int i_x = visit_queue.front().first, i_y = visit_queue.front().second;
+						const auto& pos = visit_queue.front();
+						int i_x = pos.first, i_y = pos.second;
 						visit_queue.pop_front();
 
 						// Compute based on Puzicha's (28)

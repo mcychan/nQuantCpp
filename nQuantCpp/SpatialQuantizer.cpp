@@ -715,7 +715,7 @@ namespace SpatialQuant
 			auto& a = a_vec[coarse_level];
 			auto& b = b_vec[coarse_level];
 			const int b_width = b.get_width(), b_height = b.get_height();
-			vector_fixed<double, 4> middle_b = b_value(b, 0, 0, 0, 0);
+			auto& middle_b = b_value(b, 0, 0, 0, 0);
 
 			const int center_x = (b_width - 1) / 2, center_y = (b_height - 1) / 2;
 			const int min_x = min(1, center_x - 1), min_y = min(1, center_y - 1);
@@ -731,12 +731,13 @@ namespace SpatialQuant
 
 				while (!visit_queue.empty()) {
 					// If we get to 10% above initial size, just revisit them all
-					if ((int)visit_queue.size() > coarse_width * coarse_height * 1.1) {
+					if ((int)visit_queue.size() > coarse_width* coarse_height * 1.1) {
 						visit_queue.clear();
 						random_permutation_2d(coarse_width, coarse_height, visit_queue);
 					}
 
-					int i_x = visit_queue.front().first, i_y = visit_queue.front().second;
+					const auto& pos = visit_queue.front();
+					int i_x = pos.first, i_y = pos.second;
 					visit_queue.pop_front();
 
 					// Compute (25)
@@ -760,26 +761,27 @@ namespace SpatialQuant
 					p_i *= 2.0;
 					p_i += a(i_x, i_y);
 
-					vector<double> meanfield_logs, meanfields;
 					double max_meanfield_log = -numeric_limits<double>::infinity();
 					double meanfield_sum = 0.0;
-					meanfield_logs.reserve(nMaxColor);
+					auto meanfield_logs = make_unique<double[]>(nMaxColor);
 
 					for (UINT v = 0; v < nMaxColor; ++v) {
 						// Update m_{pi(i)v}^I according to (23)
 						// We can subtract an arbitrary factor to prevent overflow,
 						// since only the weight relative to the sum matters, so we
 						// will choose a value that makes the maximum e^100.
-						meanfield_logs.push_back(-(palette[v].dot_product(p_i + middle_b.direct_product(palette[v]))) / temperature);
-						if (meanfield_logs.back() > max_meanfield_log)
-							max_meanfield_log = meanfield_logs.back();
+						meanfield_logs[v] = -(palette[v].dot_product(p_i + middle_b.direct_product(palette[v]))) / temperature;
+						if (meanfield_logs[v] > max_meanfield_log)
+							max_meanfield_log = meanfield_logs[v];
 					}
 
-					meanfields.reserve(nMaxColor);
+					auto meanfields = make_unique<double[]>(nMaxColor);
 					for (UINT v = 0; v < nMaxColor; ++v) {
-						meanfields.push_back(exp(meanfield_logs[v] - max_meanfield_log + 100));
-						meanfield_sum += meanfields.back();
+						meanfields[v] = exp(meanfield_logs[v] - max_meanfield_log + 100);
+						meanfield_sum += meanfields[v];
 					}
+					meanfield_logs.reset();
+
 					if (meanfield_sum == 0)
 						return false;
 
@@ -802,10 +804,12 @@ namespace SpatialQuant
 						if (abs(delta_m_iv) > 0.001 && !skip_palette_maintenance)
 							update_s(s, coarse_variables, b, i_x, i_y, v, delta_m_iv);
 					}
+					meanfields.reset();
+
 					auto max_v = best_match_color(coarse_variables, i_x, i_y, nMaxColor);
 					// Only consider it a change if the colors are different enough
 					if ((palette[max_v] - palette[old_max_v]).norm_squared() >= 1.0 / (255.0 * 255.0)) {
-						pixels_changed++;
+						++pixels_changed;
 						// We don't add the outer layer of pixels , because
 						// there isn't much weight there, and if it does need
 						// to be visited, it'll probably be added when we visit
