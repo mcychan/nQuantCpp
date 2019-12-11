@@ -70,8 +70,7 @@ namespace EdgeAwareSQuant
 			height = rhs.height;
 			depth = rhs.depth;
 			data = make_unique<T[]>(width * height * depth);
-			for (int i = 0; i < (width * height * depth); ++i)
-				data[i] = rhs.data[i];
+			copy(rhs.data.get(), rhs.data.get() + (width * height * depth), data.get());
 		}
 
 		inline T& operator()(int col, int row, int layer)
@@ -128,8 +127,8 @@ namespace EdgeAwareSQuant
 	void random_permutation_2d(int width, int height, deque<pair<int, int> >& result) {
 		vector<int> perm1d;
 		random_permutation(width * height, perm1d);
-		for (auto it = perm1d.rbegin(); it != perm1d.rend(); ++it)
-			result.emplace_back(*it % width, *it / width);
+		for (auto& it = perm1d.cbegin(); it != perm1d.cend(); ++it)
+			result.emplace_front(*it % width, *it / width);
 	}
 
 	void getLab(const Color& c, CIELABConvertor::Lab& lab1)

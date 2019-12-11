@@ -16,14 +16,12 @@ namespace EdgeAwareSQuant
 
 		vector_fixed(const vector_fixed<T, length>& rhs)
 		{
-			for (int i = 0; i<length; i++)
-				data[i] = rhs.data[i];
+			copy(rhs.data, rhs.data + length, data);
 		}
 
 		vector_fixed(const vector<T>& rhs)
 		{
-			for (int i = 0; i<length; i++)
-				data[i] = rhs.data[i];
+			copy(rhs.data, rhs.data + length, data);
 		}
 
 		inline T& operator[](int index)
@@ -40,7 +38,7 @@ namespace EdgeAwareSQuant
 
 		T norm_squared() {
 			T result = 0;
-			for (int i = 0; i<length; i++)
+			for (int i = 0; i<length; ++i)
 				result += data[i] * data[i];
 
 			return result;
@@ -48,15 +46,13 @@ namespace EdgeAwareSQuant
 
 		vector_fixed<T, length>& operator=(const vector_fixed<T, length>& rhs)
 		{
-			for (int i = 0; i<length; i++)
-				data[i] = rhs.data[i];
-
+			copy(rhs.data, rhs.data + length, data);
 			return *this;
 		}
 
 		vector_fixed<T, length> direct_product(const vector_fixed<T, length>& rhs) {
 			vector_fixed<T, length> result;
-			for (int i = 0; i<length; i++)
+			for (int i = 0; i<length; ++i)
 				result[i] = data[i] * rhs.data[i];
 
 			return result;
@@ -64,16 +60,16 @@ namespace EdgeAwareSQuant
 
 		double dot_product(const vector_fixed<T, length>& rhs) {
 			T result = 0;
-			for (int i = 0; i<length; i++) {
+			for (int i = 0; i<length; ++i)
 				result += data[i] * rhs.data[i];
-			}
+
 			return result;
 		}
 
 		vector_fixed<T, length>& operator+=(const vector_fixed<T, length>& rhs) {
-			for (int i = 0; i<length; i++) {
+			for (int i = 0; i<length; ++i)
 				data[i] += rhs.data[i];
-			}
+
 			return *this;
 		}
 
@@ -84,9 +80,9 @@ namespace EdgeAwareSQuant
 		}
 
 		vector_fixed<T, length>& operator-=(const vector_fixed<T, length>& rhs) {
-			for (int i = 0; i<length; i++) {
+			for (int i = 0; i<length; ++i)
 				data[i] -= rhs.data[i];
-			}
+
 			return *this;
 		}
 
@@ -97,7 +93,7 @@ namespace EdgeAwareSQuant
 		}
 
 		vector_fixed<T, length>& operator*=(const T scalar) {
-			for (int i = 0; i<length; i++)
+			for (int i = 0; i<length; ++i)
 				data[i] *= scalar;
 
 			return *this;
@@ -139,8 +135,7 @@ namespace EdgeAwareSQuant
 			width = rhs.get_width();
 			height = rhs.height;
 			data = make_unique<T[]>(width * height);
-			for (int i = 0; i<(width * height); i++)
-				data[i] = rhs.data[i];
+			copy(rhs.data.get(), rhs.data.get() + (width * height), data.get());
 		}
 
 		inline T& operator()(int col, int row)
@@ -182,9 +177,9 @@ namespace EdgeAwareSQuant
 
 		vector<T> operator*(const vector<T>& vec) {
 			vector<T> result(get_height());
-			for (int row = 0; row<get_height(); row++) {
+			for (int row = 0; row < get_height(); ++row) {
 				T sum = 0;
-				for (int col = 0; col<get_width(); col++)
+				for (int col = 0; col < get_width(); ++col)
 					sum += (*this)(col, row) * vec[col];
 
 				result[row] = sum;
@@ -193,17 +188,15 @@ namespace EdgeAwareSQuant
 		}
 
 		array2d<T>& multiply_row_scalar(int row, T mult) {
-			for (int i = 0; i<get_width(); i++)
+			for (int i = 0; i < get_width(); ++i)
 				(*this)(i, row) *= mult;
 
 			return *this;
 		}
 
 		array2d<T>& add_row_multiple(int from_row, int to_row, T mult) {
-			if (mult != 0) {
-				for (int i = 0; i<get_width(); i++)
-					(*this)(i, to_row) += mult * (*this)(i, from_row);
-			}
+			for (int i = 0; i < get_width(); ++i)
+				(*this)(i, to_row) += mult * (*this)(i, from_row);
 
 			return *this;
 		}
@@ -215,23 +208,21 @@ namespace EdgeAwareSQuant
 			auto& a = *this;
 
 			// Set result to identity matrix
-			for (int i = 0; i<get_width(); i++)
+			for (int i = 0; i < get_width(); ++i)
 				result(i, i) = 1;
 
 			// Reduce to echelon form, mirroring in result
-			for (int i = 0; i<get_width(); i++) {
-				auto detA = a(i, i);
-				float val = (detA != 0.0f) ? 1.0f / detA : 0.0f;
-				result.multiply_row_scalar(i, val);
-				multiply_row_scalar(i, val);
-				for (int j = i + 1; j<get_height(); j++) {
+			for (int i = 0; i < get_width(); ++i) {
+				result.multiply_row_scalar(i, 1 / a(i, i));
+				multiply_row_scalar(i, 1 / a(i, i));
+				for (int j = i + 1; j < get_height(); ++j) {
 					result.add_row_multiple(i, j, -a(i, j));
 					add_row_multiple(i, j, -a(i, j));
 				}
 			}
 			// Back substitute, mirroring in result
-			for (int i = get_width() - 1; i >= 0; i--) {
-				for (int j = i - 1; j >= 0; j--) {
+			for (int i = get_width() - 1; i >= 0; --i) {
+				for (int j = i - 1; j >= 0; --j) {
 					result.add_row_multiple(i, j, -a(i, j));
 					add_row_multiple(i, j, -a(i, j));
 				}
@@ -246,7 +237,7 @@ namespace EdgeAwareSQuant
 	};
 
 	template <typename T>
-	array2d<T> operator*(T scalar, array2d<T> a) {
+	array2d<T> operator*(const T scalar, array2d<T> a) {
 		return a * scalar;
 	}
 
@@ -270,8 +261,7 @@ namespace EdgeAwareSQuant
 			width = rhs.get_width();
 			height = rhs.height;
 			data = make_unique<T[]>(width * height);
-			for (int i = 0; i<(width * height); i++)
-				data[i] = rhs.data[i];
+			copy(rhs.data.get(), rhs.data.get() + (width * height), data.get());
 		}
 
 		inline T& at(int row, int col)

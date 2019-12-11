@@ -61,14 +61,12 @@ namespace SpatialQuant
 
 		vector_fixed(const vector_fixed<T, length>& rhs)
 		{
-			for (int i = 0; i < length; ++i)
-				data[i] = rhs.data[i];
+			copy(rhs.data, rhs.data + length, data);
 		}
 
 		vector_fixed(const vector<T>& rhs)
 		{
-			for (int i = 0; i < length; ++i)
-				data[i] = rhs.data[i];
+			copy(rhs.data, rhs.data + length, data);
 		}
 
 		inline T& operator[](int index)
@@ -93,9 +91,7 @@ namespace SpatialQuant
 
 		vector_fixed<T, length>& operator=(const vector_fixed<T, length>& rhs)
 		{
-			for (int i = 0; i < length; ++i)
-				data[i] = rhs.data[i];
-
+			copy(rhs.data, rhs.data + length, data);
 			return *this;
 		}
 
@@ -109,16 +105,16 @@ namespace SpatialQuant
 
 		T dot_product(const vector_fixed<T, length>& rhs) {
 			T result = 0;
-			for (int i = 0; i < length; ++i) {
+			for (int i = 0; i < length; ++i)
 				result += data[i] * rhs.data[i];
-			}
+
 			return result;
 		}
 
 		vector_fixed<T, length>& operator+=(const vector_fixed<T, length>& rhs) {
-			for (int i = 0; i < length; ++i) {
+			for (int i = 0; i < length; ++i)
 				data[i] += rhs.data[i];
-			}
+
 			return *this;
 		}
 
@@ -129,9 +125,9 @@ namespace SpatialQuant
 		}
 
 		vector_fixed<T, length>& operator-=(const vector_fixed<T, length>& rhs) {
-			for (int i = 0; i < length; ++i) {
+			for (int i = 0; i < length; ++i)
 				data[i] -= rhs.data[i];
-			}
+
 			return *this;
 		}
 
@@ -180,8 +176,7 @@ namespace SpatialQuant
 			width = rhs.width;
 			height = rhs.height;
 			data = make_unique<T[]>(width * height);
-			for (int i = 0; i < (width * height); ++i)
-				data[i] = rhs.data[i];
+			copy(rhs.data.get(), rhs.data.get() + (width * height), data.get());
 		}
 
 		inline T& operator()(int col, int row)
@@ -276,7 +271,7 @@ namespace SpatialQuant
 	};
 
 	template <typename T>
-	array2d<T> operator*(T scalar, array2d<T> a) {
+	array2d<T> operator*(const T scalar, array2d<T> a) {
 		return a * scalar;
 	}
 
@@ -299,8 +294,7 @@ namespace SpatialQuant
 			height = rhs.height;
 			depth = rhs.depth;
 			data = make_unique<T[]>(width * height * depth);
-			for (int i = 0; i < (width * height * depth); ++i)
-				data[i] = rhs.data[i];
+			copy(rhs.data.get(), rhs.data.get() + (width * height * depth), data.get());
 		}
 
 		inline T& operator()(int col, int row, int layer)
@@ -349,8 +343,8 @@ namespace SpatialQuant
 	void random_permutation_2d(int width, int height, deque<pair<int, int> >& result) {
 		vector<int> perm1d;
 		random_permutation(width * height, perm1d);
-		for (auto it = perm1d.rbegin(); it != perm1d.rend(); ++it)
-			result.emplace_back(*it % width, *it / width);
+		for (auto& it = perm1d.cbegin(); it != perm1d.cend(); ++it)
+			result.emplace_front(*it % width, *it / width);
 	}
 
 	void compute_b_array(array2d<vector_fixed<double, 4> >& filter_weights,
@@ -394,19 +388,20 @@ namespace SpatialQuant
 
 	void compute_a_image(const vector<ARGB>& image, array2d<vector_fixed<double, 4> >& b, array2d<vector_fixed<double, 4> >& a)
 	{
-		int radius_width = (b.get_width() - 1) / 2, radius_height = (b.get_height() - 1) / 2;
-		for (int i_y = 0; i_y < a.get_height(); ++i_y) {
-			for (int i_x = 0; i_x < a.get_width(); ++i_x) {
+		const int a_width = a.get_width(), a_height = a.get_height();
+		const int radius_width = (b.get_width() - 1) / 2, radius_height = (b.get_height() - 1) / 2;
+		for (int i_y = 0; i_y < a_height; ++i_y) {
+			for (int i_x = 0; i_x < a_width; ++i_x) {
 				for (int j_y = i_y - radius_height; j_y <= i_y + radius_height; ++j_y) {
 					if (j_y < 0)
 						j_y = 0;
-					if (j_y >= a.get_height())
+					if (j_y >= a_height)
 						break;
 
 					for (int j_x = i_x - radius_width; j_x <= i_x + radius_width; ++j_x) {
 						if (j_x < 0)
 							j_x = 0;
-						if (j_x >= a.get_width())
+						if (j_x >= a_width)
 							break;
 
 						Color jPixel(image[j_y * a.get_width() + j_x]);
@@ -521,8 +516,8 @@ namespace SpatialQuant
 		const int length = hasSemiTransparency ? 4 : 3;
 		const int palette_size = s.get_width();
 		const int coarse_width = coarse_variables.get_width(), coarse_height = coarse_variables.get_height();
-		int center_x = (b.get_width() - 1) / 2, center_y = (b.get_height() - 1) / 2;
-		auto center_b = b_value(b, 0, 0, 0, 0);
+		const int center_x = (b.get_width() - 1) / 2, center_y = (b.get_height() - 1) / 2;
+		const auto& center_b = b_value(b, 0, 0, 0, 0);
 		vector_fixed<double, 4> zero_vector;
 		for (int v = 0; v < palette_size; ++v) {
 			for (int alpha = v; alpha < palette_size; ++alpha)
@@ -559,9 +554,9 @@ namespace SpatialQuant
 		const int length = hasSemiTransparency ? 4 : 3;
 		const int palette_size = s.get_width();
 		const int coarse_width = coarse_variables.get_width(), coarse_height = coarse_variables.get_height();
-		int center_x = (b.get_width() - 1) / 2, center_y = (b.get_height() - 1) / 2;
-		int min_i_x = max(0, j_x - center_x), min_i_y = max(0, j_y - center_y);
-		int max_i_x = min(coarse_width, j_x + center_x + 1), max_i_y = min(coarse_height, j_y + center_y + 1);
+		const int center_x = (b.get_width() - 1) / 2, center_y = (b.get_height() - 1) / 2;
+		const int min_i_x = max(0, j_x - center_x), min_i_y = max(0, j_y - center_y);
+		const int max_i_x = min(coarse_width, j_x + center_x + 1), max_i_y = min(coarse_height, j_y + center_y + 1);
 		for (int i_y = min_i_y; i_y < max_i_y; ++i_y) {
 			for (int i_x = min_i_x; i_x < max_i_x; ++i_x) {
 				auto delta_b_ij = delta * b_value(b, i_x, i_y, j_x, j_y);
@@ -603,7 +598,7 @@ namespace SpatialQuant
 		}
 
 		const int length = hasSemiTransparency ? 4 : 3;
-		for (int k = 0; k < length; k++) {
+		for (int k = 0; k < length; ++k) {
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
 			auto& palette_channel = -1.0 * ((2.0 * S_k).matrix_inverse()) * R_k;
@@ -824,16 +819,16 @@ namespace SpatialQuant
 								int j_x = x - center_x + i_x;
 								if (j_x < 0 || j_x >= coarse_width)
 									continue;
-								visit_queue.emplace_back(j_x, j_y);
+								visit_queue.emplace_front(j_x, j_y);
 							}
 						}
 					}
-					pixels_visited++;
+					++pixels_visited;
 
 					// Show progress with dots - in a graphical interface,
 					// we'd show progressive refinements of the image instead,
 					// and maybe a palette preview.
-					step_counter++;
+					++step_counter;
 				}
 				if (skip_palette_maintenance)
 					compute_initial_s(s, *p_coarse_variables, b_vec[coarse_level]);
@@ -842,7 +837,7 @@ namespace SpatialQuant
 				compute_initial_j_palette_sum(*p_palette_sum, coarse_variables, palette);
 			}
 
-			iters_at_current_level++;
+			++iters_at_current_level;
 			skip_palette_maintenance = false;
 			if ((temperature <= final_temperature || coarse_level > 0) && iters_at_current_level >= iters_per_level) {
 				if (--coarse_level < 0)
