@@ -195,8 +195,10 @@ namespace EdgeAwareSQuant
 		}
 
 		array2d<T>& add_row_multiple(int from_row, int to_row, T mult) {
-			for (int i = 0; i < get_width(); ++i)
-				(*this)(i, to_row) += mult * (*this)(i, from_row);
+			if (mult != 0) {
+				for (int i = 0; i < get_width(); ++i)
+					(*this)(i, to_row) += mult * (*this)(i, from_row);
+			}
 
 			return *this;
 		}
@@ -213,8 +215,10 @@ namespace EdgeAwareSQuant
 
 			// Reduce to echelon form, mirroring in result
 			for (int i = 0; i < get_width(); ++i) {
-				result.multiply_row_scalar(i, 1 / a(i, i));
-				multiply_row_scalar(i, 1 / a(i, i));
+				auto detA = a(i, i);
+				float val = (detA != 0.0f) ? 1.0f / detA : 0.0f;
+				result.multiply_row_scalar(i, val);
+				multiply_row_scalar(i, val);
 				for (int j = i + 1; j < get_height(); ++j) {
 					result.add_row_multiple(i, j, -a(i, j));
 					add_row_multiple(i, j, -a(i, j));

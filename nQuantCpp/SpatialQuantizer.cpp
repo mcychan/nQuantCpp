@@ -229,8 +229,10 @@ namespace SpatialQuant
 		}
 
 		array2d<T>& add_row_multiple(int from_row, int to_row, T mult) {
-			for (int i = 0; i < get_width(); ++i)
-				(*this)(i, to_row) += mult * (*this)(i, from_row);
+			if (mult != 0) {
+				for (int i = 0; i < get_width(); ++i)
+					(*this)(i, to_row) += mult * (*this)(i, from_row);
+			}
 
 			return *this;
 		}
