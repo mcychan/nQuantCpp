@@ -341,7 +341,7 @@ namespace EdgeAwareSQuant
 		for (short k = 0; k < length; k++) {
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
-			auto& palette_channel = -1.0f * ((2.0f * S_k).matrix_inverse()) * R_k;
+			auto& palette_channel = (-2.0f * S_k).matrix_inverse() * R_k;
 			UINT v = 0;
 			for (; v < palette.size(); ++v) {
 				auto val = palette_channel[v];
@@ -457,6 +457,7 @@ namespace EdgeAwareSQuant
 		compute_initial_s_ea_icm(s, *pIndexImg8, b_array[coarse_level]);
 
 		float paletteSize = palette.size() * 1.0f;
+		const double divisor = 1.0 / (255.0 * 255.0);
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
 			vector<vector<pair<float, int> > > centroidDist(paletteSize, vector<pair<float, int> >(paletteSize, pair<float, int>(0.0f, -1)));
@@ -566,7 +567,7 @@ namespace EdgeAwareSQuant
 
 
 						pIndexImg8->at(i_y, i_x) = bestLabel;
-						if ((palette[bestLabel] - palette[old_max_v]).norm_squared() >= 1.0 / (255.0 * 255.0))
+						if ((palette[bestLabel] - palette[old_max_v]).norm_squared() >= divisor)
 							++pixels_changed;
 
 						++pixels_visited;

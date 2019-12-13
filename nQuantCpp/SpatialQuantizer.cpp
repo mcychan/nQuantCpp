@@ -310,7 +310,8 @@ namespace SpatialQuant
 		}
 
 		void fill_random() {
-			for (int i = 0; i < (width * height * depth); ++i)
+			const int volume = width * height * depth;
+			for (int i = 0; i < volume; ++i)
 				data[i] = ((double)rand()) / RAND_MAX;
 		}
 
@@ -483,20 +484,20 @@ namespace SpatialQuant
 		// To mix the pixels a little, we assume each fine pixel
 		// is 1.2 fine pixels wide and high.
 		for (int y = 0; y < coarse_height; ++y) {
+			const double top = max(0.0, (y - 0.1) / 2.0), bottom = min(smallVal.get_height() - 0.001, (y + 1.1) / 2.0);
+			const int y_top = (int)floor(top), y_bottom = (int)floor(bottom);
 			for (int x = 0; x < coarse_width; ++x) {
-				double left = max(0.0, (x - 0.1) / 2.0), right = min(smallVal.get_width() - 0.001, (x + 1.1) / 2.0);
-				double top = max(0.0, (y - 0.1) / 2.0), bottom = min(smallVal.get_height() - 0.001, (y + 1.1) / 2.0);
-				int x_left = (int)floor(left), x_right = (int)floor(right);
-				int y_top = (int)floor(top), y_bottom = (int)floor(bottom);
-				double area = (right - left) * (bottom - top);
-				double top_left_weight = (ceil(left) - left) * (ceil(top) - top) / area;
-				double top_right_weight = (right - floor(right)) * (ceil(top) - top) / area;
-				double bottom_left_weight = (ceil(left) - left) * (bottom - floor(bottom)) / area;
-				double bottom_right_weight = (right - floor(right)) * (bottom - floor(bottom)) / area;
-				double top_weight = (right - left) * (ceil(top) - top) / area;
-				double bottom_weight = (right - left) * (bottom - floor(bottom)) / area;
-				double left_weight = (bottom - top) * (ceil(left) - left) / area;
-				double right_weight = (bottom - top) * (right - floor(right)) / area;
+				const double left = max(0.0, (x - 0.1) / 2.0), right = min(smallVal.get_width() - 0.001, (x + 1.1) / 2.0);
+				const int x_left = (int)floor(left), x_right = (int)floor(right);
+				const double area = (right - left) * (bottom - top);
+				const double top_left_weight = (ceil(left) - left) * (ceil(top) - top) / area;
+				const double top_right_weight = (right - floor(right)) * (ceil(top) - top) / area;
+				const double bottom_left_weight = (ceil(left) - left) * (bottom - floor(bottom)) / area;
+				const double bottom_right_weight = (right - floor(right)) * (bottom - floor(bottom)) / area;
+				const double top_weight = (right - left) * (ceil(top) - top) / area;
+				const double bottom_weight = (right - left) * (bottom - floor(bottom)) / area;
+				const double left_weight = (bottom - top) * (ceil(left) - left) / area;
+				const double right_weight = (bottom - top) * (right - floor(right)) / area;
 				for (int z = 0; z < big.get_depth(); ++z) {
 					if (x_left == x_right && y_top == y_bottom)
 						big(x, y, z) = smallVal(x_left, y_top, z);
@@ -590,7 +591,7 @@ namespace SpatialQuant
 
 		const int coarse_width = coarse_variables.get_width(), coarse_height = coarse_variables.get_height();
 		const auto nMaxColor = palette.size();
-		vector<vector_fixed<double, 4> > r(nMaxColor);		
+		vector<vector_fixed<double, 4> > r(nMaxColor);
 		for (int i_y = 0; i_y < coarse_height; ++i_y) {
 			for (int i_x = 0; i_x < coarse_width; ++i_x) {
 				const auto& ai = a(i_x, i_y);
@@ -603,7 +604,7 @@ namespace SpatialQuant
 		for (int k = 0; k < length; ++k) {
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
-			auto& palette_channel = -1.0 * ((2.0 * S_k).matrix_inverse()) * R_k;
+			auto& palette_channel = (-2.0 * S_k).matrix_inverse() * R_k;
 			for (UINT v = 0; v < nMaxColor; ++v) {
 				double val = palette_channel[v];
 				if (val < 0.0 || isnan(val))
@@ -644,8 +645,7 @@ namespace SpatialQuant
 		const int bitmapHeight = image.size() / bitmapWidth;
 
 		const auto nMaxColor = palette.size();
-		int max_coarse_level = //1;
-			compute_max_coarse_level(bitmapWidth, bitmapHeight);
+		int max_coarse_level = compute_max_coarse_level(bitmapWidth, bitmapHeight);
 		auto p_coarse_variables = make_unique<array3d<double> >(
 			bitmapWidth >> max_coarse_level,
 			bitmapHeight >> max_coarse_level,
@@ -658,8 +658,7 @@ namespace SpatialQuant
 		// Compute a_i, b_{ij} according to (11)
 		int extended_neighborhood_width = filter_weights.get_width() * 2 - 1;
 		int extended_neighborhood_height = filter_weights.get_height() * 2 - 1;
-		array2d<vector_fixed<double, 4> > b0(extended_neighborhood_width,
-			extended_neighborhood_height);
+		array2d<vector_fixed<double, 4> > b0(extended_neighborhood_width, extended_neighborhood_height);
 		compute_b_array(filter_weights, b0);
 
 		array2d<vector_fixed<double, 4> > a0(bitmapWidth, bitmapHeight);
@@ -670,18 +669,20 @@ namespace SpatialQuant
 		a_vec.reserve(max_coarse_level + 1), b_vec.reserve(max_coarse_level + 1);
 		a_vec.emplace_back(a0), b_vec.emplace_back(b0);
 
-		int radius_width = (filter_weights.get_width() - 1) / 2, radius_height = (filter_weights.get_height() - 1) / 2;
+		const int diameter_width = (filter_weights.get_width() - 1), diameter_height = (filter_weights.get_height() - 1);
 		int coarse_level;
 		for (coarse_level = 1; coarse_level <= max_coarse_level; ++coarse_level) {
 			array2d<vector_fixed<double, 4> > bi(max(length, b_vec.back().get_width() - 2), max(length, b_vec.back().get_height() - 2));
 			const int bi_width = bi.get_width(), bi_height = bi.get_height();
 
 			for (int J_y = 0; J_y < bi_height; ++J_y) {
+				const int max_Jy = J_y * 2 + 2;
 				for (int J_x = 0; J_x < bi_width; ++J_x) {
-					for (int i_y = radius_height * 2; i_y < radius_height * 2 + 2; ++i_y) {
-						for (int i_x = radius_width * 2; i_x < radius_width * 2 + 2; ++i_x) {
-							for (int j_y = J_y * 2; j_y < J_y * 2 + 2; ++j_y) {
-								for (int j_x = J_x * 2; j_x < J_x * 2 + 2; ++j_x)
+					const int max_Jx = J_x * 2 + 2;
+					for (int i_y = diameter_height; i_y < diameter_height + 2; ++i_y) {
+						for (int i_x = diameter_width; i_x < diameter_width + 2; ++i_x) {
+							for (int j_y = J_y * 2; j_y < max_Jy; ++j_y) {
+								for (int j_x = J_x * 2; j_x < max_Jx; ++j_x)
 									bi(J_x, J_y) += b_value(b_vec.back(), i_x, i_y, j_x, j_y);
 							}
 						}
@@ -707,6 +708,7 @@ namespace SpatialQuant
 		auto p_palette_sum = make_unique<array2d< vector_fixed<double, 4> > >(p_coarse_variables->get_width(), p_coarse_variables->get_height());
 		compute_initial_j_palette_sum(*p_palette_sum, *p_coarse_variables, palette);
 
+		const double divisor = 1.0 / (255.0 * 255.0);
 		while (coarse_level >= 0 || temperature > final_temperature) {
 			// Need to reseat this reference in case we changed p_coarse_variables
 			auto& coarse_variables = *p_coarse_variables;
@@ -721,7 +723,7 @@ namespace SpatialQuant
 			const int min_x = min(1, center_x - 1), min_y = min(1, center_y - 1);
 			const int max_x = max(b_width - 1, center_x + 1), max_y = max(b_height - 1, center_y + 1);
 
-			int step_counter = 0;
+			int step_counter = 0;			
 			for (int repeat = 0; repeat < repeats_per_temp; ++repeat) {
 				int pixels_changed = 0, pixels_visited = 0;
 				deque<pair<int, int> > visit_queue;
@@ -731,7 +733,7 @@ namespace SpatialQuant
 
 				while (!visit_queue.empty()) {
 					// If we get to 10% above initial size, just revisit them all
-					if ((int)visit_queue.size() > coarse_width* coarse_height * 1.1) {
+					if ((int)visit_queue.size() > coarse_width * coarse_height * 1.1) {
 						visit_queue.clear();
 						random_permutation_2d(coarse_width, coarse_height, visit_queue);
 					}
@@ -808,7 +810,7 @@ namespace SpatialQuant
 
 					auto max_v = best_match_color(coarse_variables, i_x, i_y, nMaxColor);
 					// Only consider it a change if the colors are different enough
-					if ((palette[max_v] - palette[old_max_v]).norm_squared() >= 1.0 / (255.0 * 255.0)) {
+					if ((palette[max_v] - palette[old_max_v]).norm_squared() >= divisor) {
 						++pixels_changed;
 						// We don't add the outer layer of pixels , because
 						// there isn't much weight there, and if it does need
