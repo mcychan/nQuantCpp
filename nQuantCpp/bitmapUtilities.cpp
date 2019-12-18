@@ -496,7 +496,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 			Color c1(argb);
 			int offset = getARGBIndex(c1, hasSemiTransparency, transparentPixelIndex);
 			if (!lookup[offset])
-				lookup[offset] = ditherFn(pPalette, nMaxColors, c.GetA() ? argb : pixels[pixelIndex]) + 1;
+				lookup[offset] = ditherFn(pPalette, nMaxColors, argb) + 1;
 			qPixels[pixelIndex] = lookup[offset] - 1;
 
 			Color c2(pPalette->Entries[qPixels[pixelIndex]]);
@@ -597,7 +597,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 			Color c1(argb);
 			int offset = getARGBIndex(c1, hasSemiTransparency, transparentPixelIndex);
 			if (!lookup[offset])
-				lookup[offset] = ditherFn(pPalette, nMaxColors, c.GetA() ? argb : pixels[pixelIndex]) + 1;
+				lookup[offset] = ditherFn(pPalette, nMaxColors, argb) + 1;
 
 			Color c2(pPalette->Entries[lookup[offset] - 1]);
 			qPixels[pixelIndex] = getARGBIndex(c2, hasSemiTransparency, transparentPixelIndex);
