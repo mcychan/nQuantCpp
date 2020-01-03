@@ -770,10 +770,28 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	hasSemiTransparency = false;
 	transparentPixelIndex = -1;
 		
-	int pixelIndex = 0;
+	int pixelIndex = 0;	
+	if (bitDepth == 16) {
+		for (UINT y = 0; y < bitmapHeight; ++y) {
+			for (UINT x = 0; x < bitmapWidth; ++x) {
+				Color color;
+				pSource->GetPixel(x, y, &color);
+				if (color.GetA() < BYTE_MAX) {
+					hasSemiTransparency = true;
+					if (color.GetA() == 0) {
+						transparentPixelIndex = pixelIndex;
+						transparentColor = color.GetValue();
+					}
+				}
+				pixels[pixelIndex++] = color.GetValue();
+			}
+		}
+		return true;
+	}
+
 	unique_ptr<BYTE[]> pPaletteBytes;
 	ColorPalette* pPalette = nullptr;
-	if (bitDepth <= 16) {
+	if (bitDepth < 16) {
 		int paletteSize = pSource->GetPaletteSize();
 		pPaletteBytes = make_unique<BYTE[]>(paletteSize);
 		pPalette = (ColorPalette*) pPaletteBytes.get();
@@ -807,10 +825,10 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	}
 
 	// First loop: gather color information
-	for (UINT y = 0; y < bitmapHeight; y++) {	// For each row...
+	for (UINT y = 0; y < bitmapHeight; ++y) {	// For each row...
 		auto pPixelSource = pRowSource;
 
-		for (UINT x = 0; x < bitmapWidth; x++) {	// ...for each pixel...
+		for (UINT x = 0; x < bitmapWidth; ++x) {	// ...for each pixel...
 			BYTE pixelAlpha = BYTE_MAX;
 			ARGB argb;
 			if (pPalette == nullptr) {
