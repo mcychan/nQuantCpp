@@ -771,68 +771,76 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	transparentPixelIndex = -1;
 		
 	int pixelIndex = 0;
+	unique_ptr<BYTE[]> pPaletteBytes;
+	ColorPalette* pPalette = nullptr;
 	if (bitDepth <= 16) {
-		for (UINT y = 0; y < bitmapHeight; y++) {
-			for (UINT x = 0; x < bitmapWidth; x++) {
-				Color color;
-				pSource->GetPixel(x, y, &color);
-				if (color.GetA() < BYTE_MAX) {
-					hasSemiTransparency = true;
-					if (color.GetA() == 0) {
-						transparentPixelIndex = pixelIndex;
-						transparentColor = color.GetValue();
-					}
-				}
-				pixels[pixelIndex++] = color.GetValue();
-			}
+		int paletteSize = pSource->GetPaletteSize();
+		pPaletteBytes = make_unique<BYTE[]>(paletteSize);
+		pPalette = (ColorPalette*) pPaletteBytes.get();
+		pSource->GetPalette(pPalette, paletteSize);
+
+		int nSize = pSource->GetPropertyItemSize(PropertyTagIndexTransparent);
+		if (nSize > 0) {
+			auto pPropertyItem = make_unique<PropertyItem[]>(nSize);
+			pSource->GetPropertyItem(PropertyTagIndexTransparent, nSize, pPropertyItem.get());
+			auto pValue = (long*) pPropertyItem[0].value;
+			transparentPixelIndex = (int)(*pValue);			
 		}
 	}
 
-	// Lock bits on 3x8 source bitmap
-	else {
-		BitmapData data;
-		Status status = pSource->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, pSource->GetPixelFormat(), &data);
-		if (status != Ok)
-			return false;
+	BitmapData data;
+	Status status = pSource->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, pSource->GetPixelFormat(), &data);
+	if (status != Ok)
+		return false;
 
-		auto pRowSource = (LPBYTE)data.Scan0;
-		UINT strideSource;
+	auto pRowSource = (LPBYTE)data.Scan0;
+	UINT strideSource;
 
-		if (data.Stride > 0) strideSource = data.Stride;
-		else
-		{
-			// Compensate for possible negative stride
-			// (not needed for first loop, but we have to do it
-			// for second loop anyway)
-			pRowSource += bitmapHeight * data.Stride;
-			strideSource = -data.Stride;
-		}
+	if (data.Stride > 0) strideSource = data.Stride;
+	else
+	{
+		// Compensate for possible negative stride
+		// (not needed for first loop, but we have to do it
+		// for second loop anyway)
+		pRowSource += bitmapHeight * data.Stride;
+		strideSource = -data.Stride;
+	}
 
-		// First loop: gather color information
-		for (UINT y = 0; y < bitmapHeight; y++) {	// For each row...
-			auto pPixelSource = pRowSource;
+	// First loop: gather color information
+	for (UINT y = 0; y < bitmapHeight; y++) {	// For each row...
+		auto pPixelSource = pRowSource;
 
-			for (UINT x = 0; x < bitmapWidth; x++) {	// ...for each pixel...
+		for (UINT x = 0; x < bitmapWidth; x++) {	// ...for each pixel...
+			BYTE pixelAlpha = BYTE_MAX;
+			ARGB argb;
+			if (pPalette == nullptr) {
 				BYTE pixelBlue = *pPixelSource++;
 				BYTE pixelGreen = *pPixelSource++;
 				BYTE pixelRed = *pPixelSource++;
-				BYTE pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
-
-				auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
-				if (pixelAlpha < BYTE_MAX) {
-					hasSemiTransparency = true;					
-					if (pixelAlpha == 0) {
-						transparentColor = argb;
-						transparentPixelIndex = pixelIndex;
-					}
-				}
-				pixels[pixelIndex++] = argb;
+				pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
+				argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
+			}
+			else {
+				BYTE index = *pPixelSource++;
+				argb = pPalette->Entries[index];
+				if(index == transparentPixelIndex)
+					pixelAlpha = 0;
 			}
 
-			pRowSource += strideSource;
+			if (pixelAlpha < BYTE_MAX) {
+				hasSemiTransparency = true;					
+				if (pixelAlpha == 0) {
+					transparentColor = argb;
+					transparentPixelIndex = pixelIndex;
+				}
+			}
+			pixels[pixelIndex++] = argb;
 		}
 
-		pSource->UnlockBits(&data);
+		pRowSource += strideSource;
 	}
+
+	pSource->UnlockBits(&data);
+
 	return true;
 }
