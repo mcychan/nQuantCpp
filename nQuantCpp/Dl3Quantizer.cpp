@@ -48,7 +48,6 @@
 
 namespace Dl3Quant
 {
-	double PR = .2126, PG = .7152, PB = .0722;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
@@ -220,15 +219,15 @@ namespace Dl3Quant
 			if (curdist > mindist)
 				continue;
 
-			curdist += PR * sqr(c2.GetR() - c.GetR());
+			curdist += sqr(c2.GetR() - c.GetR());
 			if (curdist > mindist)
 				continue;
 
-			curdist += PG * sqr(c2.GetG() - c.GetG());
+			curdist += sqr(c2.GetG() - c.GetG());
 			if (curdist > mindist)
 				continue;
 
-			curdist += PB * sqr(c2.GetB() - c.GetB());
+			curdist += sqr(c2.GetB() - c.GetB());
 			if (curdist > mindist)
 				continue;
 
@@ -249,7 +248,7 @@ namespace Dl3Quant
 
 			for (; k < nMaxColors; k++) {
 				Color c2(pPalette->Entries[k]);
-				closest[4] = abs(c.GetA() - c2.GetA()) + PR * abs(c.GetR() - c2.GetR()) + PG * abs(c.GetG() - c2.GetG()) + PB * abs(c.GetB() - c2.GetB());
+				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
 				if (closest[4] < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];
@@ -345,8 +344,7 @@ namespace Dl3Quant
 			closestMap.clear();
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
-		if (hasSemiTransparency || nMaxColors <= 32)
-			PR = PG = PB = 1;
+
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		closestMap.clear();
 

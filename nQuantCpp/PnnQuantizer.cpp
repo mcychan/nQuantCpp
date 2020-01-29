@@ -11,7 +11,6 @@ Copyright (c) 2018-2019 Miller Cy Chan
 
 namespace PnnQuant
 {
-	double PR = .2126, PG = .7152, PB = .0722;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
@@ -188,15 +187,15 @@ namespace PnnQuant
 			if (curdist > mindist)
 				continue;
 
-			curdist += PR * sqr(c2.GetR() - c.GetR());
+			curdist += sqr(c2.GetR() - c.GetR());
 			if (curdist > mindist)
 				continue;
 
-			curdist += PG * sqr(c2.GetG() - c.GetG());
+			curdist += sqr(c2.GetG() - c.GetG());
 			if (curdist > mindist)
 				continue;
 
-			curdist += PB * sqr(c2.GetB() - c.GetB());
+			curdist += sqr(c2.GetB() - c.GetB());
 			if (curdist > mindist)
 				continue;
 
@@ -293,8 +292,7 @@ namespace PnnQuant
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
-		if (hasSemiTransparency || nMaxColors <= 32)
-			PR = PG = PB = 1;
+
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 
 		if (m_transparentPixelIndex >= 0) {

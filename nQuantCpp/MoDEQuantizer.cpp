@@ -17,7 +17,6 @@ Copyright (c) 2018 - 2019 Miller Cy Chan
 
 namespace MoDEQuant
 {
-	double PR = .2126, PG = .7152, PB = .0722;
 	const double a1 = 0.1, a2 = 0.05, a3 = 0.01;  // Linear combination parameters
 	const unsigned short K_number = 10;    // Number of cluster iterations
 	const double K_probability = 0.05; // Probability of cluster iteration for each individual
@@ -96,11 +95,12 @@ namespace MoDEQuant
 
 		for (unsigned short i = 0; i < nMaxColors; ++i) { //update classes and centroids
 			if (temp_x_number[i] > 0) {
-				data[SIDE * i] = temp_x[SIDE * i] / temp_x_number[i];
-				data[SIDE * i + 1] = temp_x[SIDE * i + 1] / temp_x_number[i];
-				data[SIDE * i + 2] = temp_x[SIDE * i + 2] / temp_x_number[i];
+				const double n2 = _sqrt(temp_x_number[i]);
+				data[SIDE * i] = temp_x[SIDE * i] / n2;
+				data[SIDE * i + 1] = temp_x[SIDE * i + 1] / n2;
+				data[SIDE * i + 2] = temp_x[SIDE * i + 2] / n2;
 				if (hasSemiTransparency)
-					data[SIDE * i + 3] = temp_x[SIDE * i + 3] / temp_x_number[i];
+					data[SIDE * i + 3] = temp_x[SIDE * i + 3] / n2;
 			}
 		}
 	}
@@ -456,15 +456,15 @@ namespace MoDEQuant
 			if (curdist > mindist)
 				continue;
 
-			curdist += PR * sqr(c2.GetR() - c.GetR());
+			curdist += sqr(c2.GetR() - c.GetR());
 			if (curdist > mindist)
 				continue;
 
-			curdist += PG * sqr(c2.GetG() - c.GetG());
+			curdist += sqr(c2.GetG() - c.GetG());
 			if (curdist > mindist)
 				continue;
 
-			curdist += PB * sqr(c2.GetB() - c.GetB());
+			curdist += sqr(c2.GetB() - c.GetB());
 			if (curdist > mindist)
 				continue;
 
@@ -567,8 +567,6 @@ namespace MoDEQuant
 			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
 		}
 
-		if (hasSemiTransparency)
-			PR = PG = PB = 1;
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
