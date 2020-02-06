@@ -859,10 +859,10 @@ namespace nQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 		
-		auto qPixels = make_unique<unsigned short[]>(bitmapWidth * bitmapHeight);
 		if (nMaxColors <= 32)
 			PR = PG = PB = 1;
 
+		auto qPixels = make_unique<unsigned short[]>(bitmapWidth * bitmapHeight);
 		if (nMaxColors > 2) {
 			ColorData colorData(SIDESIZE, bitmapWidth, bitmapHeight);
 			BuildHistogram(colorData, pSource, alphaThreshold, alphaFader);
@@ -879,9 +879,9 @@ namespace nQuant
 
 			GetQuantizedPalette(colorData, pPalette, nMaxColors, alphaThreshold);
 			if (nMaxColors > 256) {
-				hasSemiTransparency = false;
+				auto qPixels = make_unique<ARGB[]>(bitmapWidth * bitmapHeight);
 				dithering_image(colorData.GetPixels(), pPalette, closestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
-				return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
+				return ProcessImagePixels(pDest, qPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
 			}			
 			quantize_image(colorData.GetPixels(), pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither, alphaThreshold);
 		}
@@ -895,7 +895,7 @@ namespace nQuant
 			else {
 				pPalette->Entries[0] = Color::Black;
 				pPalette->Entries[1] = Color::White;
-			}	
+			}
 			quantize_image(pixels.data(), pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither, alphaThreshold);
 		}		
 		

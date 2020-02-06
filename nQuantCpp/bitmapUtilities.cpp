@@ -542,7 +542,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	return true;
 }
 
-bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height)
+bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, ARGB* qPixels, const UINT width, const UINT height)
 {
 	UINT pixelIndex = 0;
 	bool odd_scanline = false;
@@ -600,7 +600,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 				lookup[offset] = ditherFn(pPalette, nMaxColors, argb) + 1;
 
 			Color c2(pPalette->Entries[lookup[offset] - 1]);
-			qPixels[pixelIndex] = getARGBIndex(c2, hasSemiTransparency, transparentPixelIndex);
+			qPixels[pixelIndex] = hasSemiTransparency ? c2.GetValue() : getARGBIndex(c2, hasSemiTransparency, transparentPixelIndex);
 
 			r_pix = lim[r_pix - c2.GetR()];
 			g_pix = lim[g_pix - c2.GetG()];
@@ -643,13 +643,17 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 	return true;
 }
 
-bool ProcessImagePixels(Bitmap* pDest, const unsigned short* qPixels, const int& transparentPixelIndex)
+bool ProcessImagePixels(Bitmap* pDest, const ARGB* qPixels, const bool& hasSemiTransparency, const int& transparentPixelIndex)
 {
 	UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
 	if (bpp < 16)
 		return false;
 	
-	if(transparentPixelIndex < 0 && pDest->GetPixelFormat() != PixelFormat16bppRGB565)
+	if(hasSemiTransparency && pDest->GetPixelFormat() < PixelFormat32bppARGB)
+		pDest->ConvertFormat(PixelFormat32bppARGB, DitherTypeSolid, PaletteTypeOptimal, nullptr, 0);
+	else if (transparentPixelIndex >= 0 && pDest->GetPixelFormat() < PixelFormat16bppARGB1555)
+		pDest->ConvertFormat(PixelFormat16bppARGB1555, DitherTypeSolid, PaletteTypeOptimal, nullptr, 0);
+	else if(pDest->GetPixelFormat() != PixelFormat16bppRGB565)
 		pDest->ConvertFormat(PixelFormat16bppRGB565, DitherTypeSolid, PaletteTypeOptimal, nullptr, 0);
 
 	BitmapData targetData;
@@ -675,14 +679,37 @@ bool ProcessImagePixels(Bitmap* pDest, const unsigned short* qPixels, const int&
 		strideDest = -targetData.Stride;
 	}
 
-	// Second loop: fill indexed bitmap
-	for (UINT y = 0; y < h; y++) {	// For each row...
-		for (UINT x = 0; x < w * 2;) {
-			auto argb = qPixels[pixelIndex++];
-			pRowDest[x++] = static_cast<BYTE>(argb & 0xFF);
-			pRowDest[x++] = static_cast<BYTE>(argb >> 8);
+	bpp = GetPixelFormatSize(pDest->GetPixelFormat());
+	if (bpp == 32) {
+		for (UINT y = 0; y < h; ++y) {	// For each row...
+			for (UINT x = 0; x < w * 4;) {
+				Color c(qPixels[pixelIndex++]);
+				pRowDest[x++] = c.GetB();
+				pRowDest[x++] = c.GetG();
+				pRowDest[x++] = c.GetR();
+				pRowDest[x++] = c.GetA();
+			}
+			pRowDest += strideDest;
 		}
-		pRowDest += strideDest;
+	}
+	else if (bpp == 16) {
+		for (UINT y = 0; y < h; ++y) {	// For each row...
+			for (UINT x = 0; x < w * 2;) {
+				auto argb = qPixels[pixelIndex++];
+				pRowDest[x++] = static_cast<BYTE>(argb & 0xFF);
+				pRowDest[x++] = static_cast<BYTE>(argb >> 8);
+			}
+			pRowDest += strideDest;
+		}
+	}
+	else {
+		for (UINT y = 0; y < h; ++y) {	// For each row...
+			for (UINT x = 0; x < w; ++x) {
+				auto argb = qPixels[pixelIndex++];
+				pRowDest[x] = static_cast<BYTE>(argb);
+			}
+			pRowDest += strideDest;
+		}
 	}
 
 	status = pDest->UnlockBits(&targetData);

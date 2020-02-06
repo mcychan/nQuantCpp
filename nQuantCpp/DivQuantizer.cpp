@@ -152,7 +152,7 @@ namespace DivQuant
 			cmap[i] = pixelVec[i];
 	}
 
-	bool map_colors_mps(const ARGB* inPixelsPtr, UINT numPixels, unsigned short* qPixels, ColorPalette* pPalette)
+	bool map_colors_mps(const ARGB* inPixelsPtr, UINT numPixels, ARGB* qPixels, ColorPalette* pPalette)
 	{
 		const UINT colormapSize = pPalette->Count;
 		const int size_lut_init = 4 * BYTE_MAX + 1;
@@ -251,7 +251,7 @@ namespace DivQuant
 			}
 
 			Color c2(pPalette->Entries[index]);			
-			qPixels[ik] = getARGBIndex(c2, hasSemiTransparency, m_transparentPixelIndex);
+			qPixels[ik] = hasSemiTransparency ? c2.GetValue() : getARGBIndex(c2, hasSemiTransparency, m_transparentPixelIndex);
 		}
 		return true;
 	}
@@ -1003,15 +1003,14 @@ namespace DivQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		if (nMaxColors > 256) {
-			hasSemiTransparency = false;
+			auto qPixels = make_unique<ARGB[]>(pixels.size());
 			quant_varpart_fast(pixels.data(), pixels.size(), pPalette);
 			if (dither)
 				dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
 			else
 				map_colors_mps(pixels.data(), pixels.size(), qPixels.get(), pPalette);
-			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
+			return ProcessImagePixels(pDest, qPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
 		}		
 
 		if (nMaxColors > 2)
@@ -1029,7 +1028,10 @@ namespace DivQuant
 
 		if (hasSemiTransparency || nMaxColors <= 32)
 			PR = PG = PB = 1;
+
+		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
 			if(nMaxColors > 2)

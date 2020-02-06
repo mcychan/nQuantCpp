@@ -354,15 +354,17 @@ namespace PnnLABQuant
 			}
 		}
 		
-		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		if (nMaxColors > 256) {
-			hasSemiTransparency = false;
+			auto qPixels = make_unique<ARGB[]>(pixels.size());
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
-			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex);
+			return ProcessImagePixels(pDest, qPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
 		}
 		if (hasSemiTransparency || nMaxColors <= 32)
 			PR = PG = PB = 1;
+
+		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
 			if (nMaxColors > 2)
