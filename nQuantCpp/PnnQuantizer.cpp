@@ -48,7 +48,7 @@ namespace PnnQuant
 		bin1.nn = nn;
 	}
 
-	int pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors)
+	int pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors, bool quan_sqrt)
 	{
 		auto bins = make_unique<pnnbin[]>(65536);
 		auto heap = make_unique<int[]>(65537);
@@ -82,7 +82,8 @@ namespace PnnQuant
 			bins[i].rc *= d;
 			bins[i].gc *= d;
 			bins[i].bc *= d;
-			bins[i].cnt = _sqrt(bins[i].cnt);
+			if(quan_sqrt)
+				bins[i].cnt = _sqrt(bins[i].cnt);
 			bins[maxbins] = bins[i];
 			++maxbins;
 		}
@@ -271,8 +272,9 @@ namespace PnnQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
+		bool quan_sqrt = nMaxColors > BYTE_MAX;
 		if (nMaxColors > 2)
-			pnnquan(pixels, pPalette, nMaxColors);
+			pnnquan(pixels, pPalette, nMaxColors, quan_sqrt);
 		else {
 			if (m_transparentPixelIndex >= 0) {
 				pPalette->Entries[0] = m_transparentColor;
