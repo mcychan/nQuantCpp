@@ -121,6 +121,7 @@ namespace PnnLABQuant
 			bins[i].Lc *= d;
 			bins[i].Ac *= d;
 			bins[i].Bc *= d;
+			bins[i].cnt = _sqrt(bins[i].cnt);
 			bins[maxbins] = bins[i];
 			++maxbins;
 		}

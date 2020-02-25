@@ -79,7 +79,3 @@ inline int getARGBIndex(const Color& c, const bool& hasSemiTransparency, const i
 	return (c.GetR() & 0xF8) << 8 | (c.GetG() & 0xFC) << 3 | (c.GetB() >> 3);
 }
 
-inline double sqr(double value)
-{
-    return value * value;
-}
