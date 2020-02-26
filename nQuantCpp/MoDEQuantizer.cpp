@@ -530,7 +530,7 @@ namespace MoDEQuant
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
 		SIDE = hasSemiTransparency ? 4 : 3;
-		auto pPaletteBytes = make_unique<BYTE[]>(pDest->GetPaletteSize());
+		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
