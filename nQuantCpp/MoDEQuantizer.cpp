@@ -40,30 +40,28 @@ namespace MoDEQuant
 		return (double)rand() / (RAND_MAX + 1.0);
 	}
 
-	unsigned short find_nn(const vector<double>& data, const Color& c)
+	unsigned short find_nn(const vector<double>& data, const Color& c, double& idis)
 	{
 		auto argb = c.GetValue();
 		auto got = cacheMap.find(argb);
 		if (got == cacheMap.end()) {
 			const unsigned short nMaxColors = data.size() / SIDE;
-			unsigned short temp_k = nMaxColors;  //Record the ith pixel is divided into classes in the center of the temp_k
-			double idis = INT_MAX;
-			int nIndex = 0;
-			for (unsigned short k = 0; k < nMaxColors; ++k, nIndex += SIDE) {
-				double iidis = sqr(data[nIndex] - c.GetR());
+			unsigned short temp_k = nMaxColors;  //Record the ith pixel is divided into classes in the center of the temp_k			
+			for (unsigned short k = 0; k < nMaxColors; ++k) {
+				double iidis = sqr(data[SIDE * k] - c.GetR());
 				if (iidis >= idis)
 					continue;
 
-				iidis += sqr(data[nIndex + 1] - c.GetG());
+				iidis += sqr(data[SIDE * k + 1] - c.GetG());
 				if (iidis >= idis)
 					continue;
 
-				iidis += sqr(data[nIndex + 2] - c.GetB());
+				iidis += sqr(data[SIDE * k + 2] - c.GetB());
 				if (iidis >= idis)
 					continue;
 
 				if (hasSemiTransparency) {
-					iidis += sqr(data[nIndex + 3] - c.GetA());
+					iidis += sqr(data[SIDE * k + 3] - c.GetA());
 					if (iidis >= idis)
 						continue;
 				}
@@ -74,7 +72,11 @@ namespace MoDEQuant
 			cacheMap[argb] = temp_k;
 			return temp_k;
 		}
-		return got->second;
+		unsigned short k = got->second;
+		idis = sqr(data[SIDE * k] - c.GetR()) + sqr(data[SIDE * k + 1] - c.GetG()) + sqr(data[SIDE * k + 2] - c.GetB());
+		if (hasSemiTransparency)
+			idis += sqr(data[SIDE * k + 3] - c.GetA());
+		return k;
 	}
 
 	void updateCentroids(vector<double>& data, double* temp_x, const int* temp_x_number)
@@ -101,15 +103,11 @@ namespace MoDEQuant
 		auto k_class_Number = make_unique<int[]>(nMaxColors); //store distance of each class and related parameters
 		auto k_class_dis = make_unique<double[]>(nMaxColors);
 		for (UINT i = 0; i < nSize; ++i) {
+			double idis = INT_MAX;
 			Color c(pixels[i]);
-			auto k_class_Temp = find_nn(data, c);
+			auto k_class_Temp = find_nn(data, c, idis);
 			if (k_class_Temp < nMaxColors) {
-				double id0 = sqr(data[SIDE * k_class_Temp] - c.GetR());
-				double id1 = sqr(data[SIDE * k_class_Temp + 1] - c.GetG());
-				double id2 = sqr(data[SIDE * k_class_Temp + 2] - c.GetB());
-				double id3 = hasSemiTransparency ? sqr(data[SIDE * k_class_Temp + 3] - c.GetA()) : 0;
-
-				k_class_dis[k_class_Temp] += _sqrt(id0 + id1 + id2 + id3);
+				k_class_dis[k_class_Temp] += _sqrt(idis);
 				k_class_Number[k_class_Temp]++;
 			}
 		}
@@ -134,8 +132,9 @@ namespace MoDEQuant
 			auto temp_x_number = make_unique<int[]>(nMaxColors);  //store the pixel count of each class
 			auto temp_x = make_unique<double[]>(data.size());  //store average value centroid
 			for (UINT i = 0; i < nSize; ++i) {
+				double idis = INT_MAX;
 				Color c(pixels[i]);
-				auto temp_k = find_nn(data, c);
+				auto temp_k = find_nn(data, c, idis);
 				if (temp_k < nMaxColors) {
 					temp_x_number[temp_k]++;
 					temp_x[SIDE * temp_k] += c.GetR();     //Put each pixel of the original image into categories and put them in an array
@@ -182,8 +181,9 @@ namespace MoDEQuant
 			auto temp_x_number = make_unique<int[]>(nMaxColors);  //store the pixel count of each class
 			auto temp_x = make_unique<double[]>(data.size());  //store average value centroid
 			for (UINT i = 0; i < nSize; ++i) {
+				double idis = INT_MAX;
 				Color c(pixels[i]);
-				auto temp_k = find_nn(data, c);
+				auto temp_k = find_nn(data, c, idis);
 				if (temp_k < nMaxColors) {
 					temp_x_number[temp_k]++;
 					temp_x[SIDE * temp_k] += c.GetR();     //Put each pixel of the original image into categories and put them in an array
@@ -237,15 +237,11 @@ namespace MoDEQuant
 		double dis_sum = 0.0;
 		UINT nSize = pixels.size();
 		for (UINT i = 0; i < nSize; ++i) {
+			double idis = INT_MAX;
 			Color c(pixels[i]);
-			auto k_class_Temp = find_nn(data, c);
-			if (k_class_Temp < nMaxColors) {
-				double id0 = sqr(data[k_class_Temp * SIDE] - c.GetR());
-				double id1 = sqr(data[k_class_Temp * SIDE + 1] - c.GetG());
-				double id2 = sqr(data[k_class_Temp * SIDE + 2] - c.GetB());
-				double id3 = hasSemiTransparency ? sqr(data[k_class_Temp * SIDE + 3] - c.GetA()) : 0;
-				dis_sum += _sqrt(id0 + id1 + id2 + id3);
-			}
+			auto k_class_Temp = find_nn(data, c, idis);
+			if (k_class_Temp < nMaxColors)
+				dis_sum += _sqrt(idis);
 		}
 
 		return dis_sum / nSize;
@@ -261,8 +257,9 @@ namespace MoDEQuant
 			auto temp_x_number = make_unique<int[]>(nMaxColors);  //store the pixel count of each class
 			auto temp_x = make_unique<double[]>(data.size());  //store average value centroid
 			for (UINT i = 0; i < nSize; ++i) {
+				double idis = INT_MAX;
 				Color c(pixels[i]);
-				auto temp_k = find_nn(data, c);
+				auto temp_k = find_nn(data, c, idis);
 				if (temp_k < nMaxColors) {
 					temp_x_number[temp_k]++;
 					temp_x[SIDE * temp_k] += c.GetR();     //Put each pixel of the original image into categories and put them in an array
