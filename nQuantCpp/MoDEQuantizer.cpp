@@ -81,7 +81,6 @@ namespace MoDEQuant
 
 	void updateCentroids(vector<double>& data, double* temp_x, const int* temp_x_number)
 	{
-		cacheMap.clear();
 		const unsigned short nMaxColors = data.size() / SIDE;
 
 		for (unsigned short i = 0; i < nMaxColors; ++i) { //update classes and centroids
@@ -145,7 +144,7 @@ namespace MoDEQuant
 					temp_i_k[i] = temp_k;
 				}
 			}
-
+			cacheMap.clear();
 			updateCentroids(data, temp_x.get(), temp_x_number.get());
 		}
 
@@ -193,7 +192,7 @@ namespace MoDEQuant
 						temp_x[SIDE * temp_k + 3] += c.GetA();
 				}
 			}
-
+			cacheMap.clear();
 			updateCentroids(data, temp_x.get(), temp_x_number.get());
 		}
 
@@ -270,7 +269,7 @@ namespace MoDEQuant
 					temp_i_k[i] = temp_k;
 				}
 			}
-
+			cacheMap.clear();
 			updateCentroids(data, temp_x.get(), temp_x_number.get());
 		}
 
@@ -290,8 +289,8 @@ namespace MoDEQuant
 
 	int moDEquan(const vector<ARGB>& pixels, ColorPalette* pPalette, const unsigned short nMaxColors)
 	{
-		const BYTE INCR_STEP = 5;
-		const float INCR_PERC = INCR_STEP * 100.0f / (my_gens * LOOP);
+		const BYTE INCR_STEP = 1;
+		const float INCR_PERC = INCR_STEP * 100.0f / my_gens;
 		const clock_t begin = clock();
 		cout << std::setprecision(1) << std::fixed;
 
@@ -308,115 +307,117 @@ namespace MoDEQuant
 		auto bestx = make_unique<double[]>(D);
 
 		float percCompleted = 0;
-		for (int ii = 0; ii < LOOP; ++ii) { // loop n times to test
-			double F = 0.5, CR = 0.6, BVATG = INT_MAX;
-			srand(seed[ii]);
-			for (int i = 0; i < N; ++i) {            //the initial population 
-				for (UINT j = 0; j < D; j += SIDE) {
-					int TempInit = int(rand1() * nSizeInit);
-					Color c(pixels[TempInit]);
-					x1[i][j] = c.GetR();
-					x1[i][j + 1] = c.GetG();
-					x1[i][j + 2] = c.GetB();
-					if (hasSemiTransparency)
-						x1[i][j + 3] = c.GetA();
+		const int ii = LOOP - 1;
+
+		double F = 0.5, CR = 0.6, BVATG = INT_MAX;
+		srand(seed[ii]);
+		for (int i = 0; i < N; ++i) {            //the initial population 
+			cacheMap.clear();
+			for (UINT j = 0; j < D; j += SIDE) {
+				int TempInit = int(rand1() * nSizeInit);
+				Color c(pixels[TempInit]);
+				x1[i][j] = c.GetR();
+				x1[i][j + 1] = c.GetG();
+				x1[i][j + 2] = c.GetB();
+				if (hasSemiTransparency)
+					x1[i][j + 3] = c.GetA();
+			}
+			
+			cost[i] = a1 * evaluate1(pixels, x1[i]);
+			cost[i] -= a2 * evaluate2(pixels, x1[i]);
+			cost[i] += a3 * evaluate3(pixels, x1[i]) + 1000;
+
+			if (cost[i] < BVATG) {
+				BVATG = cost[i];
+				for (UINT j = 0; j < D; ++j)
+					bestx[j] = x1[i][j];
+			}
+		}
+
+		for (int g = 0; g < my_gens; ++g) { //generation loop				
+			if (g % INCR_STEP == 0) {
+				int elapsed_secs = int(clock() - begin) / CLOCKS_PER_SEC;
+				cout << "\rMultiobjective CQ ALGO Based on Self-Adaptive Hybrid DE: " << percCompleted << "% COMPL (" << elapsed_secs << " sec)" << std::flush;
+				percCompleted += INCR_PERC;
+			}
+
+			for (int i = 0; i < N; ++i) {
+				cacheMap.clear();
+
+				if (rand1() < K_probability) { // individual according to probability to perform clustering
+					double temp_costx1 = cost[i];
+					cost[i] = a1 * evaluate1_K(pixels, x1[i]);
+					cost[i] -= a2 * evaluate2_K(pixels, x1[i]);
+					cost[i] += a3 * evaluate3_K(pixels, x1[i]) + 1000; // clustered and changed the original data of x1[i]
+
+					if (cost[i] >= temp_costx1)
+						cost[i] = temp_costx1;
+					else if (BVATG >= cost[i]) {
+						BVATG = cost[i];
+						// update with the best individual
+						for (UINT j = 0; j < D; ++j)
+							bestx[j] = x1[i][j];
+					}
 				}
+				else { // Differential Evolution
+					int d, b;
+					do {
+						d = (int)(rand1() * N);
+					} while (d == i);
+					do {
+						b = (int)(rand1() * N);
+					} while (b == d || b == i);
 
-				cost[i] = a1 * evaluate1(pixels, x1[i]);
-				cost[i] -= a2 * evaluate2(pixels, x1[i]);
-				cost[i] += a3 * evaluate3(pixels, x1[i]) + 1000;
+					int jr = (int)(rand1() * D); // every individual update control parameters
+					if (rand1() < 0.1) {
+						F = 0.1 + rand1() * 0.9;
+						CR = rand1();
+					}
 
-				if (cost[i] < BVATG) {
-					BVATG = cost[i];
-					for (UINT j = 0; j < D; ++j)
-						bestx[j] = x1[i][j];
+					for (UINT j = 0; j < D; ++j) {
+						if (rand1() <= CR || j == jr) {
+							double diff = (x1[d][j] - x1[b][j]);
+							if (diff > Max_diff)
+								diff -= Max_diff;
+							if (diff > Max_diff)
+								diff -= Max_diff;
+							if (diff < -Max_diff)
+								diff += Max_diff;
+							if (diff < -Max_diff)
+								diff += Max_diff;
+							x2[i][j] = bestx[j] + F * diff;
+
+							// periodic mode
+							if (x2[i][j] < low)
+								x2[i][j] = high - (low - x2[i][j]);
+							else if (x2[i][j] > high)
+								x2[i][j] = low + (x2[i][j] - high);
+						}
+						else
+							x2[i][j] = x1[i][j];
+					}
+
+					double score = a1 * evaluate1(pixels, x1[i]);
+					score -= a2 * evaluate2(pixels, x1[i]);
+					if (score > cost[i])
+						continue;
+					score += a3 * evaluate3(pixels, x1[i]) + 1000;
+					if (score > cost[i])
+						continue;
+
+					cost[i] = score;
+					if (BVATG >= score) {
+						BVATG = score;
+						for (UINT j = 0; j < D; ++j)
+							bestx[j] = x1[i][j] = x2[i][j];
+					}
+					else {
+						for (UINT j = 0; j < D; ++j)
+							x1[i][j] = x2[i][j];
+					}
 				}
 			}
 
-			for (int g = 0; g < my_gens; ++g) { //generation loop				
-				if (g % INCR_STEP == 0) {
-					int elapsed_secs = int(clock() - begin) / CLOCKS_PER_SEC;
-					cout << "\rMultiobjective CQ ALGO Based on Self-Adaptive Hybrid DE: " << percCompleted << "% COMPL (" << elapsed_secs << " sec)" << std::flush;
-					percCompleted += INCR_PERC;
-				}
-
-				for (int i = 0; i < N; ++i) {
-					if (rand1() < K_probability) { // individual according to probability to perform clustering					
-
-						double temp_costx1 = cost[i];
-						cost[i] = a1 * evaluate1_K(pixels, x1[i]);
-						cost[i] -= a2 * evaluate2_K(pixels, x1[i]);
-						cost[i] += a3 * evaluate3_K(pixels, x1[i]) + 1000; // clustered and changed the original data of x1[i]
-
-						if (cost[i] >= temp_costx1)
-							cost[i] = temp_costx1;
-						else if (BVATG >= cost[i]) {
-							BVATG = cost[i];
-							// update with the best individual
-							for (UINT j = 0; j < D; ++j)
-								bestx[j] = x1[i][j];
-						}
-					}
-					else { // Differential Evolution
-						int d, b;
-						do {
-							d = (int)(rand1() * N);
-						} while (d == i);
-						do {
-							b = (int)(rand1() * N);
-						} while (b == d || b == i);
-
-						int jr = (int)(rand1() * D); // every individual update control parameters
-						if (rand1() < 0.1) {
-							F = 0.1 + rand1() * 0.9;
-							CR = rand1();
-						}
-
-						for (UINT j = 0; j < D; ++j) {
-							if (rand1() <= CR || j == jr) {
-								double diff = (x1[d][j] - x1[b][j]);
-								if (diff > Max_diff)
-									diff -= Max_diff;
-								if (diff > Max_diff)
-									diff -= Max_diff;
-								if (diff < -Max_diff)
-									diff += Max_diff;
-								if (diff < -Max_diff)
-									diff += Max_diff;
-								x2[i][j] = bestx[j] + F * diff;
-
-								// periodic mode
-								if (x2[i][j] < low)
-									x2[i][j] = high - (low - x2[i][j]);
-								else if (x2[i][j] > high)
-									x2[i][j] = low + (x2[i][j] - high);
-							}
-							else
-								x2[i][j] = x1[i][j];
-						}
-
-						double score = a1 * evaluate1(pixels, x1[i]);
-						score -= a2 * evaluate2(pixels, x1[i]);
-						if (score > cost[i])
-							continue;
-						score += a3 * evaluate3(pixels, x1[i]) + 1000;
-						if (score > cost[i])
-							continue;
-
-						cost[i] = score;
-						if (BVATG >= score) {
-							BVATG = score;
-							for (UINT j = 0; j < D; ++j)
-								bestx[j] = x1[i][j] = x2[i][j];
-						}
-						else {
-							for (UINT j = 0; j < D; ++j)
-								x1[i][j] = x2[i][j];
-						}
-					}
-				}
-
-			}
 		}
 
 		int elapsed_secs = int(clock() - begin) / CLOCKS_PER_SEC;
