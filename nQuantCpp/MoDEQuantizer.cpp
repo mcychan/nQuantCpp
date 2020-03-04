@@ -25,14 +25,13 @@ namespace MoDEQuant
 	const BYTE high = BYTE_MAX;
 	const BYTE low = 0;        // the initial bounding region
 	const int my_gens = 200;   //the generation number
-	const int LOOP = 5;        //loop number
+	const int LOOP = 10;        //loop number
 	const int seed[50] = { 20436,18352,10994,26845,24435,29789,28299,11375,10222,9885,25855,4282,22102,29385,16014,32018,3200,11252,6227,5939,8712,12504,25965,6101,30359,1295,29533,19841,14690,2695,3503,16802,18931,28464,1245,13279,5676,8951,7280,24488,6537,27128,9320,16399,24997,24303,16862,17882,15360,31216 };
 
 	BYTE SIDE = 3;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	unordered_map<ARGB, unsigned short> cacheMap;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 
 	inline double rand1()
@@ -40,7 +39,7 @@ namespace MoDEQuant
 		return (double)rand() / (RAND_MAX + 1.0);
 	}
 
-	unsigned short find_nn(const vector<double>& data, const Color& c, double& idis)
+	unsigned short find_nn(const vector<double>& data, const Color& c, unordered_map<ARGB, unsigned short>& cacheMap, double& idis)
 	{
 		auto argb = c.GetValue();
 		auto got = cacheMap.find(argb);
@@ -95,7 +94,7 @@ namespace MoDEQuant
 		}
 	}
 
-	double evaluate1(const vector<ARGB>& pixels, const vector<double>& data)
+	double evaluate1(const vector<ARGB>& pixels, unordered_map<ARGB, unsigned short>& cacheMap, const vector<double>& data)
 	{
 		const unsigned short nMaxColors = data.size() / SIDE;
 		UINT nSize = pixels.size();
@@ -104,7 +103,7 @@ namespace MoDEQuant
 		for (UINT i = 0; i < nSize; ++i) {
 			double idis = INT_MAX;
 			Color c(pixels[i]);
-			auto k_class_Temp = find_nn(data, c, idis);
+			auto k_class_Temp = find_nn(data, c, cacheMap, idis);
 			if (k_class_Temp < nMaxColors) {
 				k_class_dis[k_class_Temp] += _sqrt(idis);
 				k_class_Number[k_class_Temp]++;
@@ -121,7 +120,7 @@ namespace MoDEQuant
 	}
 
 	// Adaptation function designed for multiple targets (1): the minimum value of each inner class distance is the smallest
-	double evaluate1_K(const vector<ARGB>& pixels, vector<double>& data)  //Adaptive value function with K-means variation
+	double evaluate1_K(const vector<ARGB>& pixels, unordered_map<ARGB, unsigned short>& cacheMap, vector<double>& data)  //Adaptive value function with K-means variation
 	{
 		const unsigned short nMaxColors = data.size() / SIDE;
 		UINT nSize = pixels.size();
@@ -133,7 +132,7 @@ namespace MoDEQuant
 			for (UINT i = 0; i < nSize; ++i) {
 				double idis = INT_MAX;
 				Color c(pixels[i]);
-				auto temp_k = find_nn(data, c, idis);
+				auto temp_k = find_nn(data, c, cacheMap, idis);
 				if (temp_k < nMaxColors) {
 					temp_x_number[temp_k]++;
 					temp_x[SIDE * temp_k] += c.GetR();     //Put each pixel of the original image into categories and put them in an array
@@ -171,7 +170,7 @@ namespace MoDEQuant
 		return dis_sum;
 	}
 
-	double evaluate2(const vector<ARGB>& pixels, vector<double>& data, const int K_num = 1)  //Adaptive value function with K-means variation
+	double evaluate2(const vector<ARGB>& pixels, unordered_map<ARGB, unsigned short>& cacheMap, vector<double>& data, const int K_num = 1)  //Adaptive value function with K-means variation
 	{
 		const unsigned short nMaxColors = data.size() / SIDE;
 		UINT nSize = pixels.size();
@@ -182,7 +181,7 @@ namespace MoDEQuant
 			for (UINT i = 0; i < nSize; ++i) {
 				double idis = INT_MAX;
 				Color c(pixels[i]);
-				auto temp_k = find_nn(data, c, idis);
+				auto temp_k = find_nn(data, c, cacheMap, idis);
 				if (temp_k < nMaxColors) {
 					temp_x_number[temp_k]++;
 					temp_x[SIDE * temp_k] += c.GetR();     //Put each pixel of the original image into categories and put them in an array
@@ -224,13 +223,13 @@ namespace MoDEQuant
 	}
 
 	// designed for multi objective application function(2)：to maximize the minimum distance of class
-	double evaluate2_K(const vector<ARGB>& pixels, vector<double>& data)  //Adaptive value function with K-means variation
+	double evaluate2_K(const vector<ARGB>& pixels, unordered_map<ARGB, unsigned short>& cacheMap, vector<double>& data)  //Adaptive value function with K-means variation
 	{
-		return evaluate2(pixels, data, K_number);
+		return evaluate2(pixels, cacheMap, data, K_number);
 	}
 
 	//designed for multi objective application function(3) MSE
-	double evaluate3(const vector<ARGB>& pixels, const vector<double>& data)
+	double evaluate3(const vector<ARGB>& pixels, unordered_map<ARGB, unsigned short>& cacheMap, const vector<double>& data)
 	{
 		const unsigned short nMaxColors = data.size() / SIDE;
 		double dis_sum = 0.0;
@@ -238,7 +237,7 @@ namespace MoDEQuant
 		for (UINT i = 0; i < nSize; ++i) {
 			double idis = INT_MAX;
 			Color c(pixels[i]);
-			auto k_class_Temp = find_nn(data, c, idis);
+			auto k_class_Temp = find_nn(data, c, cacheMap, idis);
 			if (k_class_Temp < nMaxColors)
 				dis_sum += _sqrt(idis);
 		}
@@ -246,7 +245,7 @@ namespace MoDEQuant
 		return dis_sum / nSize;
 	}
 
-	double evaluate3_K(const vector<ARGB>& pixels, vector<double>& data)  //Adaptive value function with K-means variation
+	double evaluate3_K(const vector<ARGB>& pixels, unordered_map<ARGB, unsigned short>& cacheMap, vector<double>& data)  //Adaptive value function with K-means variation
 	{
 		const unsigned short nMaxColors = data.size() / SIDE;
 		UINT nSize = pixels.size();
@@ -258,7 +257,7 @@ namespace MoDEQuant
 			for (UINT i = 0; i < nSize; ++i) {
 				double idis = INT_MAX;
 				Color c(pixels[i]);
-				auto temp_k = find_nn(data, c, idis);
+				auto temp_k = find_nn(data, c, cacheMap, idis);
 				if (temp_k < nMaxColors) {
 					temp_x_number[temp_k]++;
 					temp_x[SIDE * temp_k] += c.GetR();     //Put each pixel of the original image into categories and put them in an array
@@ -311,7 +310,9 @@ namespace MoDEQuant
 
 		double F = 0.5, CR = 0.6, BVATG = INT_MAX;
 		srand(seed[ii]);
+		auto cacheMapArray = make_unique<unordered_map<ARGB, unsigned short>[]>(N);
 		for (int i = 0; i < N; ++i) {            //the initial population 
+			auto& cacheMap = cacheMapArray[i];
 			cacheMap.clear();
 			for (UINT j = 0; j < D; j += SIDE) {
 				int TempInit = int(rand1() * nSizeInit);
@@ -322,10 +323,10 @@ namespace MoDEQuant
 				if (hasSemiTransparency)
 					x1[i][j + 3] = c.GetA();
 			}
-			
-			cost[i] = a1 * evaluate1(pixels, x1[i]);
-			cost[i] -= a2 * evaluate2(pixels, x1[i]);
-			cost[i] += a3 * evaluate3(pixels, x1[i]) + 1000;
+
+			cost[i] = a1 * evaluate1(pixels, cacheMap, x1[i]);
+			cost[i] -= a2 * evaluate2(pixels, cacheMap, x1[i]);
+			cost[i] += a3 * evaluate3(pixels, cacheMap, x1[i]) + 1000;
 
 			if (cost[i] < BVATG) {
 				BVATG = cost[i];
@@ -342,13 +343,13 @@ namespace MoDEQuant
 			}
 
 			for (int i = 0; i < N; ++i) {
-				cacheMap.clear();
+				auto& cacheMap = cacheMapArray[i];
 
 				if (rand1() < K_probability) { // individual according to probability to perform clustering
 					double temp_costx1 = cost[i];
-					cost[i] = a1 * evaluate1_K(pixels, x1[i]);
-					cost[i] -= a2 * evaluate2_K(pixels, x1[i]);
-					cost[i] += a3 * evaluate3_K(pixels, x1[i]) + 1000; // clustered and changed the original data of x1[i]
+					cost[i] = a1 * evaluate1_K(pixels, cacheMap, x1[i]);
+					cost[i] -= a2 * evaluate2_K(pixels, cacheMap, x1[i]);
+					cost[i] += a3 * evaluate3_K(pixels, cacheMap, x1[i]) + 1000; // clustered and changed the original data of x1[i]
 
 					if (cost[i] >= temp_costx1)
 						cost[i] = temp_costx1;
@@ -397,14 +398,15 @@ namespace MoDEQuant
 							x2[i][j] = x1[i][j];
 					}
 
-					double score = a1 * evaluate1(pixels, x1[i]);
-					score -= a2 * evaluate2(pixels, x1[i]);
+					double score = a1 * evaluate1(pixels, cacheMap, x1[i]);
+					score -= a2 * evaluate2(pixels, cacheMap, x1[i]);
 					if (score > cost[i])
 						continue;
-					score += a3 * evaluate3(pixels, x1[i]) + 1000;
+					score += a3 * evaluate3(pixels, cacheMap, x1[i]) + 1000;
 					if (score > cost[i])
 						continue;
 
+					cacheMap.clear();
 					cost[i] = score;
 					if (BVATG >= score) {
 						BVATG = score;
@@ -548,7 +550,6 @@ namespace MoDEQuant
 		if (nMaxColors > 256) {
 			auto qPixels = make_unique<ARGB[]>(pixels.size());
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
-			cacheMap.clear();
 			closestMap.clear();
 			return ProcessImagePixels(pDest, qPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
 		}
@@ -563,7 +564,6 @@ namespace MoDEQuant
 			else if (pPalette->Entries[k] != m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[1]);
 		}
-		cacheMap.clear();
 		closestMap.clear();
 
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
