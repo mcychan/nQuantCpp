@@ -25,7 +25,7 @@ namespace MoDEQuant
 	const BYTE high = BYTE_MAX;
 	const BYTE low = 0;        // the initial bounding region
 	const int my_gens = 200;   //the generation number
-	const int LOOP = 10;        //loop number
+	const int LOOP = 5;        //loop number
 	const int seed[50] = { 20436,18352,10994,26845,24435,29789,28299,11375,10222,9885,25855,4282,22102,29385,16014,32018,3200,11252,6227,5939,8712,12504,25965,6101,30359,1295,29533,19841,14690,2695,3503,16802,18931,28464,1245,13279,5676,8951,7280,24488,6537,27128,9320,16399,24997,24303,16862,17882,15360,31216 };
 
 	BYTE SIDE = 3;
@@ -47,7 +47,7 @@ namespace MoDEQuant
 			const unsigned short nMaxColors = data.size() / SIDE;
 			unsigned short temp_k = nMaxColors;  //Record the ith pixel is divided into classes in the center of the temp_k			
 			for (unsigned short k = 0; k < nMaxColors; ++k) {
-				double iidis = sqr(data[SIDE * k] - c.GetR());
+				double iidis = sqr(data[SIDE * k] - c.GetB());
 				if (iidis >= idis)
 					continue;
 
@@ -55,7 +55,7 @@ namespace MoDEQuant
 				if (iidis >= idis)
 					continue;
 
-				iidis += sqr(data[SIDE * k + 2] - c.GetB());
+				iidis += sqr(data[SIDE * k + 2] - c.GetR());
 				if (iidis >= idis)
 					continue;
 
@@ -72,7 +72,7 @@ namespace MoDEQuant
 			return temp_k;
 		}
 		unsigned short k = got->second;
-		idis = sqr(data[SIDE * k] - c.GetR()) + sqr(data[SIDE * k + 1] - c.GetG()) + sqr(data[SIDE * k + 2] - c.GetB());
+		idis = sqr(data[SIDE * k] - c.GetB()) + sqr(data[SIDE * k + 1] - c.GetG()) + sqr(data[SIDE * k + 2] - c.GetR());
 		if (hasSemiTransparency)
 			idis += sqr(data[SIDE * k + 3] - c.GetA());
 		return k;
@@ -84,12 +84,11 @@ namespace MoDEQuant
 
 		for (unsigned short i = 0; i < nMaxColors; ++i) { //update classes and centroids
 			if (temp_x_number[i] > 0) {
-				const double n2 = _sqrt(temp_x_number[i]);
-				data[SIDE * i] = temp_x[SIDE * i] / n2;
-				data[SIDE * i + 1] = temp_x[SIDE * i + 1] / n2;
-				data[SIDE * i + 2] = temp_x[SIDE * i + 2] / n2;
+				data[SIDE * i] = temp_x[SIDE * i] / temp_x_number[i];
+				data[SIDE * i + 1] = temp_x[SIDE * i + 1] / temp_x_number[i];
+				data[SIDE * i + 2] = temp_x[SIDE * i + 2] / temp_x_number[i];
 				if (hasSemiTransparency)
-					data[SIDE * i + 3] = temp_x[SIDE * i + 3] / n2;
+					data[SIDE * i + 3] = temp_x[SIDE * i + 3] / temp_x_number[i];
 			}
 		}
 	}
@@ -104,10 +103,8 @@ namespace MoDEQuant
 			double idis = INT_MAX;
 			Color c(pixels[i]);
 			auto k_class_Temp = find_nn(data, c, cacheMap, idis);
-			if (k_class_Temp < nMaxColors) {
-				k_class_dis[k_class_Temp] += _sqrt(idis);
-				k_class_Number[k_class_Temp]++;
-			}
+			k_class_dis[k_class_Temp] += _sqrt(idis);
+			k_class_Number[k_class_Temp]++;
 		}
 
 		double dis_sum = 0.0;
@@ -133,15 +130,13 @@ namespace MoDEQuant
 				double idis = INT_MAX;
 				Color c(pixels[i]);
 				auto temp_k = find_nn(data, c, cacheMap, idis);
-				if (temp_k < nMaxColors) {
-					temp_x_number[temp_k]++;
-					temp_x[SIDE * temp_k] += c.GetR();     //Put each pixel of the original image into categories and put them in an array
-					temp_x[SIDE * temp_k + 1] += c.GetG();
-					temp_x[SIDE * temp_k + 2] += c.GetB();
-					if (hasSemiTransparency)
-						temp_x[SIDE * temp_k + 3] += c.GetA();
-					temp_i_k[i] = temp_k;
-				}
+				temp_x_number[temp_k]++;
+				temp_x[SIDE * temp_k] += c.GetB();     //Put each pixel of the original image into categories and put them in an array
+				temp_x[SIDE * temp_k + 1] += c.GetG();
+				temp_x[SIDE * temp_k + 2] += c.GetR();
+				if (hasSemiTransparency)
+					temp_x[SIDE * temp_k + 3] += c.GetA();
+				temp_i_k[i] = temp_k;
 			}
 			cacheMap.clear();
 			updateCentroids(data, temp_x.get(), temp_x_number.get());
@@ -154,9 +149,9 @@ namespace MoDEQuant
 			int j = SIDE * temp_i_k[i];
 			int jj = temp_i_k[i];
 			k_class_Number[jj]++;
-			double iid0 = sqr(data[j] - c.GetR());
+			double iid0 = sqr(data[j] - c.GetB());
 			double iid1 = sqr(data[j + 1] - c.GetG());
-			double iid2 = sqr(data[j + 2] - c.GetB());
+			double iid2 = sqr(data[j + 2] - c.GetR());
 			double iid3 = hasSemiTransparency ? sqr(data[j + 3] - c.GetA()) : 0;
 			k_class_dis[jj] += _sqrt(iid0 + iid1 + iid2 + iid3);
 		}
@@ -182,14 +177,12 @@ namespace MoDEQuant
 				double idis = INT_MAX;
 				Color c(pixels[i]);
 				auto temp_k = find_nn(data, c, cacheMap, idis);
-				if (temp_k < nMaxColors) {
-					temp_x_number[temp_k]++;
-					temp_x[SIDE * temp_k] += c.GetR();     //Put each pixel of the original image into categories and put them in an array
-					temp_x[SIDE * temp_k + 1] += c.GetG();
-					temp_x[SIDE * temp_k + 2] += c.GetB();
-					if (hasSemiTransparency)
-						temp_x[SIDE * temp_k + 3] += c.GetA();
-				}
+				temp_x_number[temp_k]++;
+				temp_x[SIDE * temp_k] += c.GetB();     //Put each pixel of the original image into categories and put them in an array
+				temp_x[SIDE * temp_k + 1] += c.GetG();
+				temp_x[SIDE * temp_k + 2] += c.GetR();
+				if (hasSemiTransparency)
+					temp_x[SIDE * temp_k + 3] += c.GetA();
 			}
 			cacheMap.clear();
 			updateCentroids(data, temp_x.get(), temp_x_number.get());
@@ -258,15 +251,13 @@ namespace MoDEQuant
 				double idis = INT_MAX;
 				Color c(pixels[i]);
 				auto temp_k = find_nn(data, c, cacheMap, idis);
-				if (temp_k < nMaxColors) {
-					temp_x_number[temp_k]++;
-					temp_x[SIDE * temp_k] += c.GetR();     //Put each pixel of the original image into categories and put them in an array
-					temp_x[SIDE * temp_k + 1] += c.GetG();
-					temp_x[SIDE * temp_k + 2] += c.GetB();
-					if (hasSemiTransparency)
-						temp_x[SIDE * temp_k + 3] += c.GetA();
-					temp_i_k[i] = temp_k;
-				}
+				temp_x_number[temp_k]++;
+				temp_x[SIDE * temp_k] += c.GetB();     //Put each pixel of the original image into categories and put them in an array
+				temp_x[SIDE * temp_k + 1] += c.GetG();
+				temp_x[SIDE * temp_k + 2] += c.GetR();
+				if (hasSemiTransparency)
+					temp_x[SIDE * temp_k + 3] += c.GetA();
+				temp_i_k[i] = temp_k;
 			}
 			cacheMap.clear();
 			updateCentroids(data, temp_x.get(), temp_x_number.get());
@@ -276,9 +267,9 @@ namespace MoDEQuant
 		for (UINT i = 0; i < nSize; ++i) {
 			Color c(pixels[i]);
 			int j = SIDE * temp_i_k[i];
-			double iid0 = sqr(data[j] - c.GetR());
+			double iid0 = sqr(data[j] - c.GetB());
 			double iid1 = sqr(data[j + 1] - c.GetG());
-			double iid2 = sqr(data[j + 2] - c.GetB());
+			double iid2 = sqr(data[j + 2] - c.GetR());
 			double iid3 = hasSemiTransparency ? sqr(data[j + 3] - c.GetA()) : 0;
 			dis_sum += _sqrt(iid0 + iid1 + iid2 + iid3);
 		}
@@ -310,16 +301,16 @@ namespace MoDEQuant
 
 		double F = 0.5, CR = 0.6, BVATG = INT_MAX;
 		srand(seed[ii]);
-		auto cacheMapArray = make_unique<unordered_map<ARGB, unsigned short>[]>(N);
+		auto pCacheMap = make_unique<unordered_map<ARGB, unsigned short>[]>(N);
 		for (int i = 0; i < N; ++i) {            //the initial population 
-			auto& cacheMap = cacheMapArray[i];
+			auto& cacheMap = pCacheMap[i];
 			cacheMap.clear();
 			for (UINT j = 0; j < D; j += SIDE) {
 				int TempInit = int(rand1() * nSizeInit);
 				Color c(pixels[TempInit]);
-				x1[i][j] = c.GetR();
+				x1[i][j] = c.GetB();
 				x1[i][j + 1] = c.GetG();
-				x1[i][j + 2] = c.GetB();
+				x1[i][j + 2] = c.GetR();
 				if (hasSemiTransparency)
 					x1[i][j + 3] = c.GetA();
 			}
@@ -343,7 +334,7 @@ namespace MoDEQuant
 			}
 
 			for (int i = 0; i < N; ++i) {
-				auto& cacheMap = cacheMapArray[i];
+				auto& cacheMap = pCacheMap[i];
 
 				if (rand1() < K_probability) { // individual according to probability to perform clustering
 					double temp_costx1 = cost[i];
@@ -428,7 +419,7 @@ namespace MoDEQuant
 		/* Fill palette */
 		UINT j = 0;
 		for (unsigned short k = 0; k < nMaxColors; ++k, j += SIDE)
-			pPalette->Entries[k] = Color::MakeARGB(hasSemiTransparency ? static_cast<BYTE>(bestx[j + 3]) : BYTE_MAX, static_cast<BYTE>(bestx[j]), static_cast<BYTE>(bestx[j + 1]), static_cast<BYTE>(bestx[j + 2]));
+			pPalette->Entries[k] = Color::MakeARGB(hasSemiTransparency ? static_cast<BYTE>(bestx[j + 3]) : BYTE_MAX, static_cast<BYTE>(bestx[j + 2]), static_cast<BYTE>(bestx[j + 1]), static_cast<BYTE>(bestx[j]));
 
 		return 0;
 	}
