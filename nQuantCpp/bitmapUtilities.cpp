@@ -798,7 +798,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	transparentPixelIndex = -1;
 		
 	int pixelIndex = 0;	
-	if (bitDepth == 16) {
+	if (bitDepth >= 16) {
 		for (UINT y = 0; y < bitmapHeight; ++y) {
 			for (UINT x = 0; x < bitmapWidth; ++x) {
 				Color color;
@@ -817,20 +817,17 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	}
 
 	unique_ptr<BYTE[]> pPaletteBytes;
-	ColorPalette* pPalette = nullptr;
-	if (bitDepth < 16) {
-		int paletteSize = pSource->GetPaletteSize();
-		pPaletteBytes = make_unique<BYTE[]>(paletteSize);
-		pPalette = (ColorPalette*) pPaletteBytes.get();
-		pSource->GetPalette(pPalette, paletteSize);
+	int paletteSize = pSource->GetPaletteSize();
+	pPaletteBytes = make_unique<BYTE[]>(paletteSize);
+	auto pPalette = (ColorPalette*) pPaletteBytes.get();
+	pSource->GetPalette(pPalette, paletteSize);
 
-		int nSize = pSource->GetPropertyItemSize(PropertyTagIndexTransparent);
-		if (nSize > 0) {
-			auto pPropertyItem = make_unique<PropertyItem[]>(nSize);
-			pSource->GetPropertyItem(PropertyTagIndexTransparent, nSize, pPropertyItem.get());
-			auto pValue = (long*) pPropertyItem[0].value;
-			transparentPixelIndex = (int)(*pValue);			
-		}
+	int nSize = pSource->GetPropertyItemSize(PropertyTagIndexTransparent);
+	if (nSize > 0) {
+		auto pPropertyItem = make_unique<PropertyItem[]>(nSize);
+		pSource->GetPropertyItem(PropertyTagIndexTransparent, nSize, pPropertyItem.get());
+		auto pValue = (long*) pPropertyItem[0].value;
+		transparentPixelIndex = (int)(*pValue);			
 	}
 
 	BitmapData data;
@@ -841,9 +838,9 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	auto pRowSource = (LPBYTE)data.Scan0;
 	UINT strideSource;
 
-	if (data.Stride > 0) strideSource = data.Stride;
-	else
-	{
+	if (data.Stride > 0)
+		strideSource = data.Stride;
+	else {
 		// Compensate for possible negative stride
 		// (not needed for first loop, but we have to do it
 		// for second loop anyway)
@@ -857,23 +854,14 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 
 		for (UINT x = 0; x < bitmapWidth; ++x) {	// ...for each pixel...
 			BYTE pixelAlpha = BYTE_MAX;
-			ARGB argb;
-			if (pPalette == nullptr) {
-				BYTE pixelBlue = *pPixelSource++;
-				BYTE pixelGreen = *pPixelSource++;
-				BYTE pixelRed = *pPixelSource++;
-				pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
-				argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
-			}
-			else {
-				BYTE index = *pPixelSource++;
-				argb = pPalette->Entries[index];
-				if(index == transparentPixelIndex)
-					pixelAlpha = 0;
-			}
+				
+			BYTE index = *pPixelSource++;
+			auto argb = pPalette->Entries[index];
+			if (index == transparentPixelIndex)
+				pixelAlpha = 0;
 
 			if (pixelAlpha < BYTE_MAX) {
-				hasSemiTransparency = true;					
+				hasSemiTransparency = true;
 				if (pixelAlpha == 0) {
 					transparentColor = argb;
 					transparentPixelIndex = pixelIndex;
