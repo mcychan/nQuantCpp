@@ -11,13 +11,13 @@ ULONG GetBitmapHeaderSize(LPCVOID pDib)
 
 	switch (nHeaderSize)
 	{
-	case sizeof(BITMAPCOREHEADER) :
-	case sizeof(BITMAPINFOHEADER) :
-	case sizeof(BITMAPV4HEADER) :
-	case sizeof(BITMAPV5HEADER) :
-	{
-		return nHeaderSize;
-	}
+		case sizeof(BITMAPCOREHEADER) :
+			case sizeof(BITMAPINFOHEADER) :
+			case sizeof(BITMAPV4HEADER) :
+			case sizeof(BITMAPV5HEADER) :
+		{
+			return nHeaderSize;
+		}
 	}
 
 	return 0;
@@ -40,7 +40,7 @@ ULONG GetBitmapLineWidthInBytes(ULONG nWidthInPixels, ULONG nBitCount)
 // GetBitmapDimensions
 //
 
-BOOL GetBitmapDimensions(LPCVOID pDib, UINT *pWidth, UINT *pHeight)
+BOOL GetBitmapDimensions(LPCVOID pDib, UINT* pWidth, UINT* pHeight)
 {
 	ULONG nHeaderSize = GetBitmapHeaderSize(pDib);
 
@@ -443,9 +443,9 @@ BOOL FillBitmapFileHeader(LPCVOID pDib, PBITMAPFILEHEADER pbmfh)
 bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height)
 {
 	UINT pixelIndex = 0;
-	
+
 	bool odd_scanline = false;
-	short *row0, *row1;
+	short* row0, * row1;
 	int j, a_pix, r_pix, g_pix, b_pix, dir, k;
 	const int DJ = 4;
 	const int DITHER_MAX = 20;
@@ -546,7 +546,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 {
 	UINT pixelIndex = 0;
 	bool odd_scanline = false;
-	short *row0, *row1;
+	short* row0, * row1;
 	int a_pix, r_pix, g_pix, b_pix, dir, k;
 	const int DJ = 4;
 	const int DITHER_MAX = 20;
@@ -648,12 +648,12 @@ bool ProcessImagePixels(Bitmap* pDest, const ARGB* qPixels, const bool& hasSemiT
 	UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
 	if (bpp < 16)
 		return false;
-	
-	if(hasSemiTransparency && pDest->GetPixelFormat() < PixelFormat32bppARGB)
+
+	if (hasSemiTransparency && pDest->GetPixelFormat() < PixelFormat32bppARGB)
 		pDest->ConvertFormat(PixelFormat32bppARGB, DitherTypeSolid, PaletteTypeOptimal, nullptr, 0);
 	else if (transparentPixelIndex >= 0 && pDest->GetPixelFormat() < PixelFormat16bppARGB1555)
 		pDest->ConvertFormat(PixelFormat16bppARGB1555, DitherTypeSolid, PaletteTypeOptimal, nullptr, 0);
-	else if(pDest->GetPixelFormat() != PixelFormat16bppRGB565)
+	else if (pDest->GetPixelFormat() != PixelFormat16bppRGB565)
 		pDest->ConvertFormat(PixelFormat16bppRGB565, DitherTypeSolid, PaletteTypeOptimal, nullptr, 0);
 
 	BitmapData targetData;
@@ -793,12 +793,12 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	const UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
 	const UINT bitmapWidth = pSource->GetWidth();
 	const UINT bitmapHeight = pSource->GetHeight();
-	
+
 	hasSemiTransparency = false;
 	transparentPixelIndex = -1;
-		
-	int pixelIndex = 0;	
-	if (bitDepth >= 16) {
+
+	int pixelIndex = 0;
+	if (bitDepth == 16) {
 		for (UINT y = 0; y < bitmapHeight; ++y) {
 			for (UINT x = 0; x < bitmapWidth; ++x) {
 				Color color;
@@ -817,17 +817,20 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	}
 
 	unique_ptr<BYTE[]> pPaletteBytes;
-	int paletteSize = pSource->GetPaletteSize();
-	pPaletteBytes = make_unique<BYTE[]>(paletteSize);
-	auto pPalette = (ColorPalette*) pPaletteBytes.get();
-	pSource->GetPalette(pPalette, paletteSize);
+	ColorPalette* pPalette = nullptr;
+	if (bitDepth < 16) {
+		int paletteSize = pSource->GetPaletteSize();
+		pPaletteBytes = make_unique<BYTE[]>(paletteSize);
+		pPalette = (ColorPalette*)pPaletteBytes.get();
+		pSource->GetPalette(pPalette, paletteSize);
 
-	int nSize = pSource->GetPropertyItemSize(PropertyTagIndexTransparent);
-	if (nSize > 0) {
-		auto pPropertyItem = make_unique<PropertyItem[]>(nSize);
-		pSource->GetPropertyItem(PropertyTagIndexTransparent, nSize, pPropertyItem.get());
-		auto pValue = (long*) pPropertyItem[0].value;
-		transparentPixelIndex = (int)(*pValue);			
+		int nSize = pSource->GetPropertyItemSize(PropertyTagIndexTransparent);
+		if (nSize > 0) {
+			auto pPropertyItem = make_unique<PropertyItem[]>(nSize);
+			pSource->GetPropertyItem(PropertyTagIndexTransparent, nSize, pPropertyItem.get());
+			auto pValue = (long*)pPropertyItem[0].value;
+			transparentPixelIndex = (int)(*pValue);
+		}
 	}
 
 	BitmapData data;
@@ -838,9 +841,9 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	auto pRowSource = (LPBYTE)data.Scan0;
 	UINT strideSource;
 
-	if (data.Stride > 0)
-		strideSource = data.Stride;
-	else {
+	if (data.Stride > 0) strideSource = data.Stride;
+	else
+	{
 		// Compensate for possible negative stride
 		// (not needed for first loop, but we have to do it
 		// for second loop anyway)
@@ -854,11 +857,20 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 
 		for (UINT x = 0; x < bitmapWidth; ++x) {	// ...for each pixel...
 			BYTE pixelAlpha = BYTE_MAX;
-				
-			BYTE index = *pPixelSource++;
-			auto argb = pPalette->Entries[index];
-			if (index == transparentPixelIndex)
-				pixelAlpha = 0;
+			ARGB argb;
+			if (pPalette == nullptr) {
+				BYTE pixelBlue = *pPixelSource++;
+				BYTE pixelGreen = *pPixelSource++;
+				BYTE pixelRed = *pPixelSource++;
+				pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
+				argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
+			}
+			else {
+				BYTE index = *pPixelSource++;
+				argb = pPalette->Entries[index];
+				if (index == transparentPixelIndex)
+					pixelAlpha = 0;
+			}
 
 			if (pixelAlpha < BYTE_MAX) {
 				hasSemiTransparency = true;
