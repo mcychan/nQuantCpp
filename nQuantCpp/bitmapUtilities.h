@@ -77,3 +77,8 @@ inline int GetARGBIndex(const Color& c, const bool& hasSemiTransparency)
 	return (c.GetR() & 0xF8) << 8 | (c.GetG() & 0xFC) << 3 | (c.GetB() >> 3);
 }
 
+inline int GetARGB1555(const Color& c)
+{
+	return (c.GetA() & 0x80) << 8 | (c.GetR() & 0xF8) << 7 | (c.GetG() & 0xF8) << 2 | (c.GetB() >> 3);
+}
+
