@@ -70,6 +70,8 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsig
 
 bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency, int& transparentPixelIndex, ARGB& transparentColor);
 
+bool HasTransparency(Bitmap* pSource);
+
 inline int GetARGBIndex(const Color& c, const bool& hasSemiTransparency)
 {
 	if (hasSemiTransparency)

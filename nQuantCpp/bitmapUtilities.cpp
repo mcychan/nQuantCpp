@@ -450,7 +450,7 @@ void CalcDitherPixel(int* pDitherPixel, const Color& c, const BYTE* clamp, const
 	}
 	else {
 		pDitherPixel[0] = clamp[((rowerr[0] + 0x2010) >> 5) + c.GetR()];
-		pDitherPixel[1] = clamp[((rowerr[1] + 0x4020) >> 6) + c.GetG()];
+		pDitherPixel[1] = clamp[((rowerr[1] + 0x1008) >> 4) + c.GetG()];
 		pDitherPixel[2] = clamp[((rowerr[2] + 0x2010) >> 5) + c.GetB()];
 		pDitherPixel[3] = c.GetA();
 	}
@@ -926,4 +926,75 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	pSource->UnlockBits(&data);
 
 	return true;
+}
+
+bool HasTransparency(Bitmap* pSource)
+{
+	const UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
+	const UINT bitmapWidth = pSource->GetWidth();
+	const UINT bitmapHeight = pSource->GetHeight();
+
+	int pixelIndex = 0;
+	if (pSource->GetPixelFormat() & PixelFormatIndexed) {
+		int paletteSize = pSource->GetPaletteSize();
+		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + (1 << bitDepth) * sizeof(ARGB));
+		auto pPalette = (ColorPalette*)pPaletteBytes.get();
+		pSource->GetPalette(pPalette, paletteSize);
+
+		for (UINT i = 0; i < pPalette->Count; ++i) {
+			Color c(pPalette->Entries[i]);
+
+			if (c.GetA() < BYTE_MAX)
+				return true;
+		}
+
+		auto nSize = pSource->GetPropertyItemSize(PropertyTagIndexTransparent);
+		if (nSize > 0) {
+			auto pPropertyItem = make_unique<PropertyItem[]>(nSize);
+			pSource->GetPropertyItem(PropertyTagIndexTransparent, nSize, pPropertyItem.get());
+			if (pPropertyItem.get()->length > 0)
+				return true;
+		}
+		return false;
+	}
+
+	BitmapData data;
+	Status status = pSource->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, PixelFormat32bppARGB, &data);
+	if (status != Ok)
+		return false;
+
+	auto pRowSource = (LPBYTE)data.Scan0;
+	UINT strideSource;
+
+	if (data.Stride > 0) strideSource = data.Stride;
+	else
+	{
+		// Compensate for possible negative stride
+		// (not needed for first loop, but we have to do it
+		// for second loop anyway)
+		pRowSource += bitmapHeight * data.Stride;
+		strideSource = -data.Stride;
+	}
+
+	// First loop: gather color information
+	for (UINT y = 0; y < bitmapHeight; ++y) {	// For each row...
+		auto pPixelSource = pRowSource;
+
+		for (UINT x = 0; x < bitmapWidth; ++x) {	// ...for each pixel...
+			BYTE pixelBlue = *pPixelSource++;
+			BYTE pixelGreen = *pPixelSource++;
+			BYTE pixelRed = *pPixelSource++;
+			BYTE pixelAlpha = *pPixelSource++;
+			auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
+
+			if (pixelAlpha < BYTE_MAX)
+				return true;
+		}
+
+		pRowSource += strideSource;
+	}
+
+	pSource->UnlockBits(&data);
+
+	return false;
 }
