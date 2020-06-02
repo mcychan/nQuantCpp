@@ -97,7 +97,7 @@ namespace PnnLABQuant
 			// !!! Can throw gamma correction in here, but what to do about perceptual
 			// !!! nonuniformity then?			
 			Color c(pixel);
-			int index = getARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex);
+			int index = GetARGBIndex(c, hasSemiTransparency);
 
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);

@@ -251,7 +251,7 @@ namespace DivQuant
 			}
 
 			Color c2(pPalette->Entries[index]);			
-			qPixels[ik] = hasSemiTransparency ? c2.GetValue() : getARGBIndex(c2, hasSemiTransparency, m_transparentPixelIndex);
+			qPixels[ik] = hasSemiTransparency ? c2.GetValue() : GetARGBIndex(c2, hasSemiTransparency);
 		}
 		return true;
 	}

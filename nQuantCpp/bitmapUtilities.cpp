@@ -440,13 +440,29 @@ BOOL FillBitmapFileHeader(LPCVOID pDib, PBITMAPFILEHEADER pbmfh)
 	return TRUE;
 }
 
+void CalcDitherPixel(int* pDitherPixel, const Color& c, const BYTE* clamp, const short* rowerr, const bool& hasSemiTransparency)
+{
+	if (hasSemiTransparency) {
+		pDitherPixel[0] = clamp[((rowerr[0] + 0x1008) >> 4) + c.GetR()];
+		pDitherPixel[1] = clamp[((rowerr[1] + 0x1008) >> 4) + c.GetG()];
+		pDitherPixel[2] = clamp[((rowerr[2] + 0x1008) >> 4) + c.GetB()];
+		pDitherPixel[3] = clamp[((rowerr[3] + 0x1008) >> 4) + c.GetA()];
+	}
+	else {
+		pDitherPixel[0] = clamp[((rowerr[0] + 0x2010) >> 5) + c.GetR()];
+		pDitherPixel[1] = clamp[((rowerr[1] + 0x4020) >> 6) + c.GetG()];
+		pDitherPixel[2] = clamp[((rowerr[2] + 0x2010) >> 5) + c.GetB()];
+		pDitherPixel[3] = c.GetA();
+	}
+}
+
 bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height)
 {
 	UINT pixelIndex = 0;
 	
 	bool odd_scanline = false;
 	short *row0, *row1;
-	int j, a_pix, r_pix, g_pix, b_pix, dir, k;
+	int dir, k;
 	const int DJ = 4;
 	const int DITHER_MAX = 20;
 	const int err_len = (width + 2) * DJ;
@@ -458,6 +474,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	auto erowerr = erowErr.get();
 	auto orowerr = orowErr.get();
 	auto lookup = make_unique<short[]>(65536);
+	auto pDitherPixel = make_unique<int[]>(4);
 
 	for (int i = 0; i < 256; i++) {
 		clamp[i] = 0;
@@ -484,27 +501,27 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 			row1 = &orowerr[width * DJ];
 		}
 		row1[0] = row1[1] = row1[2] = row1[3] = 0;
-		for (j = 0; j < width; j++) {
+		for (UINT j = 0; j < width; ++j) {
 			Color c(pixels[pixelIndex]);
 
-			r_pix = clamp[((row0[0] + 0x1008) >> 4) + c.GetR()];
-			g_pix = clamp[((row0[1] + 0x1008) >> 4) + c.GetG()];
-			b_pix = clamp[((row0[2] + 0x1008) >> 4) + c.GetB()];
-			a_pix = clamp[((row0[3] + 0x1008) >> 4) + c.GetA()];
-
-			ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+			CalcDitherPixel(pDitherPixel.get(), c, clamp, row0, hasSemiTransparency);
+			int r_pix = pDitherPixel[0];
+			int g_pix = pDitherPixel[1];
+			int b_pix = pDitherPixel[2];
+			int a_pix = pDitherPixel[3];
+			auto argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 			Color c1(argb);
-			int offset = getARGBIndex(c1, hasSemiTransparency, transparentPixelIndex);
+			int offset = GetARGBIndex(c1, hasSemiTransparency);
 			if (!lookup[offset])
 				lookup[offset] = ditherFn(pPalette, nMaxColors, argb) + 1;
 			qPixels[pixelIndex] = lookup[offset] - 1;
 
 			Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 
-			r_pix = lim[r_pix - c2.GetR()];
-			g_pix = lim[g_pix - c2.GetG()];
-			b_pix = lim[b_pix - c2.GetB()];
-			a_pix = lim[a_pix - c2.GetA()];
+			r_pix = lim[c1.GetR() - c2.GetR()];
+			g_pix = lim[c1.GetG() - c2.GetG()];
+			b_pix = lim[c1.GetB() - c2.GetB()];
+			a_pix = lim[c1.GetA() - c2.GetA()];
 
 			k = r_pix * 2;
 			row1[0 - DJ] = r_pix;
@@ -547,7 +564,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 	UINT pixelIndex = 0;
 	bool odd_scanline = false;
 	short *row0, *row1;
-	int a_pix, r_pix, g_pix, b_pix, dir, k;
+	int dir, k;
 	const int DJ = 4;
 	const int DITHER_MAX = 20;
 	const int err_len = (width + 2) * DJ;
@@ -559,6 +576,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 	auto erowerr = erowErr.get();
 	auto orowerr = orowErr.get();
 	auto lookup = make_unique<int[]>(65536);
+	auto pDitherPixel = make_unique<int[]>(4);
 
 	for (int i = 0; i < 256; i++) {
 		clamp[i] = 0;
@@ -585,27 +603,27 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 			row1 = &orowerr[width * DJ];
 		}
 		row1[0] = row1[1] = row1[2] = row1[3] = 0;
-		for (UINT j = 0; j < width; j++) {
+		for (UINT j = 0; j < width; ++j) {
 			Color c(pixels[pixelIndex]);
 
-			r_pix = clamp[((row0[0] + 0x1008) >> 4) + c.GetR()];
-			g_pix = clamp[((row0[1] + 0x1008) >> 4) + c.GetG()];
-			b_pix = clamp[((row0[2] + 0x1008) >> 4) + c.GetB()];
-			a_pix = clamp[((row0[3] + 0x1008) >> 4) + c.GetA()];
-
-			ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+			CalcDitherPixel(pDitherPixel.get(), c, clamp, row0, hasSemiTransparency);
+			int r_pix = pDitherPixel[0];
+			int g_pix = pDitherPixel[1];
+			int b_pix = pDitherPixel[2];
+			int a_pix = pDitherPixel[3];
+			auto argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 			Color c1(argb);
-			int offset = getARGBIndex(c1, hasSemiTransparency, transparentPixelIndex);
+			int offset = GetARGBIndex(c1, hasSemiTransparency);
 			if (!lookup[offset])
 				lookup[offset] = ditherFn(pPalette, nMaxColors, argb) + 1;
 
 			Color c2(pPalette->Entries[lookup[offset] - 1]);
-			qPixels[pixelIndex] = hasSemiTransparency ? c2.GetValue() : getARGBIndex(c2, hasSemiTransparency, transparentPixelIndex);
+			qPixels[pixelIndex] = hasSemiTransparency ? c2.GetValue() : GetARGBIndex(c2, hasSemiTransparency);
 
-			r_pix = lim[r_pix - c2.GetR()];
-			g_pix = lim[g_pix - c2.GetG()];
-			b_pix = lim[b_pix - c2.GetB()];
-			a_pix = lim[a_pix - c2.GetA()];
+			r_pix = lim[c1.GetR() - c2.GetR()];
+			g_pix = lim[c1.GetG() - c2.GetG()];
+			b_pix = lim[c1.GetB() - c2.GetB()];
+			a_pix = lim[c1.GetA() - c2.GetA()];
 
 			k = r_pix * 2;
 			row1[0 - DJ] = r_pix;
@@ -849,6 +867,16 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 
 		pSource->UnlockBits(&data);
 
+		auto nSize = pSource->GetPropertyItemSize(PropertyTagIndexTransparent);
+		if (nSize > 0) {
+			auto pPropertyItem = make_unique<PropertyItem[]>(nSize);
+			pSource->GetPropertyItem(PropertyTagIndexTransparent, nSize, pPropertyItem.get());
+			if (pPropertyItem.get()->length > 0) {
+				transparentPixelIndex = *(BYTE*)pPropertyItem.get()->value;
+				Color c(pPalette->Entries[transparentPixelIndex]);
+				transparentColor = Color::MakeARGB(0, c.GetR(), c.GetG(), c.GetB());
+			}
+		}
 		return true;
 	}
 
