@@ -985,10 +985,11 @@ bool HasTransparency(Bitmap* pSource)
 			BYTE pixelGreen = *pPixelSource++;
 			BYTE pixelRed = *pPixelSource++;
 			BYTE pixelAlpha = *pPixelSource++;
-			auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
 
-			if (pixelAlpha < BYTE_MAX)
+			if (pixelAlpha < BYTE_MAX) {
+				pSource->UnlockBits(&data);
 				return true;
+			}
 		}
 
 		pRowSource += strideSource;
