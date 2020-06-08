@@ -934,7 +934,10 @@ bool HasTransparency(Bitmap* pSource)
 	const UINT bitmapWidth = pSource->GetWidth();
 	const UINT bitmapHeight = pSource->GetHeight();
 
-	int pixelIndex = 0;
+	// Not an alpha-capable color format. Note that GDI+ indexed images are alpha-capable on the palette.
+	if (!(pSource->GetFlags() & ImageFlags::ImageFlagsHasAlpha))
+		return false;
+
 	if (pSource->GetPixelFormat() & PixelFormatIndexed) {
 		int paletteSize = pSource->GetPaletteSize();
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + (1 << bitDepth) * sizeof(ARGB));
