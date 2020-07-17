@@ -23,7 +23,7 @@ Here some examples of output:
 <p>Reduced to 16 colors by Xialoin Wu's fast optimal color Quantization Algorithm<br /><img src="https://i.stack.imgur.com/De9xw.png" /></p><hr>
 <p>Original photo<br /><img src="https://i.stack.imgur.com/SE5x9.png" /></p>
 <p>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<br /><img src="https://i.stack.imgur.com/0sDDn.png" /></p>
-<心>Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://i.stack.imgur.com/SB6NJ.png" /></心><hr>
+<p>Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://i.stack.imgur.com/SB6NJ.png" /></p><hr>
 
 <p>Original image<br /><img src="https://i.stack.imgur.com/F90bn.jpg" /></p>
 <b><a href="http://www.cs.joensuu.fi/sipu/pub/Threshold-JEI.pdf">Fast pairwise nearest neighbor based algorithm with CIELAB color space</a></b> with 16 colors<br>
@@ -44,4 +44,4 @@ The readers can see coding of the error diffusion and dithering are quite simila
 Each algorithm has its own advantages. I share the source of color quantization to invite further discussion and improvements.
 Such source code are written in C++ to gain best performance. It is readable and convertible to <a href="https://github.com/mcychan/nQuant.cs">c#</a>, <a href="https://github.com/mcychan/nQuant.j2se">java</a>, or <a href="https://github.com/mcychan/PnnQuant.js">javascript</a>.
 Welcome for C++ experts for further improvement or provide color quantization algorithms better than the above algorithms.
-Please send email to miller.chan@gmail.com to report issues or give suggestions.
+Please use issues to track ideas, enhancements, tasks, or bugs for work on GitHub.
