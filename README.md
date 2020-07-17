@@ -16,26 +16,25 @@ Only png can support semi transparent image and desired color depth. Gif can ens
 
 Here some examples of output:
 
-<div>Original image<img src="http://i.imgur.com/h9ghTMB.png" /></div>
-<div>Reduced to 256 colors by Divisive hierarchical clustering algorithm<img src="https://i.stack.imgur.com/viRTI.png" /></div>
-<div>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/G1jkp.png" /></div>
-<div>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm<img src="https://i.stack.imgur.com/ry1oi.png" /></div>
-<div>Reduced to 16 colors by Xialoin Wu's fast optimal color Quantization Algorithm<img src="https://i.stack.imgur.com/De9xw.png" /></div><hr>
-<div>Original photo</div>
-<div><img src="https://i.stack.imgur.com/SE5x9.png" /></div>
-<div>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<img src="https://i.stack.imgur.com/0sDDn.png" /></div>
-<div>Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<img src="https://i.stack.imgur.com/SB6NJ.png" /></div><hr>
+<p>Original image<br /><img src="http://i.imgur.com/h9ghTMB.png" /></p>
+<p>Reduced to 256 colors by Divisive hierarchical clustering algorithm<br /><img src="https://i.stack.imgur.com/viRTI.png" /></p>
+<p>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<br /><img src="https://i.stack.imgur.com/G1jkp.png" /></p>
+<p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://i.stack.imgur.com/ry1oi.png" /></p>
+<p>Reduced to 16 colors by Xialoin Wu's fast optimal color Quantization Algorithm<br /><img src="https://i.stack.imgur.com/De9xw.png" /></p><hr>
+<p>Original photo<br /><img src="https://i.stack.imgur.com/SE5x9.png" /></p>
+<p>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<br /><img src="https://i.stack.imgur.com/0sDDn.png" /></p>
+<心>Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://i.stack.imgur.com/SB6NJ.png" /></心><hr>
 
-<div>Original image<img src="https://i.stack.imgur.com/F90bn.jpg" /></div>
+<p>Original image<br /><img src="https://i.stack.imgur.com/F90bn.jpg" /></p>
 <b><a href="http://www.cs.joensuu.fi/sipu/pub/Threshold-JEI.pdf">Fast pairwise nearest neighbor based algorithm with CIELAB color space</a></b> with 16 colors<br>
-<div>High quality and fast
+High quality and fast<br />
 <img src="https://i.stack.imgur.com/2kFxV.png" alt="Fast pairwise nearest neighbor based algorithm with CIELAB color space with 16 colors"></p>
-<p><b><a href="http://cg.cs.tsinghua.edu.cn/people/~huanghz/publications/TIP-2015-CombinedColorQuantization.pdf">Efficient, Edge-Aware, Combined Color Quantization and Dithering</a></b> with 16 colors</div>
-<div>Higher quality for 32 or less colors but slower
+<p><b><a href="http://cg.cs.tsinghua.edu.cn/people/~huanghz/publications/TIP-2015-CombinedColorQuantization.pdf">Efficient, Edge-Aware, Combined Color Quantization and Dithering</a></b> with 16 colors<br />
+Higher quality for 32 or less colors but slower<br />
 <img src="https://i.stack.imgur.com/cVYMP.png" alt="Efficient, Edge-Aware, Combined Color Quantization and Dithering with 16 colors"></p>
-<p><b><a href="https://people.eecs.berkeley.edu/~dcoetzee/downloads/scolorq/">Spatial color quantization</a></b> with 16 colors<br>
+<p><b><a href="https://people.eecs.berkeley.edu/~dcoetzee/downloads/scolorq/">Spatial color quantization</a></b> with 16 colors<br />
 Higher quality for 32 or less colors but the slowest<br />
-<img src="https://i.stack.imgur.com/DVdGv.png" alt="Spatial color quantization with 16 colors"></div>
+<img src="https://i.stack.imgur.com/DVdGv.png" alt="Spatial color quantization with 16 colors"></p>
 
 If you are using the command line. Assuming you are in the same directory as nQuantCpp.exe, you would enter: nQuantCpp yourImage.jpg /m 16
 
