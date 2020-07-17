@@ -1,17 +1,18 @@
 # nQuantCpp
 nQuantCpp includes top 6 color quantization algorithms for visual c++ producing high quality optimized images.
 
-Divisive hierarchical clustering algorithm,
-Fast pairwise nearest neighbor based algorithm, 
-NeuQuant Neural-Net Quantization Algorithm, 
-Xialoin Wu's fast optimal color quantizer, 
-Efficient, Edge-Aware, Combined Color Quantization and Dithering,
-Spatial color quantization
+Divisive hierarchical clustering algorithm utilizes the commonly used binary splitting strategy along with several carefully selected heuristics that ensure a good balance between effectiveness and efficiency.
+Fast pairwise nearest neighbor based algorithm is log linear and considerably faster than optimal thresholding, it is applicable in real-time image processing applications. 
+NeuQuant Neural-Net Quantization Algorithm is a self-organizing Kohonen neural network for quantizing colour graphics images.
+Xialoin Wu's fast optimal color quantizer, which is one of the most effective color quantization methods, provides excellent results.
+Efficient, Edge-Aware, Combined Color Quantization and Dithering is a novel algorithm to simultaneously accomplish color quantization and dithering of images.
+Spatial color quantization is a novel technique for palette selection and dithering with a simple perceptual model of human vision to produce superior results for many types of images.
 
-Fast pairwise nearest neighbor based algorithm minimized color loss for photo having red lips and supports 256 or less colors with transparency. NeuQuant Neural-Net Quantization Algorithm produces smooth photo quantization especially for natual landscape photo and fully supports image having transparent color. Xialoin Wu's fast optimal color quantizer fully supports image having transparent color. DL3 Quantization supports 256 or less colors. Spatial color quantization supports 64 or less colors. nQuantCpp also provides a command line wrapper in case you want to use it from the command line.
+Fast pairwise nearest neighbor based algorithm minimized color loss for photo having red lips and supports 256 or less colors with transparency. NeuQuant Neural-Net Quantization Algorithm produces smooth photo quantization especially for natual landscape photo and fully supports image having transparent color. Xialoin Wu's fast optimal color quantizer fully supports image having transparent color. Efficient, Edge-Aware, Combined Color Quantization and Dithering, Spatial color quantization supports 64 or less colors. nQuantCpp also provides a command line wrapper in case you want to use it from the command line.
 
 Either download nQuantCpp from this site or add it to your Visual Studio project seamlessly.
-PNG is useful because it's the only widely supported format which can store partially transparent images. The format uses compression, but the files can still be large. Use nQuantCpp to shrink images for your apps and sites.  Based on the provided options you chosen, an optimal strategy is executed. The result is a quality image which use less bandwidth and load faster.
+PNG is useful because it's the only widely supported format which can store partially transparent images. The format uses compression, but the files can still be large. Use Color quantization algorithms can be chosen by command line since version 1.10 using the /a algorithm.
+Only png can support semi transparent image and desired color depth. Gif can ensure the number of colors for the converted image is 256 or less. Bmp does support desired color depth. Jpg only supports 24-bit image format.
 
 Here some examples of output:
 
