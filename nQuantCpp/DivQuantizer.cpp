@@ -922,11 +922,11 @@ namespace DivQuant
 
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			if (nMaxColors > 32) {
-				double curdist = sqr(c2.GetA() - c.GetA());
-				if (curdist > mindist)
-					continue;
+			double curdist = sqr(c2.GetA() - c.GetA());
+			if (curdist > mindist)
+				continue;
 
+			if (nMaxColors > 32) {
 				curdist += PR * sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
@@ -936,17 +936,9 @@ namespace DivQuant
 					continue;
 
 				curdist += PB * sqr(c2.GetB() - c.GetB());
-				if (curdist > mindist)
-					continue;
-
-				mindist = curdist;
 			}
 			else {
 				getLab(c2, lab2);
-
-				double curdist = sqr(c2.GetA() - c.GetA());
-				if (curdist > mindist)
-					continue;
 
 				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				curdist += sqr(deltaL_prime_div_k_L_S_L);
@@ -965,13 +957,12 @@ namespace DivQuant
 				if (curdist > mindist)
 					continue;
 
-				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
-				if (curdist > mindist)
-					continue;
-
-				mindist = curdist;
+				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);		
 			}
 			
+			if (curdist > mindist)
+				continue;
+			mindist = curdist;
 			k = i;
 		}
 		return k;

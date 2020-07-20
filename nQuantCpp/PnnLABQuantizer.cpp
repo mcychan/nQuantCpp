@@ -236,6 +236,8 @@ namespace PnnLABQuant
 		Color c(argb);
 
 		double mindist = INT_MAX;
+		CIELABConvertor::Lab lab1, lab2;
+		getLab(c, lab1);
 
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
@@ -252,34 +254,35 @@ namespace PnnLABQuant
 				if (curdist > mindist)
 					continue;
 
-				curdist += PB * sqr(c2.GetB() - c.GetB());
-				if (curdist > mindist)
-					continue;
-
-				mindist = curdist;
+				curdist += PB * sqr(c2.GetB() - c.GetB());	
 			}
 			else {
-				curdist += PR * sqr(c2.GetR() - c.GetR());
+				getLab(c2, lab2);
+
+				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
+				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
 
-				curdist += PG * sqr(c2.GetG() - c.GetG());
+				double a1Prime, a2Prime, CPrime1, CPrime2;
+				double deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
+				curdist += sqr(deltaC_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
 
-				curdist += PB * sqr(c2.GetB() - c.GetB());
+				double barCPrime, barhPrime;
+				double deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
+				curdist += sqr(deltaH_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
 
-				double luma1 = c.GetR() * PR + c.GetG() * PG + c.GetB() * PB;
-				double luma2 = c2.GetR() * PR + c2.GetG() * PG + c2.GetB() * PB;
-				curdist += sqr(luma1 - luma2);
-				if (curdist > mindist)
-					continue;
-
-				mindist = curdist;
+				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
+				
 			}
 			
+			if (curdist > mindist)
+				continue;
+			mindist = curdist;
 			k = i;
 		}
 		return k;
@@ -375,7 +378,7 @@ namespace PnnLABQuant
 			return ProcessImagePixels(pDest, qPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
 		}
 		if (hasSemiTransparency || nMaxColors <= 32)
-			PR = .299, PG = .587, PB = .114;
+			PR = PG = PB = 1;
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
