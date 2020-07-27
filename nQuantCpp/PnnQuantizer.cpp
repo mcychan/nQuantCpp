@@ -82,6 +82,7 @@ namespace PnnQuant
 			bins[i].rc *= d;
 			bins[i].gc *= d;
 			bins[i].bc *= d;
+
 			if(quan_sqrt)
 				bins[i].cnt = _sqrt(bins[i].cnt);
 			bins[maxbins] = bins[i];
@@ -272,7 +273,7 @@ namespace PnnQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		bool quan_sqrt = nMaxColors > BYTE_MAX;
+		bool quan_sqrt = nMaxColors <= 64;
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors, quan_sqrt);
 		else {

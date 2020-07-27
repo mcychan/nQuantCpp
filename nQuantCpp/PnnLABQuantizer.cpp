@@ -58,7 +58,7 @@ namespace PnnLABQuant
 			if (nerr >= err)
 				continue;
 
-			if (nMaxColors > 32) {
+			if (rand() < nMaxColors / 256.0) {
 				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				nerr += nerr2 * sqr(deltaL_prime_div_k_L_S_L);
 				if (nerr >= err)
@@ -245,7 +245,7 @@ namespace PnnLABQuant
 			if (curdist > mindist)
 				continue;
 
-			if (nMaxColors > 32) {	
+			if (rand() < nMaxColors / 256.0) {
 				curdist += PR * sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
@@ -276,8 +276,7 @@ namespace PnnLABQuant
 				if (curdist > mindist)
 					continue;
 
-				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
-				
+				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);				
 			}
 			
 			if (curdist > mindist)
@@ -358,7 +357,7 @@ namespace PnnLABQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		bool quan_sqrt = nMaxColors > BYTE_MAX;
+		bool quan_sqrt = nMaxColors <= 64;
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors, quan_sqrt);
 		else {
@@ -377,7 +376,7 @@ namespace PnnLABQuant
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
 			return ProcessImagePixels(pDest, qPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
 		}
-		if (hasSemiTransparency || nMaxColors <= 32)
+		if (hasSemiTransparency)
 			PR = PG = PB = 1;
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
