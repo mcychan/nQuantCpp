@@ -357,7 +357,7 @@ namespace PnnLABQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		bool quan_sqrt = nMaxColors <= 64;
+		bool quan_sqrt = nMaxColors >= 64;
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors, quan_sqrt);
 		else {
