@@ -8,6 +8,7 @@ Copyright (c) 2018-2019 Miller Cy Chan
 #include "PnnLABQuantizer.h"
 #include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
+#include <ctime>
 #include <unordered_map>
 
 namespace PnnLABQuant
@@ -18,6 +19,10 @@ namespace PnnLABQuant
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
 	unordered_map<ARGB, vector<double> > closestMap;
+
+	inline double rand_gen() {
+		return (double)rand() / (RAND_MAX + 1.0);
+	}
 
 	struct pnnbin {
 		double ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
@@ -58,7 +63,7 @@ namespace PnnLABQuant
 			if (nerr >= err)
 				continue;
 
-			if (rand() < nMaxColors / 256.0) {
+			if (rand_gen() < nMaxColors / 256.0) {
 				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				nerr += nerr2 * sqr(deltaL_prime_div_k_L_S_L);
 				if (nerr >= err)
@@ -245,7 +250,7 @@ namespace PnnLABQuant
 			if (curdist > mindist)
 				continue;
 
-			if (rand() < nMaxColors / 256.0) {
+			if (rand_gen() < nMaxColors / 256.0) {
 				curdist += PR * sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
@@ -357,6 +362,7 @@ namespace PnnLABQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
+		srand(time(NULL));
 		bool quan_sqrt = nMaxColors >= 64;
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors, quan_sqrt);
