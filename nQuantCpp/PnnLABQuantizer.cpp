@@ -250,7 +250,7 @@ namespace PnnLABQuant
 			if (curdist > mindist)
 				continue;
 
-			if (rand_gen() < nMaxColors / 256.0) {
+			if (nMaxColors > 32) {
 				curdist += PR * sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
