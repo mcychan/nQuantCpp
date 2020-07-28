@@ -50,6 +50,7 @@ namespace PnnLABQuant
 		auto n1 = bin1.cnt;
 		CIELABConvertor::Lab lab1;
 		lab1.alpha = bin1.ac, lab1.L = bin1.Lc, lab1.A = bin1.Ac, lab1.B = bin1.Bc;
+		bool crossover = rand_gen() < nMaxColors / 256.0;
 		for (int i = bin1.fw; i; i = bins[i].fw) {			
 			double n2 = bins[i].cnt;
 			double nerr2 = (n1 * n2) / (n1 + n2);
@@ -63,7 +64,7 @@ namespace PnnLABQuant
 			if (nerr >= err)
 				continue;
 
-			if (rand_gen() < nMaxColors / 256.0) {
+			if (crossover) {
 				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				nerr += nerr2 * sqr(deltaL_prime_div_k_L_S_L);
 				if (nerr >= err)
