@@ -50,7 +50,7 @@ namespace PnnLABQuant
 		auto n1 = bin1.cnt;
 		CIELABConvertor::Lab lab1;
 		lab1.alpha = bin1.ac, lab1.L = bin1.Lc, lab1.A = bin1.Ac, lab1.B = bin1.Bc;
-		bool crossover = rand_gen() < nMaxColors / 256.0;
+		bool crossover = rand_gen() < nMaxColors / 320.0;
 		for (int i = bin1.fw; i; i = bins[i].fw) {			
 			double n2 = bins[i].cnt;
 			double nerr2 = (n1 * n2) / (n1 + n2);
@@ -83,6 +83,8 @@ namespace PnnLABQuant
 					continue;
 
 				nerr += nerr2 * CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
+				if (nerr >= err)
+					continue;
 			}
 			else {
 				nerr += nerr2 * sqr(lab2.L - lab1.L);
@@ -364,7 +366,7 @@ namespace PnnLABQuant
 		pPalette->Count = nMaxColors;
 
 		srand(time(NULL));
-		bool quan_sqrt = nMaxColors >= 64;
+		bool quan_sqrt = true;
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors, quan_sqrt);
 		else {
