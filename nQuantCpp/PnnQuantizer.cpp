@@ -273,9 +273,8 @@ namespace PnnQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		bool quan_sqrt = nMaxColors >= 64;
 		if (nMaxColors > 2)
-			pnnquan(pixels, pPalette, nMaxColors, quan_sqrt);
+			pnnquan(pixels, pPalette, nMaxColors, true);
 		else {
 			if (m_transparentPixelIndex >= 0) {
 				pPalette->Entries[0] = m_transparentColor;
