@@ -22,7 +22,7 @@ namespace PnnLABQuant
 	unordered_map<ARGB, vector<double> > closestMap;
 
 	inline double rand_gen() {
-		return (double)rand() / (RAND_MAX + 1.0);
+		return ((double)rand() / (RAND_MAX));
 	}
 
 	struct pnnbin {
@@ -52,7 +52,7 @@ namespace PnnLABQuant
 		CIELABConvertor::Lab lab1;
 		lab1.alpha = bin1.ac, lab1.L = bin1.Lc, lab1.A = bin1.Ac, lab1.B = bin1.Bc;
 		bool crossover = rand_gen() < ratio;
-		for (int i = bin1.fw; i; i = bins[i].fw) {			
+		for (int i = bin1.fw; i; i = bins[i].fw) {
 			double n2 = bins[i].cnt;
 			double nerr2 = (n1 * n2) / (n1 + n2);
 			if (nerr2 >= err)
@@ -144,8 +144,8 @@ namespace PnnLABQuant
 			bins[i].Lc *= d;
 			bins[i].Ac *= d;
 			bins[i].Bc *= d;
-			
-			if(quan_sqrt)
+
+			if (quan_sqrt)
 				bins[i].cnt = _sqrt(bins[i].cnt);
 			bins[maxbins] = bins[i];
 			++maxbins;
@@ -159,7 +159,7 @@ namespace PnnLABQuant
 		//	bins[0].bk = bins[i].fw = 0;
 
 		int h, l, l2;
-		ratio = quan_sqrt ? 0.003125 * nMaxColors : 1.0;
+		ratio = 0.003125 * nMaxColors;
 		/* Initialize nearest neighbors and build heap of them */
 		for (int i = 0; i < maxbins; ++i) {
 			find_nn(bins.get(), i, nMaxColors);
@@ -178,7 +178,7 @@ namespace PnnLABQuant
 		int extbins = maxbins - nMaxColors;
 		for (int i = 0; i < extbins; ) {
 			int b1;
-			
+
 			/* Use heap to find which bins to merge */
 			for (;;) {
 				auto& tb = bins[b1 = heap[1]]; /* One with least error */
@@ -226,7 +226,7 @@ namespace PnnLABQuant
 		/* Fill palette */
 		short k = 0;
 
-		for (int i = 0;; k++) {			
+		for (int i = 0;; k++) {
 			CIELABConvertor::Lab lab1;
 			lab1.alpha = rint(bins[i].ac);
 			lab1.L = bins[i].Lc, lab1.A = bins[i].Ac, lab1.B = bins[i].Bc;
@@ -265,7 +265,7 @@ namespace PnnLABQuant
 				if (curdist > mindist)
 					continue;
 
-				curdist += PB * sqr(c2.GetB() - c.GetB());	
+				curdist += PB * sqr(c2.GetB() - c.GetB());
 			}
 			else {
 				getLab(c2, lab2);
@@ -287,9 +287,9 @@ namespace PnnLABQuant
 				if (curdist > mindist)
 					continue;
 
-				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);				
+				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
 			}
-			
+
 			if (curdist > mindist)
 				continue;
 			mindist = curdist;
@@ -297,7 +297,7 @@ namespace PnnLABQuant
 		}
 		return k;
 	}
-	
+
 	unsigned short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
 		UINT k = 0;
@@ -332,7 +332,7 @@ namespace PnnLABQuant
 		else
 			closest = got->second;
 
-		if (closest[2] == 0 || (rand() % (int) ceil(closest[3] + closest[2])) <= closest[3])
+		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3])
 			k = closest[0];
 		else
 			k = closest[1];
@@ -343,7 +343,7 @@ namespace PnnLABQuant
 
 	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
-		if (dither) 
+		if (dither)
 			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
 
 		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
@@ -363,14 +363,14 @@ namespace PnnLABQuant
 		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
-		
+
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
 		srand(time(NULL));
 		bool quan_sqrt = rand_gen() < nMaxColors / 64.0;
-		if (nMaxColors > 2) 
+		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors, quan_sqrt);
 		else {
 			if (m_transparentPixelIndex >= 0) {
@@ -382,7 +382,7 @@ namespace PnnLABQuant
 				pPalette->Entries[1] = Color::White;
 			}
 		}
-		
+
 		if (nMaxColors > 256) {
 			auto qPixels = make_unique<ARGB[]>(pixels.size());
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
