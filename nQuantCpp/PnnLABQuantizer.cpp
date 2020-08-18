@@ -16,7 +16,7 @@ namespace PnnLABQuant
 	double PR = .2126, PG = .7152, PB = .0722;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
-	double ratio = 320.0;
+	double ratio = 1.0;
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
 	unordered_map<ARGB, vector<double> > closestMap;
@@ -51,7 +51,7 @@ namespace PnnLABQuant
 		auto n1 = bin1.cnt;
 		CIELABConvertor::Lab lab1;
 		lab1.alpha = bin1.ac, lab1.L = bin1.Lc, lab1.A = bin1.Ac, lab1.B = bin1.Bc;
-		bool crossover = rand_gen() < nMaxColors / ratio;
+		bool crossover = rand_gen() < ratio;
 		for (int i = bin1.fw; i; i = bins[i].fw) {			
 			double n2 = bins[i].cnt;
 			double nerr2 = (n1 * n2) / (n1 + n2);
@@ -159,7 +159,7 @@ namespace PnnLABQuant
 		//	bins[0].bk = bins[i].fw = 0;
 
 		int h, l, l2;
-		ratio = quan_sqrt ? 320.0 : 256.0;
+		ratio = quan_sqrt ? 0.003125 * nMaxColors : 1.0;
 		/* Initialize nearest neighbors and build heap of them */
 		for (int i = 0; i < maxbins; ++i) {
 			find_nn(bins.get(), i, nMaxColors);
