@@ -159,7 +159,7 @@ namespace PnnLABQuant
 		//	bins[0].bk = bins[i].fw = 0;
 
 		int h, l, l2;
-		ratio = quan_sqrt ? 320.0 : 256.0;
+		ratio = quan_sqrt ? 512.0 : 256.0;
 		/* Initialize nearest neighbors and build heap of them */
 		for (int i = 0; i < maxbins; ++i) {
 			find_nn(bins.get(), i, nMaxColors);
