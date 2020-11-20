@@ -159,7 +159,7 @@ namespace PnnLABQuant
 		//	bins[0].bk = bins[i].fw = 0;
 
 		int h, l, l2;
-		ratio = 0.003125 * nMaxColors;
+		ratio = 0.0;
 		/* Initialize nearest neighbors and build heap of them */
 		for (int i = 0; i < maxbins; ++i) {
 			find_nn(bins.get(), i, nMaxColors);
@@ -174,6 +174,7 @@ namespace PnnLABQuant
 			heap[l] = i;
 		}
 
+		ratio = 0.003125 * nMaxColors;
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
 		for (int i = 0; i < extbins; ) {
