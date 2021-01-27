@@ -473,7 +473,6 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	auto lim = &limtb[256];
 	auto erowerr = erowErr.get();
 	auto orowerr = orowErr.get();
-	auto lookup = make_unique<short[]>(65536);
 	auto pDitherPixel = make_unique<int[]>(4);
 
 	for (int i = 0; i < 256; i++) {
@@ -511,10 +510,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 			int a_pix = pDitherPixel[3];
 			auto argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 			Color c1(argb);
-			int offset = GetARGBIndex(c1, hasSemiTransparency);
-			if (!lookup[offset])
-				lookup[offset] = ditherFn(pPalette, nMaxColors, argb) + 1;
-			qPixels[pixelIndex] = lookup[offset] - 1;
+			qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, argb);
 
 			Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 
@@ -575,7 +571,6 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 	auto lim = &limtb[256];
 	auto erowerr = erowErr.get();
 	auto orowerr = orowErr.get();
-	auto lookup = make_unique<int[]>(65536);
 	auto pDitherPixel = make_unique<int[]>(4);
 
 	for (int i = 0; i < 256; i++) {
@@ -613,11 +608,8 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 			int a_pix = pDitherPixel[3];
 			auto argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 			Color c1(argb);
-			int offset = GetARGBIndex(c1, hasSemiTransparency);
-			if (!lookup[offset])
-				lookup[offset] = ditherFn(pPalette, nMaxColors, argb) + 1;
 
-			Color c2(pPalette->Entries[lookup[offset] - 1]);
+			Color c2(pPalette->Entries[ditherFn(pPalette, nMaxColors, argb)]);
 			qPixels[pixelIndex] = hasSemiTransparency ? c2.GetValue() : GetARGB1555(c2);
 
 			r_pix = lim[c1.GetR() - c2.GetR()];
