@@ -174,7 +174,7 @@ namespace PnnLABQuant
 			heap[l] = i;
 		}
 
-		ratio = 0.003125 * nMaxColors;
+		ratio = sqr(nMaxColors) / pixelMap.size();
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
 		for (int i = 0; i < extbins; ) {
