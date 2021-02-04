@@ -170,7 +170,7 @@ namespace PnnLABQuant
 			heap[l] = i;
 		}
 
-		ratio = min(1.0, sqr(nMaxColors) / pixelMap.size());
+		ratio = min(1.0, pow(nMaxColors, 2.25) / pixelMap.size());
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
 		for (int i = 0; i < extbins; ) {
@@ -366,7 +366,7 @@ namespace PnnLABQuant
 		pPalette->Count = nMaxColors;
 
 		srand(time(NULL));
-		bool quan_sqrt = rand_gen() < nMaxColors / 64.0;
+		bool quan_sqrt = true;
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors, quan_sqrt);
 		else {
