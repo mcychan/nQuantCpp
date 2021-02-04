@@ -51,7 +51,6 @@ namespace PnnLABQuant
 		auto n1 = bin1.cnt;
 		CIELABConvertor::Lab lab1;
 		lab1.alpha = bin1.ac, lab1.L = bin1.Lc, lab1.A = bin1.Ac, lab1.B = bin1.Bc;
-		bool crossover = rand_gen() < ratio;
 		for (int i = bin1.fw; i; i = bins[i].fw) {
 			double n2 = bins[i].cnt;
 			double nerr2 = (n1 * n2) / (n1 + n2);
@@ -65,42 +64,39 @@ namespace PnnLABQuant
 			if (nerr >= err)
 				continue;
 
-			if (crossover) {
-				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
-				nerr += nerr2 * sqr(deltaL_prime_div_k_L_S_L);
-				if (nerr >= err)
-					continue;
+			nerr += (1 - ratio) * nerr2 * sqr(lab2.L - lab1.L);
+			if (nerr >= err)
+				continue;
 
-				double a1Prime, a2Prime, CPrime1, CPrime2;
-				double deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
-				nerr += nerr2 * sqr(deltaC_prime_div_k_L_S_L);
-				if (nerr >= err)
-					continue;
+			nerr += (1 - ratio) * nerr2 * sqr(lab2.A - lab1.A);
+			if (nerr >= err)
+				continue;
 
-				double barCPrime, barhPrime;
-				double deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
-				nerr += nerr2 * sqr(deltaH_prime_div_k_L_S_L);
-				if (nerr >= err)
-					continue;
-
-				nerr += nerr2 * CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
-				if (nerr >= err)
-					continue;
-			}
-			else {
-				nerr += nerr2 * sqr(lab2.L - lab1.L);
-				if (nerr >= err)
-					continue;
-
-				nerr += nerr2 * sqr(lab2.A - lab1.A);
-				if (nerr >= err)
-					continue;
-
-				nerr += nerr2 * sqr(lab2.B - lab1.B);
-			}
+			nerr += (1 - ratio) * nerr2 * sqr(lab2.B - lab1.B);
 
 			if (nerr >= err)
 				continue;
+
+			double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
+			nerr += ratio * nerr2 * sqr(deltaL_prime_div_k_L_S_L);
+			if (nerr >= err)
+				continue;
+
+			double a1Prime, a2Prime, CPrime1, CPrime2;
+			double deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
+			nerr += ratio * nerr2 * sqr(deltaC_prime_div_k_L_S_L);
+			if (nerr >= err)
+				continue;
+
+			double barCPrime, barhPrime;
+			double deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
+			nerr += ratio * nerr2 * sqr(deltaH_prime_div_k_L_S_L);
+			if (nerr >= err)
+				continue;
+
+			nerr += ratio * nerr2 * CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
+			if (nerr >= err)
+				continue;			
 
 			err = nerr;
 			nn = i;
@@ -174,7 +170,7 @@ namespace PnnLABQuant
 			heap[l] = i;
 		}
 
-		ratio = sqr(nMaxColors) / pixelMap.size();
+		ratio = min(1.0, sqr(nMaxColors) / pixelMap.size());
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
 		for (int i = 0; i < extbins; ) {
