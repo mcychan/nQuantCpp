@@ -143,8 +143,7 @@ namespace PnnLABQuant
 
 			if (quan_sqrt)
 				bins[i].cnt = _sqrt(bins[i].cnt);
-			bins[maxbins] = bins[i];
-			++maxbins;
+			bins[maxbins++] = bins[i];
 		}
 
 		for (int i = 0; i < maxbins - 1; ++i) {

@@ -460,9 +460,6 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 {
 	UINT pixelIndex = 0;
 	
-	bool odd_scanline = false;
-	short *row0, *row1;
-	int dir, k;
 	const int DJ = 4;
 	const int DITHER_MAX = 20;
 	const int err_len = (width + 2) * DJ;
@@ -487,15 +484,15 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
 		limtb[i + 256] = i;
 
+	short *row0, *row1;
+	int dir = 1;
 	for (int i = 0; i < height; i++) {
-		if (odd_scanline) {
-			dir = -1;
-			pixelIndex += (width - 1);
+		if (dir < 0) {
+			pixelIndex += width - 1;
 			row0 = &orowerr[DJ];
 			row1 = &erowerr[width * DJ];
 		}
 		else {
-			dir = 1;
 			row0 = &erowerr[DJ];
 			row1 = &orowerr[width * DJ];
 		}
@@ -519,7 +516,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 			b_pix = lim[c1.GetB() - c2.GetB()];
 			a_pix = lim[c1.GetA() - c2.GetA()];
 
-			k = r_pix * 2;
+			int k = r_pix * 2;
 			row1[0 - DJ] = r_pix;
 			row1[0 + DJ] += (r_pix += k);
 			row1[0] += (r_pix += k);
@@ -548,9 +545,9 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 			pixelIndex += dir;
 		}
 		if ((i % 2) == 1)
-			pixelIndex += (width + 1);
+			pixelIndex += width + 1;
 
-		odd_scanline = !odd_scanline;
+		dir *= -1;
 	}
 	return true;
 }
