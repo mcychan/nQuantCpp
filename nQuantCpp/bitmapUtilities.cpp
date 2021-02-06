@@ -593,7 +593,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 			Color c1(argb);
 
 			Color c2(pPalette->Entries[ditherFn(pPalette, nMaxColors, argb)]);
-			qPixels[pixelIndex] = hasSemiTransparency ? c2.GetValue() : GetARGB1555(c2);
+			qPixels[pixelIndex] = hasSemiTransparency ? c2.GetValue() : GetARGBIndex(c2, false);
 
 			r_pix = lim[c1.GetR() - c2.GetR()];
 			g_pix = lim[c1.GetG() - c2.GetG()];
