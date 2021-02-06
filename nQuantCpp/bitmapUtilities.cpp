@@ -440,18 +440,18 @@ BOOL FillBitmapFileHeader(LPCVOID pDib, PBITMAPFILEHEADER pbmfh)
 	return TRUE;
 }
 
-void CalcDitherPixel(int* pDitherPixel, const Color& c, const BYTE* clamp, const short* rowerr, const bool& hasSemiTransparency)
+void CalcDitherPixel(int* pDitherPixel, const Color& c, const BYTE* clamp, const short* rowerr, int cursor, const bool& hasSemiTransparency)
 {
 	if (hasSemiTransparency) {
-		pDitherPixel[0] = clamp[((rowerr[0] + 0x1008) >> 4) + c.GetR()];
-		pDitherPixel[1] = clamp[((rowerr[1] + 0x1008) >> 4) + c.GetG()];
-		pDitherPixel[2] = clamp[((rowerr[2] + 0x1008) >> 4) + c.GetB()];
-		pDitherPixel[3] = clamp[((rowerr[3] + 0x1008) >> 4) + c.GetA()];
+		pDitherPixel[0] = clamp[((rowerr[cursor] + 0x1008) >> 4) + c.GetR()];
+		pDitherPixel[1] = clamp[((rowerr[cursor + 1] + 0x1008) >> 4) + c.GetG()];
+		pDitherPixel[2] = clamp[((rowerr[cursor + 2] + 0x1008) >> 4) + c.GetB()];
+		pDitherPixel[3] = clamp[((rowerr[cursor + 3] + 0x1008) >> 4) + c.GetA()];
 	}
 	else {
-		pDitherPixel[0] = clamp[((rowerr[0] + 0x2010) >> 5) + c.GetR()];
-		pDitherPixel[1] = clamp[((rowerr[1] + 0x1008) >> 4) + c.GetG()];
-		pDitherPixel[2] = clamp[((rowerr[2] + 0x2010) >> 5) + c.GetB()];
+		pDitherPixel[0] = clamp[((rowerr[cursor] + 0x2010) >> 5) + c.GetR()];
+		pDitherPixel[1] = clamp[((rowerr[cursor + 1] + 0x1008) >> 4) + c.GetG()];
+		pDitherPixel[2] = clamp[((rowerr[cursor + 2] + 0x2010) >> 5) + c.GetB()];
 		pDitherPixel[3] = c.GetA();
 	}
 }
@@ -468,8 +468,6 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	auto orowErr = make_unique<short[]>(err_len);
 	char limtb[512] = { 0 };
 	auto lim = &limtb[256];
-	auto erowerr = erowErr.get();
-	auto orowerr = orowErr.get();
 	auto pDitherPixel = make_unique<int[]>(4);
 
 	for (int i = 0; i < 256; i++) {
@@ -484,23 +482,19 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
 		limtb[i + 256] = i;
 
-	short *row0, *row1;
+	auto row0 = erowErr.get();
+	auto row1 = orowErr.get();
 	int dir = 1;
 	for (int i = 0; i < height; i++) {
-		if (dir < 0) {
+		if (dir < 0)
 			pixelIndex += width - 1;
-			row0 = &orowerr[DJ];
-			row1 = &erowerr[width * DJ];
-		}
-		else {
-			row0 = &erowerr[DJ];
-			row1 = &orowerr[width * DJ];
-		}
-		row1[0] = row1[1] = row1[2] = row1[3] = 0;
+
+		int cursor0 = DJ, cursor1 = width * DJ;
+		row1[cursor1] = row1[cursor1 + 1] = row1[cursor1 + 2] = row1[cursor1 + 3] = 0;
 		for (UINT j = 0; j < width; ++j) {
 			Color c(pixels[pixelIndex]);
 
-			CalcDitherPixel(pDitherPixel.get(), c, clamp, row0, hasSemiTransparency);
+			CalcDitherPixel(pDitherPixel.get(), c, clamp, row0, cursor0, hasSemiTransparency);
 			int r_pix = pDitherPixel[0];
 			int g_pix = pDitherPixel[1];
 			int b_pix = pDitherPixel[2];
@@ -517,37 +511,38 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 			a_pix = lim[c1.GetA() - c2.GetA()];
 
 			int k = r_pix * 2;
-			row1[0 - DJ] = r_pix;
-			row1[0 + DJ] += (r_pix += k);
-			row1[0] += (r_pix += k);
-			row0[0 + DJ] += (r_pix += k);
+			row1[cursor1 - DJ] = r_pix;
+			row1[cursor1 + DJ] += (r_pix += k);
+			row1[cursor1] += (r_pix += k);
+			row0[cursor0 + DJ] += (r_pix += k);
 
 			k = g_pix * 2;
-			row1[1 - DJ] = g_pix;
-			row1[1 + DJ] += (g_pix += k);
-			row1[1] += (g_pix += k);
-			row0[1 + DJ] += (g_pix += k);
+			row1[cursor1 + 1 - DJ] = g_pix;
+			row1[cursor1 + 1 + DJ] += (g_pix += k);
+			row1[cursor1 + 1] += (g_pix += k);
+			row0[cursor0 + 1 + DJ] += (g_pix += k);
 
 			k = b_pix * 2;
-			row1[2 - DJ] = b_pix;
-			row1[2 + DJ] += (b_pix += k);
-			row1[2] += (b_pix += k);
-			row0[2 + DJ] += (b_pix += k);
+			row1[cursor1 + 2 - DJ] = b_pix;
+			row1[cursor1 + 2 + DJ] += (b_pix += k);
+			row1[cursor1 + 2] += (b_pix += k);
+			row0[cursor0 + 2 + DJ] += (b_pix += k);
 
 			k = a_pix * 2;
-			row1[3 - DJ] = a_pix;
-			row1[3 + DJ] += (a_pix += k);
-			row1[3] += (a_pix += k);
-			row0[3 + DJ] += (a_pix += k);
+			row1[cursor1 + 3 - DJ] = a_pix;
+			row1[cursor1 + 3 + DJ] += (a_pix += k);
+			row1[cursor1 + 3] += (a_pix += k);
+			row0[cursor0 + 3 + DJ] += (a_pix += k);
 
-			row0 += DJ;
-			row1 -= DJ;
+			cursor0 += DJ;
+			cursor1 -= DJ;
 			pixelIndex += dir;
 		}
 		if ((i % 2) == 1)
 			pixelIndex += width + 1;
 
 		dir *= -1;
+		swap(row0, row1);
 	}
 	return true;
 }
@@ -555,9 +550,6 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, ARGB* qPixels, const UINT width, const UINT height)
 {
 	UINT pixelIndex = 0;
-	bool odd_scanline = false;
-	short *row0, *row1;
-	int dir, k;
 	const int DJ = 4;
 	const int DITHER_MAX = 20;
 	const int err_len = (width + 2) * DJ;
@@ -566,8 +558,6 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 	auto orowErr = make_unique<short[]>(err_len);
 	char limtb[512] = { 0 };
 	auto lim = &limtb[256];
-	auto erowerr = erowErr.get();
-	auto orowerr = orowErr.get();
 	auto pDitherPixel = make_unique<int[]>(4);
 
 	for (int i = 0; i < 256; i++) {
@@ -582,23 +572,19 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 	for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
 		limtb[i + 256] = i;
 
+	auto row0 = erowErr.get();
+	auto row1 = orowErr.get();
+	int dir = 1;
 	for (int i = 0; i < height; i++) {
-		if (odd_scanline) {
-			dir = -1;
-			pixelIndex += (width - 1);
-			row0 = &orowerr[DJ];
-			row1 = &erowerr[width * DJ];
-		}
-		else {
-			dir = 1;
-			row0 = &erowerr[DJ];
-			row1 = &orowerr[width * DJ];
-		}
-		row1[0] = row1[1] = row1[2] = row1[3] = 0;
+		if (dir < 0)
+			pixelIndex += width - 1;
+
+		int cursor0 = DJ, cursor1 = width * DJ;
+		row1[cursor1] = row1[cursor1 + 1] = row1[cursor1 + 2] = row1[cursor1 + 3] = 0;
 		for (UINT j = 0; j < width; ++j) {
 			Color c(pixels[pixelIndex]);
 
-			CalcDitherPixel(pDitherPixel.get(), c, clamp, row0, hasSemiTransparency);
+			CalcDitherPixel(pDitherPixel.get(), c, clamp, row0, cursor0, hasSemiTransparency);
 			int r_pix = pDitherPixel[0];
 			int g_pix = pDitherPixel[1];
 			int b_pix = pDitherPixel[2];
@@ -614,38 +600,39 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 			b_pix = lim[c1.GetB() - c2.GetB()];
 			a_pix = lim[c1.GetA() - c2.GetA()];
 
-			k = r_pix * 2;
-			row1[0 - DJ] = r_pix;
-			row1[0 + DJ] += (r_pix += k);
-			row1[0] += (r_pix += k);
-			row0[0 + DJ] += (r_pix += k);
+			int k = r_pix * 2;
+			row1[cursor1 - DJ] = r_pix;
+			row1[cursor1 + DJ] += (r_pix += k);
+			row1[cursor1] += (r_pix += k);
+			row0[cursor0 + DJ] += (r_pix += k);
 
 			k = g_pix * 2;
-			row1[1 - DJ] = g_pix;
-			row1[1 + DJ] += (g_pix += k);
-			row1[1] += (g_pix += k);
-			row0[1 + DJ] += (g_pix += k);
+			row1[cursor1 + 1 - DJ] = g_pix;
+			row1[cursor1 + 1 + DJ] += (g_pix += k);
+			row1[cursor1 + 1] += (g_pix += k);
+			row0[cursor0 + 1 + DJ] += (g_pix += k);
 
 			k = b_pix * 2;
-			row1[2 - DJ] = b_pix;
-			row1[2 + DJ] += (b_pix += k);
-			row1[2] += (b_pix += k);
-			row0[2 + DJ] += (b_pix += k);
+			row1[cursor1 + 2 - DJ] = b_pix;
+			row1[cursor1 + 2 + DJ] += (b_pix += k);
+			row1[cursor1 + 2] += (b_pix += k);
+			row0[cursor0 + 2 + DJ] += (b_pix += k);
 
 			k = a_pix * 2;
-			row1[3 - DJ] = a_pix;
-			row1[3 + DJ] += (a_pix += k);
-			row1[3] += (a_pix += k);
-			row0[3 + DJ] += (a_pix += k);
+			row1[cursor1 + 3 - DJ] = a_pix;
+			row1[cursor1 + 3 + DJ] += (a_pix += k);
+			row1[cursor1 + 3] += (a_pix += k);
+			row0[cursor0 + 3 + DJ] += (a_pix += k);
 
-			row0 += DJ;
-			row1 -= DJ;
+			cursor0 += DJ;
+			cursor1 -= DJ;
 			pixelIndex += dir;
 		}
 		if ((i % 2) == 1)
 			pixelIndex += (width + 1);
 
-		odd_scanline = !odd_scanline;
+		dir *= -1;
+		swap(row0, row1);
 	}
 	return true;
 }
