@@ -42,7 +42,7 @@ namespace PnnLABQuant
 			lab1 = got->second;
 	}
 
-	void find_nn(pnnbin* bins, int idx, const UINT& nMaxColors)
+	void find_nn(pnnbin* bins, int idx)
 	{
 		int nn = 0;
 		double err = INT_MAX;
@@ -157,7 +157,7 @@ namespace PnnLABQuant
 		ratio = 0.0;
 		/* Initialize nearest neighbors and build heap of them */
 		for (int i = 0; i < maxbins; ++i) {
-			find_nn(bins.get(), i, nMaxColors);
+			find_nn(bins.get(), i);
 			/* Push slot on heap */
 			err = bins[i].err;
 			for (l = ++heap[0]; l > 1; l = l2) {
@@ -185,7 +185,7 @@ namespace PnnLABQuant
 					b1 = heap[1] = heap[heap[0]--];
 				else /* Too old error value */
 				{
-					find_nn(bins.get(), b1, nMaxColors);
+					find_nn(bins.get(), b1);
 					tb.tm = i;
 				}
 				/* Push slot down */
