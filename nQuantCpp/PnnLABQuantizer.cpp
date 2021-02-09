@@ -112,6 +112,7 @@ namespace PnnLABQuant
 		double err, n1, n2;
 
 		/* Build histogram */
+		int i = 0;
 		for (const auto& pixel : pixels) {
 			// !!! Can throw gamma correction in here, but what to do about perceptual
 			// !!! nonuniformity then?			
@@ -169,7 +170,10 @@ namespace PnnLABQuant
 			heap[l] = i;
 		}
 
-		ratio = min(1.0, sqr(nMaxColors) / pixelMap.size());
+		if(nMaxColors < 64)
+			ratio = min(1.0, pow(nMaxColors, 1.65) / maxbins);
+		else
+			ratio = min(1.0, sqr(nMaxColors) / pixelMap.size());
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
 		for (int i = 0; i < extbins; ) {
