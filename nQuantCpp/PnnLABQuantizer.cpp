@@ -173,7 +173,7 @@ namespace PnnLABQuant
 		if(nMaxColors < 64)
 			ratio = min(1.0, pow(nMaxColors, 1.27) / maxbins);
 		else
-			ratio = min(1.0, sqr(nMaxColors) / pixelMap.size());
+			ratio = min(1.0, pow(nMaxColors, 0.95) / pixelMap.size());
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
 		for (int i = 0; i < extbins; ) {
