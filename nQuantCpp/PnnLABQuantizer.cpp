@@ -143,7 +143,7 @@ namespace PnnLABQuant
 			bins[i].Bc *= d;
 
 			if (quan_sqrt)
-				bins[i].cnt = _sqrt(bins[i].cnt);
+				bins[i].cnt = pow(bins[i].cnt, 0.6);
 			bins[maxbins++] = bins[i];
 		}
 
@@ -171,7 +171,7 @@ namespace PnnLABQuant
 		}
 
 		if(nMaxColors < 64)
-			ratio = min(1.0, pow(nMaxColors, 1.65) / maxbins);
+			ratio = min(1.0, pow(nMaxColors, 1.27) / maxbins);
 		else
 			ratio = min(1.0, sqr(nMaxColors) / pixelMap.size());
 		/* Merge bins which increase error the least */
