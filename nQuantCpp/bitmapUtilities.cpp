@@ -792,7 +792,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	transparentPixelIndex = -1;
 
 	int pixelIndex = 0;
-	if (pSource->GetPixelFormat() & PixelFormatIndexed) {
+	if (pSource->GetPixelFormat() == PixelFormat8bppIndexed) {
 		int paletteSize = pSource->GetPaletteSize();
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + (1 << bitDepth) * sizeof(ARGB));
 		auto pPalette = (ColorPalette*) pPaletteBytes.get();
