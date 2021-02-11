@@ -442,6 +442,8 @@ namespace NeuralNet
 
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
+
+			getLab(c2, lab2);
 			if (nMaxColors > 32) {
 				double curdist = sqr(c2.GetA() - c.GetA());
 				if (curdist > mindist)
@@ -456,14 +458,19 @@ namespace NeuralNet
 					continue;
 
 				curdist += PB * sqr(c2.GetB() - c.GetB());
+				if (PB < 1) {
+					if (curdist > mindist)
+						continue;
+
+					curdist += .333 * sqr(lab2.B - lab1.B);
+				}
+
 				if (curdist > mindist)
 					continue;
 
 				mindist = curdist;
 			}
 			else {
-				getLab(c2, lab2);
-
 				double curdist = sqr(c2.GetA() - c.GetA());
 				if (curdist > mindist)
 					continue;

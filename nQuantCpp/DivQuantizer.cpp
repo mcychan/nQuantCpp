@@ -926,6 +926,7 @@ namespace DivQuant
 			if (curdist > mindist)
 				continue;
 
+			getLab(c2, lab2);
 			if (nMaxColors > 32) {
 				curdist += PR * sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
@@ -936,10 +937,14 @@ namespace DivQuant
 					continue;
 
 				curdist += PB * sqr(c2.GetB() - c.GetB());
+				if (PB < 1) {
+					if (curdist > mindist)
+						continue;
+
+					curdist += .333 * sqr(lab2.B - lab1.B);
+				}
 			}
 			else {
-				getLab(c2, lab2);
-
 				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
