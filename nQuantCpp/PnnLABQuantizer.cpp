@@ -59,7 +59,7 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab2;
 			lab2.alpha = bins[i].ac, lab2.L = bins[i].Lc, lab2.A = bins[i].Ac, lab2.B = bins[i].Bc;
-			double alphaDiff = lab2.alpha - lab1.alpha;
+			double alphaDiff = hasSemiTransparency ? abs(lab2.alpha - lab1.alpha) : 0;
 			double nerr = nerr2 * sqr(alphaDiff) * alphaDiff / 3.0;
 			if (nerr >= err)
 				continue;
@@ -143,7 +143,7 @@ namespace PnnLABQuant
 			bins[i].Bc *= d;
 
 			if (quan_sqrt)
-				bins[i].cnt = pow(bins[i].cnt, 0.6);
+				bins[i].cnt = _sqrt(bins[i].cnt);
 			bins[maxbins++] = bins[i];
 		}
 
@@ -171,9 +171,9 @@ namespace PnnLABQuant
 		}
 
 		if (nMaxColors < 64)
-			ratio = min(1.0, pow(nMaxColors, 1.27) / maxbins);
+			ratio = min(1.0, pow(nMaxColors, 1.62) / maxbins);
 		else
-			ratio = min(1.0, pow(nMaxColors, 0.95) / pixelMap.size());
+			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
 		for (int i = 0; i < extbins; ) {
@@ -271,7 +271,8 @@ namespace PnnLABQuant
 					if (curdist > mindist)
 						continue;
 
-					curdist += .333 * sqr(lab2.B - lab1.B);
+					double yDiff = abs(lab2.B - lab1.B);
+					curdist += yDiff * sqr(yDiff) / 3.0;
 				}
 			}
 			else {
