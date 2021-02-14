@@ -15,6 +15,7 @@ namespace PnnQuant
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
+	unordered_map<ARGB, unsigned short > nearestMap;
 
 	struct pnnbin {
 		double ac = 0, rc = 0, gc = 0, bc = 0, err = 0;
@@ -177,6 +178,10 @@ namespace PnnQuant
 
 	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
+		auto got = nearestMap.find(argb);
+		if (got != nearestMap.end())
+			return got->second;
+
 		unsigned short k = 0;
 		Color c(argb);
 
@@ -202,6 +207,7 @@ namespace PnnQuant
 			mindist = curdist;
 			k = i;
 		}
+		nearestMap[argb] = k;
 		return k;
 	}
 
@@ -302,6 +308,7 @@ namespace PnnQuant
 				swap(pPalette->Entries[0], pPalette->Entries[1]);
 		}
 		closestMap.clear();
+		nearestMap.clear();
 
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
 	}

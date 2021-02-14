@@ -20,6 +20,7 @@ namespace PnnLABQuant
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
 	unordered_map<ARGB, vector<double> > closestMap;
+	unordered_map<ARGB, unsigned short > nearestMap;
 
 	inline double rand_gen() {
 		return ((double)rand() / (RAND_MAX));
@@ -171,7 +172,7 @@ namespace PnnLABQuant
 		}
 
 		if (nMaxColors < 64)
-			ratio = min(1.0, pow(nMaxColors, 1.62) / maxbins);
+			ratio = min(1.0, pow(nMaxColors, 1.58) / maxbins);
 		else
 			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());
 		/* Merge bins which increase error the least */
@@ -243,6 +244,10 @@ namespace PnnLABQuant
 
 	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
+		auto got = nearestMap.find(argb);
+		if (got != nearestMap.end())
+			return got->second;
+
 		unsigned short k = 0;
 		Color c(argb);
 
@@ -301,6 +306,7 @@ namespace PnnLABQuant
 			mindist = curdist;
 			k = i;
 		}
+		nearestMap[argb] = k;
 		return k;
 	}
 
@@ -409,6 +415,7 @@ namespace PnnLABQuant
 		}
 		pixelMap.clear();
 		closestMap.clear();
+		nearestMap.clear();
 
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
 	}
