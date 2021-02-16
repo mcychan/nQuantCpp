@@ -13,7 +13,7 @@ Copyright (c) 2018-2019 Miller Cy Chan
 
 namespace PnnLABQuant
 {
-	double PR = .2126, PG = .7152, PB = .0722;
+	double PR = .299, PG = .587, PB = .114;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	double ratio = 1.0;
@@ -276,8 +276,10 @@ namespace PnnLABQuant
 					if (curdist > mindist)
 						continue;
 
-					double yDiff = abs(lab2.B - lab1.B);
-					curdist += yDiff * sqr(yDiff) / 3.0;
+					double luma1 = c.GetR() * PR + c.GetG() * PG + c.GetB() * PB;
+					double luma2 = c2.GetR() * PR + c2.GetG() * PG + c2.GetB() * PB;
+					double lumadiff = abs(luma1 - luma2);
+					curdist += sqr(lumadiff) / 3.0;
 				}
 			}
 			else {
