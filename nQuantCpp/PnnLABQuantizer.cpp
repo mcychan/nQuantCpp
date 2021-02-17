@@ -276,8 +276,7 @@ namespace PnnLABQuant
 					if (curdist > mindist)
 						continue;
 
-					double yDiff = abs(lab2.B - lab1.B);
-					curdist += yDiff * sqr(yDiff) / 3.0;
+					curdist += sqr(lab2.B - lab1.B) / 3.0;
 				}
 			}
 			else {
