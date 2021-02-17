@@ -260,8 +260,7 @@ namespace PnnLABQuant
 			double curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
-
-			getLab(c2, lab2);
+			
 			if (nMaxColors > 32) {
 				curdist += PR * sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
@@ -276,13 +275,13 @@ namespace PnnLABQuant
 					if (curdist > mindist)
 						continue;
 
-					double luma1 = c.GetR() * PR + c.GetG() * PG + c.GetB() * PB;
-					double luma2 = c2.GetR() * PR + c2.GetG() * PG + c2.GetB() * PB;
-					double lumadiff = abs(luma1 - luma2);
-					curdist += sqr(lumadiff) / 3.0;
+					auto luma1 = c.GetR() * PR + c.GetG() * PG + c.GetB() * PB;
+					auto luma2 = c2.GetR() * PR + c2.GetG() * PG + c2.GetB() * PB;
+					curdist += sqr(luma1 - luma2) / 3.0;
 				}
 			}
 			else {
+				getLab(c2, lab2);
 				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
