@@ -89,10 +89,6 @@ namespace PnnQuant
 
 		if (sqr(nMaxColors) / maxbins < .022)
 			quan_sqrt = false;
-		if (quan_sqrt) {
-			for (int i = 0; i < 65536; ++i)
-				bins[i].cnt = _sqrt(bins[i].cnt);
-		}
 
 		int i = 0;
 		for (; i < maxbins - 1; ++i) {
