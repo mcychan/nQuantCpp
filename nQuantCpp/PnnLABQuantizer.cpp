@@ -276,7 +276,7 @@ namespace PnnLABQuant
 					if (curdist > mindist)
 						continue;
 
-					curdist += sqr(lab2.B - lab1.B) / 3.0;
+					curdist += sqr(lab2.B - lab1.B) / 2.0;
 				}
 			}
 			else {
