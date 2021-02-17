@@ -83,18 +83,27 @@ namespace PnnQuant
 			bins[i].rc *= d;
 			bins[i].gc *= d;
 			bins[i].bc *= d;
-
-			if(quan_sqrt)
-				bins[i].cnt = _sqrt(bins[i].cnt);
+			
 			bins[maxbins++] = bins[i];
 		}
 
-		for (int i = 0; i < maxbins - 1; ++i) {
-			bins[i].fw = i + 1;
-			bins[i + 1].bk = i;
+		if (sqr(nMaxColors) / maxbins < .022)
+			quan_sqrt = false;
+		if (quan_sqrt) {
+			for (int i = 0; i < 65536; ++i)
+				bins[i].cnt = _sqrt(bins[i].cnt);
 		}
 
-		//	bins[0].bk = bins[i].fw = 0;
+		int i = 0;
+		for (; i < maxbins - 1; ++i) {
+			bins[i].fw = i + 1;
+			bins[i + 1].bk = i;
+
+			if (quan_sqrt)
+				bins[i].cnt = _sqrt(bins[i].cnt);
+		}
+		if (quan_sqrt)
+			bins[i].cnt = _sqrt(bins[i].cnt);
 
 		int h, l, l2;
 		/* Initialize nearest neighbors and build heap of them */

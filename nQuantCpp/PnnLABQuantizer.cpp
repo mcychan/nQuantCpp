@@ -113,7 +113,6 @@ namespace PnnLABQuant
 		double err, n1, n2;
 
 		/* Build histogram */
-		int i = 0;
 		for (const auto& pixel : pixels) {
 			// !!! Can throw gamma correction in here, but what to do about perceptual
 			// !!! nonuniformity then?			
@@ -142,18 +141,23 @@ namespace PnnLABQuant
 			bins[i].Lc *= d;
 			bins[i].Ac *= d;
 			bins[i].Bc *= d;
-
-			if (quan_sqrt)
-				bins[i].cnt = _sqrt(bins[i].cnt);
+			
 			bins[maxbins++] = bins[i];
 		}
 
-		for (int i = 0; i < maxbins - 1; ++i) {
+		if (sqr(nMaxColors) / maxbins < .022)
+			quan_sqrt = false;
+
+		int i = 0;
+		for (; i < maxbins - 1; ++i) {
 			bins[i].fw = i + 1;
 			bins[i + 1].bk = i;
-		}
 
-		//	bins[0].bk = bins[i].fw = 0;
+			if (quan_sqrt)
+				bins[i].cnt = _sqrt(bins[i].cnt);
+		}
+		if (quan_sqrt)
+			bins[i].cnt = _sqrt(bins[i].cnt);
 
 		int h, l, l2;
 		ratio = 0.0;
@@ -171,8 +175,10 @@ namespace PnnLABQuant
 			heap[l] = i;
 		}
 
-		if (nMaxColors < 64)
+		if (quan_sqrt && nMaxColors < 64)
 			ratio = min(1.0, pow(nMaxColors, 1.58) / maxbins);
+		else if (!quan_sqrt)
+			ratio = .75;
 		else
 			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());
 		/* Merge bins which increase error the least */
@@ -380,9 +386,8 @@ namespace PnnLABQuant
 		pPalette->Count = nMaxColors;
 
 		srand(time(NULL));
-		bool quan_sqrt = true;
 		if (nMaxColors > 2)
-			pnnquan(pixels, pPalette, nMaxColors, quan_sqrt);
+			pnnquan(pixels, pPalette, nMaxColors, true);
 		else {
 			if (m_transparentPixelIndex >= 0) {
 				pPalette->Entries[0] = m_transparentColor;
