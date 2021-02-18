@@ -22,10 +22,6 @@ namespace PnnLABQuant
 	unordered_map<ARGB, vector<double> > closestMap;
 	unordered_map<ARGB, unsigned short > nearestMap;
 
-	inline double rand_gen() {
-		return ((double)rand() / (RAND_MAX));
-	}
-
 	struct pnnbin {
 		double ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
 		int cnt = 0;
@@ -145,7 +141,8 @@ namespace PnnLABQuant
 			bins[maxbins++] = bins[i];
 		}
 
-		if (sqr(nMaxColors) / maxbins < .022)
+		double proportional = sqr(nMaxColors) / maxbins;
+		if (proportional < .022 || proportional > .5)
 			quan_sqrt = false;
 
 		int i = 0;
@@ -162,7 +159,7 @@ namespace PnnLABQuant
 		int h, l, l2;
 		ratio = 0.0;
 		/* Initialize nearest neighbors and build heap of them */
-		for (int i = 0; i < maxbins; ++i) {
+		for (i = 0; i < maxbins; ++i) {
 			find_nn(bins.get(), i);
 			/* Push slot on heap */
 			err = bins[i].err;
@@ -176,14 +173,14 @@ namespace PnnLABQuant
 		}
 
 		if (quan_sqrt && nMaxColors < 64)
-			ratio = min(1.0, pow(nMaxColors, 1.58) / maxbins);
+			ratio = min(1.0, pow(nMaxColors, 1.5) / maxbins);
 		else if (!quan_sqrt)
 			ratio = .75;
 		else
 			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
-		for (int i = 0; i < extbins; ) {
+		for (i = 0; i < extbins; ) {
 			int b1;
 
 			/* Use heap to find which bins to merge */
@@ -233,7 +230,7 @@ namespace PnnLABQuant
 		/* Fill palette */
 		short k = 0;
 
-		for (int i = 0;; k++) {
+		for (i = 0;; k++) {
 			CIELABConvertor::Lab lab1;
 			lab1.alpha = rint(bins[i].ac);
 			lab1.L = bins[i].Lc, lab1.A = bins[i].Ac, lab1.B = bins[i].Bc;
