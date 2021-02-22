@@ -467,10 +467,9 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	auto erowErr = make_unique<short[]>(err_len);
 	auto orowErr = make_unique<short[]>(err_len);
 	char limtb[512] = { 0 };
-	auto lim = &limtb[256];
 	auto pDitherPixel = make_unique<int[]>(4);
 
-	for (int i = 0; i < 256; i++) {
+	for (int i = 0; i < 256; ++i) {
 		clamp[i] = 0;
 		clamp[i + 256] = static_cast<BYTE>(i);
 		clamp[i + 512] = BYTE_MAX;
@@ -485,7 +484,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	auto row0 = erowErr.get();
 	auto row1 = orowErr.get();
 	int dir = 1;
-	for (int i = 0; i < height; i++) {
+	for (int i = 0; i < height; ++i) {
 		if (dir < 0)
 			pixelIndex += width - 1;
 
@@ -505,10 +504,10 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 
 			Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 
-			r_pix = lim[c1.GetR() - c2.GetR()];
-			g_pix = lim[c1.GetG() - c2.GetG()];
-			b_pix = lim[c1.GetB() - c2.GetB()];
-			a_pix = lim[c1.GetA() - c2.GetA()];
+			r_pix = limtb[c1.GetR() - c2.GetR() + 256];
+			g_pix = limtb[c1.GetG() - c2.GetG() + 256];
+			b_pix = limtb[c1.GetB() - c2.GetB() + 256];
+			a_pix = limtb[c1.GetA() - c2.GetA() + 256];
 
 			int k = r_pix * 2;
 			row1[cursor1 - DJ] = r_pix;
@@ -557,10 +556,9 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 	auto erowErr = make_unique<short[]>(err_len);
 	auto orowErr = make_unique<short[]>(err_len);
 	char limtb[512] = { 0 };
-	auto lim = &limtb[256];
 	auto pDitherPixel = make_unique<int[]>(4);
 
-	for (int i = 0; i < 256; i++) {
+	for (int i = 0; i < 256; ++i) {
 		clamp[i] = 0;
 		clamp[i + 256] = static_cast<BYTE>(i);
 		clamp[i + 512] = BYTE_MAX;
@@ -575,7 +573,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 	auto row0 = erowErr.get();
 	auto row1 = orowErr.get();
 	int dir = 1;
-	for (int i = 0; i < height; i++) {
+	for (int i = 0; i < height; ++i) {
 		if (dir < 0)
 			pixelIndex += width - 1;
 
@@ -595,10 +593,10 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 			Color c2(pPalette->Entries[ditherFn(pPalette, nMaxColors, argb)]);
 			qPixels[pixelIndex] = hasSemiTransparency ? c2.GetValue() : GetARGBIndex(c2, false);
 
-			r_pix = lim[c1.GetR() - c2.GetR()];
-			g_pix = lim[c1.GetG() - c2.GetG()];
-			b_pix = lim[c1.GetB() - c2.GetB()];
-			a_pix = lim[c1.GetA() - c2.GetA()];
+			r_pix = limtb[c1.GetR() - c2.GetR() + 256];
+			g_pix = limtb[c1.GetG() - c2.GetG() + 256];
+			b_pix = limtb[c1.GetB() - c2.GetB() + 256];
+			a_pix = limtb[c1.GetA() - c2.GetA() + 256];
 
 			int k = r_pix * 2;
 			row1[cursor1 - DJ] = r_pix;
@@ -739,8 +737,8 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsig
 
 	UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
 	// Second loop: fill indexed bitmap
-	for (UINT y = 0; y < h; y++) {	// For each row...
-		for (UINT x = 0; x < w; x++) {	// ...for each pixel...
+	for (UINT y = 0; y < h; ++y) {	// For each row...
+		for (UINT x = 0; x < w; ++x) {	// ...for each pixel...
 			BYTE nibbles = 0;
 			BYTE index = static_cast<BYTE>(qPixels[pixelIndex++]);
 
