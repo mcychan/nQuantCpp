@@ -142,7 +142,7 @@ namespace PnnLABQuant
 		}
 
 		double proportional = sqr(nMaxColors) / maxbins;
-		if (proportional < .022 || proportional > .5)
+		if ((proportional < .022 || proportional > .5) && nMaxColors < 64)
 			quan_sqrt = false;
 
 		int i = 0;
@@ -173,11 +173,11 @@ namespace PnnLABQuant
 		}
 
 		if (quan_sqrt && nMaxColors < 64)
-			ratio = min(1.0, pow(nMaxColors, 1.5) / maxbins);
-		else if (!quan_sqrt)
-			ratio = .75;
+			ratio = min(1.0, pow(nMaxColors, 1.51) / maxbins);
+		else if (quan_sqrt)
+			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());			
 		else
-			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());
+			ratio = .75;
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
 		for (i = 0; i < extbins; ) {
