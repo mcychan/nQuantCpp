@@ -461,25 +461,26 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	UINT pixelIndex = 0;
 	
 	const int DJ = 4;
+	const int BLOCK_SIZE = 256;
 	const int DITHER_MAX = 20;
 	const int err_len = (width + 2) * DJ;
-	BYTE clamp[DJ * 256] = { 0 };
+	auto clamp = make_unique <BYTE[]>(DJ * BLOCK_SIZE);
 	auto erowErr = make_unique<short[]>(err_len);
 	auto orowErr = make_unique<short[]>(err_len);
-	char limtb[512] = { 0 };
-	auto pDitherPixel = make_unique<int[]>(4);
+	auto limtb = make_unique<char[]>(2 * BLOCK_SIZE);
+	auto pDitherPixel = make_unique<int[]>(DJ);
 
-	for (int i = 0; i < 256; ++i) {
+	for (int i = 0; i < BLOCK_SIZE; ++i) {
 		clamp[i] = 0;
-		clamp[i + 256] = static_cast<BYTE>(i);
-		clamp[i + 512] = BYTE_MAX;
-		clamp[i + 768] = BYTE_MAX;
+		clamp[i + BLOCK_SIZE] = static_cast<BYTE>(i);
+		clamp[i + BLOCK_SIZE * 2] = BYTE_MAX;
+		clamp[i + BLOCK_SIZE * 3] = BYTE_MAX;
 
 		limtb[i] = -DITHER_MAX;
-		limtb[i + 256] = DITHER_MAX;
+		limtb[i + BLOCK_SIZE] = DITHER_MAX;
 	}
 	for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
-		limtb[i + 256] = i;
+		limtb[i + BLOCK_SIZE] = i;
 
 	auto row0 = erowErr.get();
 	auto row1 = orowErr.get();
@@ -493,7 +494,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 		for (UINT j = 0; j < width; ++j) {
 			Color c(pixels[pixelIndex]);
 
-			CalcDitherPixel(pDitherPixel.get(), c, clamp, row0, cursor0, hasSemiTransparency);
+			CalcDitherPixel(pDitherPixel.get(), c, clamp.get(), row0, cursor0, hasSemiTransparency);
 			int r_pix = pDitherPixel[0];
 			int g_pix = pDitherPixel[1];
 			int b_pix = pDitherPixel[2];
@@ -504,10 +505,10 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 
 			Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 
-			r_pix = limtb[c1.GetR() - c2.GetR() + 256];
-			g_pix = limtb[c1.GetG() - c2.GetG() + 256];
-			b_pix = limtb[c1.GetB() - c2.GetB() + 256];
-			a_pix = limtb[c1.GetA() - c2.GetA() + 256];
+			r_pix = limtb[c1.GetR() - c2.GetR() + BLOCK_SIZE];
+			g_pix = limtb[c1.GetG() - c2.GetG() + BLOCK_SIZE];
+			b_pix = limtb[c1.GetB() - c2.GetB() + BLOCK_SIZE];
+			a_pix = limtb[c1.GetA() - c2.GetA() + BLOCK_SIZE];
 
 			int k = r_pix * 2;
 			row1[cursor1 - DJ] = r_pix;
@@ -550,25 +551,26 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 {
 	UINT pixelIndex = 0;
 	const int DJ = 4;
+	const int BLOCK_SIZE = 256;
 	const int DITHER_MAX = 20;
 	const int err_len = (width + 2) * DJ;
-	BYTE clamp[DJ * 256] = { 0 };
+	auto clamp = make_unique <BYTE[]>(DJ * BLOCK_SIZE);
 	auto erowErr = make_unique<short[]>(err_len);
 	auto orowErr = make_unique<short[]>(err_len);
-	char limtb[512] = { 0 };
-	auto pDitherPixel = make_unique<int[]>(4);
+	auto limtb = make_unique<char[]>(2 * BLOCK_SIZE);
+	auto pDitherPixel = make_unique<int[]>(DJ);
 
-	for (int i = 0; i < 256; ++i) {
+	for (int i = 0; i < BLOCK_SIZE; ++i) {
 		clamp[i] = 0;
-		clamp[i + 256] = static_cast<BYTE>(i);
-		clamp[i + 512] = BYTE_MAX;
-		clamp[i + 768] = BYTE_MAX;
+		clamp[i + BLOCK_SIZE] = static_cast<BYTE>(i);
+		clamp[i + BLOCK_SIZE * 2] = BYTE_MAX;
+		clamp[i + BLOCK_SIZE * 3] = BYTE_MAX;
 
 		limtb[i] = -DITHER_MAX;
-		limtb[i + 256] = DITHER_MAX;
+		limtb[i + BLOCK_SIZE] = DITHER_MAX;
 	}
-	for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
-		limtb[i + 256] = i;
+	for (int i = -DITHER_MAX; i <= DITHER_MAX; ++i)
+		limtb[i + BLOCK_SIZE] = i;
 
 	auto row0 = erowErr.get();
 	auto row1 = orowErr.get();
@@ -582,7 +584,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 		for (UINT j = 0; j < width; ++j) {
 			Color c(pixels[pixelIndex]);
 
-			CalcDitherPixel(pDitherPixel.get(), c, clamp, row0, cursor0, hasSemiTransparency);
+			CalcDitherPixel(pDitherPixel.get(), c, clamp.get(), row0, cursor0, hasSemiTransparency);
 			int r_pix = pDitherPixel[0];
 			int g_pix = pDitherPixel[1];
 			int b_pix = pDitherPixel[2];
@@ -593,10 +595,10 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 			Color c2(pPalette->Entries[ditherFn(pPalette, nMaxColors, argb)]);
 			qPixels[pixelIndex] = hasSemiTransparency ? c2.GetValue() : GetARGBIndex(c2, false);
 
-			r_pix = limtb[c1.GetR() - c2.GetR() + 256];
-			g_pix = limtb[c1.GetG() - c2.GetG() + 256];
-			b_pix = limtb[c1.GetB() - c2.GetB() + 256];
-			a_pix = limtb[c1.GetA() - c2.GetA() + 256];
+			r_pix = limtb[c1.GetR() - c2.GetR() + BLOCK_SIZE];
+			g_pix = limtb[c1.GetG() - c2.GetG() + BLOCK_SIZE];
+			b_pix = limtb[c1.GetB() - c2.GetB() + BLOCK_SIZE];
+			a_pix = limtb[c1.GetA() - c2.GetA() + BLOCK_SIZE];
 
 			int k = r_pix * 2;
 			row1[cursor1 - DJ] = r_pix;
