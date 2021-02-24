@@ -173,7 +173,7 @@ namespace PnnLABQuant
 		}
 
 		if (quan_sqrt && nMaxColors < 64)
-			ratio = min(1.0, pow(nMaxColors, 1.51) / maxbins);
+			ratio = min(1.0, pow(nMaxColors, 1.55) / maxbins);
 		else if (quan_sqrt)
 			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());			
 		else
