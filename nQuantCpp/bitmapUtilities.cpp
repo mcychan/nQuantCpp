@@ -440,9 +440,9 @@ BOOL FillBitmapFileHeader(LPCVOID pDib, PBITMAPFILEHEADER pbmfh)
 	return TRUE;
 }
 
-void CalcDitherPixel(int* pDitherPixel, const Color& c, const BYTE* clamp, const short* rowerr, int cursor, const bool& hasSemiTransparency)
+void CalcDitherPixel(int* pDitherPixel, const Color& c, const BYTE* clamp, const short* rowerr, int cursor, const bool noBias)
 {
-	if (hasSemiTransparency) {
+	if (noBias) {
 		pDitherPixel[0] = clamp[((rowerr[cursor] + 0x1008) >> 4) + c.GetR()];
 		pDitherPixel[1] = clamp[((rowerr[cursor + 1] + 0x1008) >> 4) + c.GetG()];
 		pDitherPixel[2] = clamp[((rowerr[cursor + 2] + 0x1008) >> 4) + c.GetB()];
@@ -484,6 +484,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 
 	auto row0 = erowErr.get();
 	auto row1 = orowErr.get();
+
 	int dir = 1;
 	for (int i = 0; i < height; ++i) {
 		if (dir < 0)
