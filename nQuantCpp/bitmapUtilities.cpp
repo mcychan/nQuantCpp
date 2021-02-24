@@ -485,6 +485,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	auto row0 = erowErr.get();
 	auto row1 = orowErr.get();
 
+	bool noBias = hasSemiTransparency || nMaxColors < 64;
 	int dir = 1;
 	for (int i = 0; i < height; ++i) {
 		if (dir < 0)
@@ -495,7 +496,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 		for (UINT j = 0; j < width; ++j) {
 			Color c(pixels[pixelIndex]);
 
-			CalcDitherPixel(pDitherPixel.get(), c, clamp.get(), row0, cursor0, hasSemiTransparency);
+			CalcDitherPixel(pDitherPixel.get(), c, clamp.get(), row0, cursor0, noBias);
 			int r_pix = pDitherPixel[0];
 			int g_pix = pDitherPixel[1];
 			int b_pix = pDitherPixel[2];
