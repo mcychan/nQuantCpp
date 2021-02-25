@@ -151,13 +151,18 @@ namespace PnnLABQuant
 			bins[i + 1].bk = i;
 
 			if (quan_sqrt)
-				bins[i].cnt = _sqrt(bins[i].cnt);
+				bins[i].cnt = (int) _sqrt(bins[i].cnt);
 		}
 		if (quan_sqrt)
-			bins[i].cnt = _sqrt(bins[i].cnt);
+			bins[i].cnt = (int) _sqrt(bins[i].cnt);
 
 		int h, l, l2;
-		ratio = 0.0;
+		if (quan_sqrt && nMaxColors < 64)
+			ratio = min(1.0, pow(nMaxColors, 1.98) / maxbins);
+		else if (quan_sqrt)
+			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());
+		else
+			ratio = .55;
 		/* Initialize nearest neighbors and build heap of them */
 		for (i = 0; i < maxbins; ++i) {
 			find_nn(bins.get(), i);
@@ -171,13 +176,7 @@ namespace PnnLABQuant
 			}
 			heap[l] = i;
 		}
-
-		if (quan_sqrt && nMaxColors < 64)
-			ratio = min(1.0, pow(nMaxColors, 1.55) / maxbins);
-		else if (quan_sqrt)
-			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());			
-		else
-			ratio = .75;
+		
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
 		for (i = 0; i < extbins; ) {
