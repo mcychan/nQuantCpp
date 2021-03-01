@@ -42,7 +42,7 @@ namespace PnnLABQuant
 	void find_nn(pnnbin* bins, int idx)
 	{
 		int nn = 0;
-		double err = INT_MAX;
+		double err = 1e100;
 
 		auto& bin1 = bins[idx];
 		auto n1 = bin1.cnt;
@@ -104,9 +104,7 @@ namespace PnnLABQuant
 
 	int PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors, bool quan_sqrt)
 	{
-		auto bins = make_unique<pnnbin[]>(65536);
-		auto heap = make_unique<int[]>(65537);
-		double err, n1, n2;
+		auto bins = make_unique<pnnbin[]>(65536);		
 
 		/* Build histogram */
 		for (const auto& pixel : pixels) {
@@ -145,16 +143,15 @@ namespace PnnLABQuant
 		if ((proportional < .022 || proportional > .5) && nMaxColors < 64)
 			quan_sqrt = false;
 
-		int i = 0;
-		for (; i < maxbins - 1; ++i) {
+		if (quan_sqrt)
+			bins[0].cnt = (int)_sqrt(bins[0].cnt);
+		for (int i = 0; i < maxbins - 1; ++i) {
 			bins[i].fw = i + 1;
 			bins[i + 1].bk = i;
 
 			if (quan_sqrt)
-				bins[i].cnt = (int) _sqrt(bins[i].cnt);
-		}
-		if (quan_sqrt)
-			bins[i].cnt = (int) _sqrt(bins[i].cnt);
+				bins[i + 1].cnt = (int) _sqrt(bins[i + 1].cnt);
+		}		
 
 		int h, l, l2;
 		if (quan_sqrt && nMaxColors < 64)
@@ -163,11 +160,13 @@ namespace PnnLABQuant
 			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());
 		else
 			ratio = .55;
+
 		/* Initialize nearest neighbors and build heap of them */
-		for (i = 0; i < maxbins; ++i) {
+		auto heap = make_unique<int[]>(65537);
+		for (int i = 0; i < maxbins; ++i) {
 			find_nn(bins.get(), i);
 			/* Push slot on heap */
-			err = bins[i].err;
+			auto err = bins[i].err;
 			for (l = ++heap[0]; l > 1; l = l2) {
 				l2 = l >> 1;
 				if (bins[h = heap[l2]].err <= err)
@@ -179,7 +178,7 @@ namespace PnnLABQuant
 		
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
-		for (i = 0; i < extbins; ) {
+		for (int i = 0; i < extbins; ) {
 			int b1;
 
 			/* Use heap to find which bins to merge */
@@ -196,10 +195,10 @@ namespace PnnLABQuant
 					tb.tm = i;
 				}
 				/* Push slot down */
-				err = bins[b1].err;
+				auto err = bins[b1].err;
 				for (l = 1; (l2 = l + l) <= heap[0]; l = l2) {
 					if ((l2 < heap[0]) && (bins[heap[l2]].err > bins[heap[l2 + 1]].err))
-						l2++;
+						++l2;
 					if (err <= bins[h = heap[l2]].err)
 						break;
 					heap[l] = h;
@@ -210,8 +209,8 @@ namespace PnnLABQuant
 			/* Do a merge */
 			auto& tb = bins[b1];
 			auto& nb = bins[tb.nn];
-			n1 = tb.cnt;
-			n2 = nb.cnt;
+			double n1 = tb.cnt;
+			double n2 = nb.cnt;
 			double d = 1.0 / (n1 + n2);
 			tb.ac = d * (n1 * tb.ac + n2 * nb.ac);
 			tb.Lc = d * (n1 * tb.Lc + n2 * nb.Lc);
@@ -228,10 +227,9 @@ namespace PnnLABQuant
 
 		/* Fill palette */
 		short k = 0;
-
-		for (i = 0;; k++) {
+		for (int i = 0;; k++) {
 			CIELABConvertor::Lab lab1;
-			lab1.alpha = rint(bins[i].ac);
+			lab1.alpha = (int) bins[i].ac;
 			lab1.L = bins[i].Lc, lab1.A = bins[i].Ac, lab1.B = bins[i].Bc;
 			pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
 			if (m_transparentPixelIndex >= 0 && pPalette->Entries[k] == m_transparentColor)
@@ -253,7 +251,7 @@ namespace PnnLABQuant
 		unsigned short k = 0;
 		Color c(argb);
 
-		double mindist = INT_MAX;
+		double mindist = SHORT_MAX;
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 
