@@ -155,7 +155,7 @@ namespace PnnLABQuant
 
 		int h, l, l2;
 		if (quan_sqrt && nMaxColors < 64)
-			ratio = min(1.0, pow(nMaxColors, 1.78) / maxbins);
+			ratio = min(1.0, sqr(nMaxColors) / maxbins - pow(nMaxColors, 2.52) / pixelMap.size());
 		else if (quan_sqrt)
 			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());
 		else
@@ -227,7 +227,7 @@ namespace PnnLABQuant
 
 		/* Fill palette */
 		short k = 0;
-		for (int i = 0;; k++) {
+		for (int i = 0;; ++k) {
 			CIELABConvertor::Lab lab1;
 			lab1.alpha = (int) bins[i].ac;
 			lab1.L = bins[i].Lc, lab1.A = bins[i].Ac, lab1.B = bins[i].Bc;

@@ -90,16 +90,15 @@ namespace PnnQuant
 		if (sqr(nMaxColors) / maxbins < .022)
 			quan_sqrt = false;
 
-		int i = 0;
-		for (; i < maxbins - 1; ++i) {
+		if (quan_sqrt)
+			bins[0].cnt = _sqrt(bins[0].cnt);
+		for (int i = 0; i < maxbins - 1; ++i) {
 			bins[i].fw = i + 1;
 			bins[i + 1].bk = i;
 
 			if (quan_sqrt)
-				bins[i].cnt = _sqrt(bins[i].cnt);
-		}
-		if (quan_sqrt)
-			bins[i].cnt = _sqrt(bins[i].cnt);
+				bins[i + 1].cnt = _sqrt(bins[i + 1].cnt);
+		}		
 
 		int h, l, l2;
 		/* Initialize nearest neighbors and build heap of them */
@@ -169,8 +168,8 @@ namespace PnnQuant
 		/* Fill palette */
 		UINT k = 0;
 		for (int i = 0;; ++k) {
-			auto alpha = hasSemiTransparency ? rint(bins[i].ac) : BYTE_MAX;
-			pPalette->Entries[k] = Color::MakeARGB(alpha, rint(bins[i].rc), rint(bins[i].gc), rint(bins[i].bc));
+			auto alpha = hasSemiTransparency ? (byte) bins[i].ac : BYTE_MAX;
+			pPalette->Entries[k] = Color::MakeARGB(alpha, (byte) bins[i].rc, (byte) bins[i].gc, (byte) bins[i].bc);
 			if (m_transparentPixelIndex >= 0 && pPalette->Entries[k] == m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[k]);
 
