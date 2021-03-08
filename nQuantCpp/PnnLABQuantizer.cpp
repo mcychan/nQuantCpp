@@ -155,7 +155,7 @@ namespace PnnLABQuant
 
 		int h, l, l2;
 		if (quan_sqrt && nMaxColors < 64)
-			ratio = min(1.0, proportional - pow(nMaxColors, 2.52) / pixelMap.size());
+			ratio = min(1.0, proportional - nMaxColors * exp(4.202) / pixelMap.size());
 		else if (quan_sqrt)
 			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());
 		else
