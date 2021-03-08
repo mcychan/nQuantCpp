@@ -56,8 +56,7 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab2;
 			lab2.alpha = bins[i].ac, lab2.L = bins[i].Lc, lab2.A = bins[i].Ac, lab2.B = bins[i].Bc;
-			double alphaDiff = hasSemiTransparency ? abs(lab2.alpha - lab1.alpha) : 0;
-			double nerr = nerr2 * sqr(alphaDiff) * alphaDiff / 3.0;
+			double nerr = nerr2 * sqr(lab2.alpha - lab1.alpha) / exp(1.0);
 			if (nerr >= err)
 				continue;
 
@@ -262,7 +261,7 @@ namespace PnnLABQuant
 				continue;
 
 			getLab(c2, lab2);
-			if (nMaxColors > 32) {
+			if (nMaxColors > 32 || hasSemiTransparency) {
 				curdist += PR * sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
