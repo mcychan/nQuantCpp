@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "targetver.h"
-
 #include <atlstr.h>
 #include <tchar.h>
 #include <intsafe.h>
