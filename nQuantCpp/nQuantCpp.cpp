@@ -181,25 +181,25 @@ bool fileExists(const wstring& path)
 {
 #ifdef WIN32
 
-	return (_waccess(path.c_str(), 0) == 0);
+	return _waccess(path.c_str(), 0) == 0;
 
 #else   
 	// hopefully this will work on most *nixes...
 
-	size_t outSize = src.size() * sizeof(wchar_t) + 1;// max possible bytes plus \0 char
-	char* conv = new char[outSize];
-	memset(conv, 0, outSize);
+	size_t outSize = path.size() * sizeof(wchar_t) + 1;// max possible bytes plus \0 char
+	auto conv = make_unique<char[]>(outSize);
+	memset(conv.get(), 0, outSize);
 
 	char* oldLocale = setlocale(LC_ALL, NULL);
 	setlocale(LC_ALL, "en_US.UTF-8"); // let's hope, most machines will have "en_US.UTF-8" available
 
-	size_t wcsSize = wcstombs(conv, path.c_str(), outSize);
+	size_t wcsSize = wcstombs(conv.get(), path.c_str(), outSize);
 	// we might get an error code (size_t-1) in wcsSize, ignoring for now
 
 	// now be good, restore the locale
 	setlocale(LC_ALL, oldLocale);
 
-	return (access(conv, 0) == 0);
+	return access(conv.get(), 0) == 0;
 
 #endif
 }
