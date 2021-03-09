@@ -56,7 +56,8 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab2;
 			lab2.alpha = bins[i].ac, lab2.L = bins[i].Lc, lab2.A = bins[i].Ac, lab2.B = bins[i].Bc;
-			double nerr = nerr2 * sqr(lab2.alpha - lab1.alpha) / exp(1.0);
+			double alphaDiff = hasSemiTransparency ? abs(lab2.alpha - lab1.alpha) : 0;
+			double nerr = nerr2 * sqr(alphaDiff) / exp(1.0);
 			if (nerr >= err)
 				continue;
 
@@ -103,7 +104,7 @@ namespace PnnLABQuant
 
 	int PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors, bool quan_sqrt)
 	{
-		auto bins = make_unique<pnnbin[]>(65536);		
+		auto bins = make_unique<pnnbin[]>(65536);
 
 		/* Build histogram */
 		for (const auto& pixel : pixels) {
@@ -134,7 +135,7 @@ namespace PnnLABQuant
 			bins[i].Lc *= d;
 			bins[i].Ac *= d;
 			bins[i].Bc *= d;
-			
+
 			bins[maxbins++] = bins[i];
 		}
 
@@ -149,8 +150,8 @@ namespace PnnLABQuant
 			bins[i + 1].bk = i;
 
 			if (quan_sqrt)
-				bins[i + 1].cnt = (int) _sqrt(bins[i + 1].cnt);
-		}		
+				bins[i + 1].cnt = (int)_sqrt(bins[i + 1].cnt);
+		}
 
 		int h, l, l2;
 		if (quan_sqrt && nMaxColors < 64)
@@ -174,7 +175,7 @@ namespace PnnLABQuant
 			}
 			heap[l] = i;
 		}
-		
+
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
 		for (int i = 0; i < extbins; ) {
@@ -228,7 +229,7 @@ namespace PnnLABQuant
 		short k = 0;
 		for (int i = 0;; ++k) {
 			CIELABConvertor::Lab lab1;
-			lab1.alpha = (int) bins[i].ac;
+			lab1.alpha = (int)bins[i].ac;
 			lab1.L = bins[i].Lc, lab1.A = bins[i].Ac, lab1.B = bins[i].Bc;
 			pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
 			if (m_transparentPixelIndex >= 0 && pPalette->Entries[k] == m_transparentColor)
@@ -261,7 +262,7 @@ namespace PnnLABQuant
 				continue;
 
 			getLab(c2, lab2);
-			if (nMaxColors > 32 || hasSemiTransparency) {
+			if (nMaxColors > 32) {
 				curdist += PR * sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
