@@ -155,11 +155,12 @@ namespace PnnLABQuant
 
 		int h, l, l2;
 		if (quan_sqrt && nMaxColors < 64)
-			ratio = min(1.0, proportional - nMaxColors * exp(4.12) / pixelMap.size());
+			ratio = min(1.0, proportional - nMaxColors * exp(4.172) / pixelMap.size());
 		else if (quan_sqrt)
 			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());
 		else
 			ratio = min(1.0, pow(nMaxColors, 2.07) / maxbins);
+		cout << ratio << "\t" << maxbins << "\t" << pixelMap.size() << endl;
 
 		/* Initialize nearest neighbors and build heap of them */
 		auto heap = make_unique<int[]>(65537);
