@@ -815,12 +815,13 @@ namespace DivQuant
 		/* Determine the final cluster centers */
 		int shift_amount = 8 - num_bits;
 		int num_empty = 0; /* # empty clusters */
+		UINT colortableOffset = 0;
 		for (UINT ic = 0; ic < num_colors; ++ic) {
 			if (size[ic] > 0) {
 				CIELABConvertor::Lab lab1;
 				lab1.alpha = rint(mean[ic].alpha);
 				lab1.L = mean[ic].L, lab1.A = mean[ic].A, lab1.B = mean[ic].B;
-				pPalette->Entries[ic] = CIELABConvertor::LAB2RGB(lab1);
+				pPalette->Entries[colortableOffset++] = CIELABConvertor::LAB2RGB(lab1);
 			}
 			else {
 				/* Empty cluster */
