@@ -25,12 +25,13 @@
 
 namespace DivQuant
 {
-	double PR = .2126, PG = .7152, PB = .0722;
+	double PR = .299, PG = .587, PB = .114;
 	const int COLOR_HASH_SIZE = 20023;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
+	unordered_map<ARGB, unsigned short> nearestMap;
 
 	struct Bucket
 	{
@@ -913,6 +914,10 @@ namespace DivQuant
 	
 	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
+		auto got = nearestMap.find(argb);
+		if (got != nearestMap.end())
+			return got->second;
+
 		unsigned short k = 0;
 		Color c(argb);
 
@@ -941,7 +946,7 @@ namespace DivQuant
 					if (curdist > mindist)
 						continue;
 
-					curdist += .333 * sqr(lab2.B - lab1.B);
+					curdist += sqr(lab2.B - lab1.B) / 2.0;
 				}
 			}
 			else {
@@ -970,6 +975,7 @@ namespace DivQuant
 			mindist = curdist;
 			k = i;
 		}
+		nearestMap[argb] = k;
 		return k;
 	}
 
@@ -1035,6 +1041,8 @@ namespace DivQuant
 			else if (pPalette->Entries[k] != m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[1]);
 		}
+		pixelMap.clear();
+		nearestMap.clear();
 
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
 	}

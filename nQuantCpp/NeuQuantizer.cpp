@@ -86,6 +86,7 @@ namespace NeuralNet
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
+	unordered_map<ARGB, unsigned short> nearestMap;
 
 	inline double colorimportance(double al)
 	{
@@ -433,6 +434,10 @@ namespace NeuralNet
 
 	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
 	{
+		auto got = nearestMap.find(argb);
+		if (got != nearestMap.end())
+			return got->second;
+		
 		unsigned short k = 0;
 		Color c(argb);
 
@@ -462,7 +467,7 @@ namespace NeuralNet
 					if (curdist > mindist)
 						continue;
 
-					curdist += .333 * sqr(lab2.B - lab1.B);
+					curdist += sqr(lab2.B - lab1.B) / 2.0;
 				}
 
 				if (curdist > mindist)
@@ -492,6 +497,7 @@ namespace NeuralNet
 			
 			k = i;
 		}
+		nearestMap[argb] = k;
 		return k;
 	}
 
@@ -517,6 +523,7 @@ namespace NeuralNet
 		radpower.reset();
 
 		pixelMap.clear();
+		nearestMap.clear();
 	}
 
 	// The work horse for NeuralNet color quantizing.
