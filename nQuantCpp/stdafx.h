@@ -10,11 +10,12 @@ using namespace Gdiplus;
 #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #ifndef BYTE_MAX
-	#define BYTE_MAX 255
+	#include <climits>
+	#define BYTE_MAX UCHAR_MAX
 #endif
 
 #ifndef SHORT_MAX
-	#define SHORT_MAX 32768
+	#define SHORT_MAX SHRT_MAX
 #endif
 
 inline double sqr(double value)
