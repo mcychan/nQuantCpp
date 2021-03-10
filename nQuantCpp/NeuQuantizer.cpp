@@ -447,13 +447,12 @@ namespace NeuralNet
 
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
+			double curdist = sqr(c2.GetA() - c.GetA());
+			if (curdist > mindist)
+				continue;
 
 			getLab(c2, lab2);
 			if (nMaxColors > 32) {
-				double curdist = sqr(c2.GetA() - c.GetA());
-				if (curdist > mindist)
-					continue;
-
 				curdist += PR * sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
@@ -469,17 +468,8 @@ namespace NeuralNet
 
 					curdist += sqr(lab2.B - lab1.B) / 2.0;
 				}
-
-				if (curdist > mindist)
-					continue;
-
-				mindist = curdist;
 			}
 			else {
-				double curdist = sqr(c2.GetA() - c.GetA());
-				if (curdist > mindist)
-					continue;
-
 				curdist += sqr(lab2.L - lab1.L);
 				if (curdist > mindist)
 					continue;
@@ -488,13 +478,13 @@ namespace NeuralNet
 				if (curdist > mindist)
 					continue;
 
-				curdist += sqr(lab2.B - lab1.B);
-				if (curdist > mindist)
-					continue;
-
-				mindist = curdist;
+				curdist += sqr(lab2.B - lab1.B);				
 			}
 			
+			if (curdist > mindist)
+				continue;
+
+			mindist = curdist;
 			k = i;
 		}
 		nearestMap[argb] = k;

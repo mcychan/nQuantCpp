@@ -360,8 +360,8 @@ namespace PnnLABQuant
 		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		UINT pixelIndex = 0;
 		for (int j = 0; j < height; ++j) {
-			for (int i = 0; i < width; ++i, ++pixelIndex)
-				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
+			for (int i = 0; i < width; ++i)
+				qPixels[pixelIndex++] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 		return true;
 	}
