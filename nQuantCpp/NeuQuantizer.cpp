@@ -508,8 +508,8 @@ namespace NeuralNet
 
 		UINT pixelIndex = 0;
 		for (UINT j = 0; j < height; ++j) {
-			for (UINT i = 0; i < width; ++i, ++pixelIndex)
-				qPixels[pixelIndex] = nearestColorIndex(pPalette, nMaxColors, pixels[pixelIndex]);
+			for (UINT i = 0; i < width; ++i)
+				qPixels[pixelIndex++] = nearestColorIndex(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 
 		return true;
@@ -559,7 +559,9 @@ namespace NeuralNet
 			PR = PG = PB = 1;
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);		if (m_transparentPixelIndex >= 0) {
+		quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+
+		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
 			if (nMaxColors > 2)
 				pPalette->Entries[k] = m_transparentColor;
