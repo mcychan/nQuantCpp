@@ -9,7 +9,7 @@
 // London, Ontario N6A 5B7
 // wu@csd.uwo.ca
 //
-// Copyright(c) 2018 - 2019 Miller Cy Chan
+// Copyright(c) 2018 - 2021 Miller Cy Chan
 // 
 // Algorithm: Greedy orthogonal bipartition of RGB space for variance
 // 	   minimization aided by inclusion-exclusion tricks.
@@ -40,7 +40,7 @@ namespace nQuant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	double PR = .2126, PG = .7152, PB = .0722;
+	double PR = .299, PG = .587, PB = .114;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 	unordered_map<ARGB, unsigned short> nearestMap;
 
@@ -592,10 +592,8 @@ namespace nQuant
 	void BuildLookups(ColorPalette* pPalette, vector<Box>& cubes, const ColorData& data)
 	{
 		volatile UINT lookupsCount = 0;
-		if (m_transparentPixelIndex >= 0) {
-			pPalette->Entries[lookupsCount] = m_transparentColor;
-			++lookupsCount;
-		}
+		if (m_transparentPixelIndex >= 0)
+			pPalette->Entries[lookupsCount++] = m_transparentColor;
 			
 		for (auto const& cube : cubes) {
 			auto weight = Volume(cube, data.weights.get());
@@ -607,8 +605,7 @@ namespace nQuant
 			BYTE red = static_cast<BYTE>(Volume(cube, data.momentsRed.get()) / weight);
 			BYTE green = static_cast<BYTE>(Volume(cube, data.momentsGreen.get()) / weight);
 			BYTE blue = static_cast<BYTE>(Volume(cube, data.momentsBlue.get()) / weight);
-			pPalette->Entries[lookupsCount] = Color::MakeARGB(alpha, red, green, blue);
-			++lookupsCount;
+			pPalette->Entries[lookupsCount++] = Color::MakeARGB(alpha, red, green, blue);
 		}
 
 		if(lookupsCount < pPalette->Count)
