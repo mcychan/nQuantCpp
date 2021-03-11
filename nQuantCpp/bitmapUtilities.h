@@ -60,6 +60,8 @@ BOOL FillBitmapFileHeader(LPCVOID pDib, PBITMAPFILEHEADER pbmfh);
 
 typedef unsigned short (*DitherFn)(const ColorPalette*, const UINT nMaxColors, const ARGB);
 
+void CalcDitherPixel(int* pDitherPixel, const Color& c, const BYTE* clamp, const short* rowerr, int cursor, const bool noBias);
+
 bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height);
 
 bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, ARGB* qPixels, const UINT width, const UINT height);

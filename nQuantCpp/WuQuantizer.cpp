@@ -730,22 +730,6 @@ namespace nQuant
 		}
 	}
 
-	void CalcDitherPixel(int* pDitherPixel, const Color& c, const BYTE* clamp, const short* rowerr, int cursor, const bool noBias)
-	{
-		if (noBias) {
-			pDitherPixel[0] = clamp[((rowerr[cursor] + 0x1008) >> 4) + c.GetR()];
-			pDitherPixel[1] = clamp[((rowerr[cursor + 1] + 0x1008) >> 4) + c.GetG()];
-			pDitherPixel[2] = clamp[((rowerr[cursor + 2] + 0x1008) >> 4) + c.GetB()];
-			pDitherPixel[3] = clamp[((rowerr[cursor + 3] + 0x1008) >> 4) + c.GetA()];
-		}
-		else {
-			pDitherPixel[0] = clamp[((rowerr[cursor] + 0x2010) >> 5) + c.GetR()];
-			pDitherPixel[1] = clamp[((rowerr[cursor + 1] + 0x1008) >> 4) + c.GetG()];
-			pDitherPixel[2] = clamp[((rowerr[cursor + 2] + 0x2010) >> 5) + c.GetB()];
-			pDitherPixel[3] = c.GetA();
-		}
-	}
-
 	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, unsigned short* qPixels, const UINT width, const UINT height, const bool dither, BYTE alphaThreshold)
 	{
 		if (dither) {
