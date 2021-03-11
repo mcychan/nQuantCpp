@@ -42,7 +42,7 @@ namespace nQuant
 	ARGB m_transparentColor = Color::Transparent;
 	double PR = .2126, PG = .7152, PB = .0722;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
-	unordered_map<ARGB, UINT> rightMatches;
+	unordered_map<ARGB, unsigned short> nearestMap;
 
 	struct Box {
 		BYTE AlphaMinimum = 0;
@@ -661,9 +661,9 @@ namespace nQuant
 		if (c.GetA() <= alphaThreshold)
 			return k;
 
-		auto got = rightMatches.find(argb);
-		if (got == rightMatches.end()) {
-			double mindist = INT_MAX;
+		auto got = nearestMap.find(argb);
+		if (got == nearestMap.end()) {
+			double mindist = SHORT_MAX;
 			for (UINT i = 0; i < pPalette->Count; i++) {
 				Color c2(pPalette->Entries[i]);
 				double curdist = sqr(c2.GetA() - c.GetA());
@@ -686,7 +686,7 @@ namespace nQuant
 				k = i;
 			}
 
-			rightMatches[argb] = k;
+			nearestMap[argb] = k;
 		}
 		else
 			k = got->second;
@@ -718,7 +718,7 @@ namespace nQuant
 			blues[bestMatch] += pixel.GetB();
 			sums[bestMatch]++;
 		}
-		rightMatches.clear();
+		nearestMap.clear();
 
 		short paletteIndex = (m_transparentPixelIndex < 0) ? 0 : 1;
 		for (; paletteIndex < colorCount; ++paletteIndex) {
@@ -733,113 +733,112 @@ namespace nQuant
 		}
 	}
 
+	void CalcDitherPixel(int* pDitherPixel, const Color& c, const BYTE* clamp, const short* rowerr, int cursor, const bool noBias)
+	{
+		if (noBias) {
+			pDitherPixel[0] = clamp[((rowerr[cursor] + 0x1008) >> 4) + c.GetR()];
+			pDitherPixel[1] = clamp[((rowerr[cursor + 1] + 0x1008) >> 4) + c.GetG()];
+			pDitherPixel[2] = clamp[((rowerr[cursor + 2] + 0x1008) >> 4) + c.GetB()];
+			pDitherPixel[3] = clamp[((rowerr[cursor + 3] + 0x1008) >> 4) + c.GetA()];
+		}
+		else {
+			pDitherPixel[0] = clamp[((rowerr[cursor] + 0x2010) >> 5) + c.GetR()];
+			pDitherPixel[1] = clamp[((rowerr[cursor + 1] + 0x1008) >> 4) + c.GetG()];
+			pDitherPixel[2] = clamp[((rowerr[cursor + 2] + 0x2010) >> 5) + c.GetB()];
+			pDitherPixel[3] = c.GetA();
+		}
+	}
+
 	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, unsigned short* qPixels, const UINT width, const UINT height, const bool dither, BYTE alphaThreshold)
 	{
 		if (dither) {
-			bool odd_scanline = false;
-			short *thisrowerr, *nextrowerr;
-			constexpr BYTE DJ = 4;
-			constexpr BYTE DITHER_MAX = 20;
+			UINT pixelIndex = 0;
+
+			const int DJ = 4;
+			const int BLOCK_SIZE = 256;
+			const int DITHER_MAX = 20;
 			const int err_len = (width + 2) * DJ;
-			BYTE range_tbl[DJ * 256] = { 0 };
-			auto range = &range_tbl[256];
+			auto clamp = make_unique <BYTE[]>(DJ * BLOCK_SIZE);
 			auto erowErr = make_unique<short[]>(err_len);
 			auto orowErr = make_unique<short[]>(err_len);
-			char dith_max_tbl[512] = { 0 };
-			auto dith_max = &dith_max_tbl[256];
-			auto erowerr = erowErr.get();
-			auto orowerr = orowErr.get();
+			auto limtb = make_unique<char[]>(2 * BLOCK_SIZE);
+			auto pDitherPixel = make_unique<int[]>(DJ);
 
-			for (int i = 0; i < 256; i++) {
-				range_tbl[i] = 0;
-				range_tbl[i + 256] = static_cast<BYTE>(i);
-				range_tbl[i + 512] = BYTE_MAX;
-				range_tbl[i + 768] = BYTE_MAX;
-			}
+			for (int i = 0; i < BLOCK_SIZE; ++i) {
+				clamp[i] = 0;
+				clamp[i + BLOCK_SIZE] = static_cast<BYTE>(i);
+				clamp[i + BLOCK_SIZE * 2] = BYTE_MAX;
+				clamp[i + BLOCK_SIZE * 3] = BYTE_MAX;
 
-			for (int i = 0; i < 256; i++) {
-				dith_max_tbl[i] = -DITHER_MAX;
-				dith_max_tbl[i + 256] = DITHER_MAX;
+				limtb[i] = -DITHER_MAX;
+				limtb[i + BLOCK_SIZE] = DITHER_MAX;
 			}
 			for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
-				dith_max_tbl[i + 256] = i;
+				limtb[i + BLOCK_SIZE] = i;
 
-			UINT pixelIndex = 0;
-			for (int i = 0; i < height; i++) {
-				int dir;
-				if (odd_scanline) {
-					dir = -1;
-					pixelIndex += (width - 1);
-					thisrowerr = orowerr + DJ;
-					nextrowerr = erowerr + width * DJ;
-				}
-				else {
-					dir = 1;
-					thisrowerr = erowerr + DJ;
-					nextrowerr = orowerr + width * DJ;
-				}
-				nextrowerr[0] = nextrowerr[1] = nextrowerr[2] = nextrowerr[3] = 0;
-				for (int j = 0; j < width; j++) {
+			auto row0 = erowErr.get();
+			auto row1 = orowErr.get();
+
+			bool noBias = hasSemiTransparency || pPalette->Count < 64;
+			int dir = 1;
+			for (int i = 0; i < height; ++i) {
+				if (dir < 0)
+					pixelIndex += width - 1;
+
+				int cursor0 = DJ, cursor1 = width * DJ;
+				row1[cursor1] = row1[cursor1 + 1] = row1[cursor1 + 2] = row1[cursor1 + 3] = 0;
+				for (UINT j = 0; j < width; ++j) {
 					Color c(pixels[pixelIndex]);
 
-					int a_pix = range[((thisrowerr[0] + 8) >> 4) + c.GetA()];
-					int r_pix = range[((thisrowerr[1] + 8) >> 4) + c.GetR()];
-					int g_pix = range[((thisrowerr[2] + 8) >> 4) + c.GetG()];
-					int b_pix = range[((thisrowerr[3] + 8) >> 4) + c.GetB()];
-
-					ARGB argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-					qPixels[pixelIndex] = nearestColorIndex(pPalette, c.GetA() ? argb : pixels[pixelIndex], alphaThreshold);
+					CalcDitherPixel(pDitherPixel.get(), c, clamp.get(), row0, cursor0, noBias);
+					int r_pix = pDitherPixel[0];
+					int g_pix = pDitherPixel[1];
+					int b_pix = pDitherPixel[2];
+					int a_pix = pDitherPixel[3];
+					auto argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+					Color c1(argb);
+					qPixels[pixelIndex] = nearestColorIndex(pPalette, argb, alphaThreshold);
 
 					Color c2(pPalette->Entries[qPixels[pixelIndex]]);
-					a_pix = dith_max[a_pix - c2.GetA()];
-					r_pix = dith_max[r_pix - c2.GetR()];
-					g_pix = dith_max[g_pix - c2.GetG()];
-					b_pix = dith_max[b_pix - c2.GetB()];
 
-					int two_val = a_pix * 2;
-					nextrowerr[0 - DJ] = a_pix;
-					a_pix += two_val;
-					nextrowerr[0 + DJ] += a_pix;
-					a_pix += two_val;
-					nextrowerr[0] += a_pix;
-					a_pix += two_val;
-					thisrowerr[0 + DJ] += a_pix;
+					r_pix = limtb[c1.GetR() - c2.GetR() + BLOCK_SIZE];
+					g_pix = limtb[c1.GetG() - c2.GetG() + BLOCK_SIZE];
+					b_pix = limtb[c1.GetB() - c2.GetB() + BLOCK_SIZE];
+					a_pix = limtb[c1.GetA() - c2.GetA() + BLOCK_SIZE];
 
-					two_val = r_pix * 2;
-					nextrowerr[1 - DJ] = r_pix;
-					r_pix += two_val;
-					nextrowerr[1 + DJ] += r_pix;
-					r_pix += two_val;
-					nextrowerr[1] += r_pix;
-					r_pix += two_val;
-					thisrowerr[1 + DJ] += r_pix;
+					int k = r_pix * 2;
+					row1[cursor1 - DJ] = r_pix;
+					row1[cursor1 + DJ] += (r_pix += k);
+					row1[cursor1] += (r_pix += k);
+					row0[cursor0 + DJ] += (r_pix += k);
 
-					two_val = g_pix * 2;
-					nextrowerr[2 - DJ] = g_pix;
-					g_pix += two_val;
-					nextrowerr[2 + DJ] += g_pix;
-					g_pix += two_val;
-					nextrowerr[2] += g_pix;
-					g_pix += two_val;
-					thisrowerr[2 + DJ] += g_pix;
+					k = g_pix * 2;
+					row1[cursor1 + 1 - DJ] = g_pix;
+					row1[cursor1 + 1 + DJ] += (g_pix += k);
+					row1[cursor1 + 1] += (g_pix += k);
+					row0[cursor0 + 1 + DJ] += (g_pix += k);
 
-					two_val = b_pix * 2;
-					nextrowerr[3 - DJ] = b_pix;
-					b_pix += two_val;
-					nextrowerr[3 + DJ] += b_pix;
-					b_pix += two_val;
-					nextrowerr[3] += b_pix;
-					b_pix += two_val;
-					thisrowerr[3 + DJ] += b_pix;
+					k = b_pix * 2;
+					row1[cursor1 + 2 - DJ] = b_pix;
+					row1[cursor1 + 2 + DJ] += (b_pix += k);
+					row1[cursor1 + 2] += (b_pix += k);
+					row0[cursor0 + 2 + DJ] += (b_pix += k);
 
-					thisrowerr += DJ;
-					nextrowerr -= DJ;
+					k = a_pix * 2;
+					row1[cursor1 + 3 - DJ] = a_pix;
+					row1[cursor1 + 3 + DJ] += (a_pix += k);
+					row1[cursor1 + 3] += (a_pix += k);
+					row0[cursor0 + 3 + DJ] += (a_pix += k);
+
+					cursor0 += DJ;
+					cursor1 -= DJ;
 					pixelIndex += dir;
 				}
 				if ((i % 2) == 1)
-					pixelIndex += (width + 1);
+					pixelIndex += width + 1;
 
-				odd_scanline = !odd_scanline;
+				dir *= -1;
+				swap(row0, row1);
 			}
 			return true;
 		}
@@ -907,7 +906,7 @@ namespace nQuant
 				swap(pPalette->Entries[0], pPalette->Entries[1]);
 		}
 		closestMap.clear();
-		rightMatches.clear();
+		nearestMap.clear();
 
 		return ProcessImagePixels(pDest, pPalette, qPixels.get());
 	}
