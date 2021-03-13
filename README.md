@@ -18,7 +18,7 @@ Here some examples of output:
 <p>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<br /><img src="https://i.stack.imgur.com/0sDDn.png" /></p>
 <p>Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://i.stack.imgur.com/SB6NJ.png" /></p><hr>
 
-<p>Original image of Hong Kong Cuisines<br /><img src="https://i.stack.imgur.com/F90bn.jpg" /></p>
+<p>Original image of Hong Kong Cuisines<br /><img src="https://mcychan.github.io/PnnQuant.js/demo/img/old-HK.jpg" /></p>
 <b><a href="http://www.cs.joensuu.fi/sipu/pub/Threshold-JEI.pdf">Fast pairwise nearest neighbor based algorithm with CIELAB color space</a></b> with 16 colors<br>
 High quality and fast<br />
 <img src="https://repository-images.githubusercontent.com/121180544/95f03a00-7780-11eb-9330-f2e6232c283f" alt="Fast pairwise nearest neighbor based algorithm with CIELAB color space with 16 colors"></p>
