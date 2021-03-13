@@ -6,14 +6,16 @@ Either download nQuantCpp from this site or add it to your Visual Studio project
 PNG is useful because it's the only widely supported format which can store partially transparent images. The format uses compression, but the files can still be large. Use Color quantization algorithms can be chosen by command line since version 1.10 using the /a algorithm.
 Only png can support semi transparent image and desired color depth. Gif can ensure the number of colors for the converted image is 256 or less. Bmp does support desired color depth. Jpg only supports 24-bit image format.
 
-Here some examples of output:
+Let's climb up the mountain: Ready, Go!!!
 
 <p>Original photo of climbing<br /><img src="https://mcychan.github.io/PnnQuant.js/demo/img/climb.jpg" /></p>
 <p>Reduced to 256 colors by Divisive hierarchical clustering algorithm<br /><img src="https://i.stack.imgur.com/Qitc4.png" /></p>
 <p>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<br /><img src="https://i.stack.imgur.com/ebUOv.png" /></p>
 <p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://i.stack.imgur.com/07EFv.png" /></p>
 <p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm with CIELAB color space<br /><img src="https://i.stack.imgur.com/6GxLY.png" /></p>
-<p>Reduced to 16 colors by Xialoin Wu's fast optimal color Quantization Algorithm<br /><img src="https://i.stack.imgur.com/Wgwor.png" /></p><hr>
+<p>Reduced to 16 colors by Xialoin Wu's fast optimal color Quantization Algorithm<br /><img src="https://i.stack.imgur.com/Wgwor.png" /></p>
+Other color quantizations also suffered from Petrificus Totalus when less than 33 colors. Any experts please come to rescure them.
+<hr />
 <p>Original photo of Aetna's Hartford headquarters<br /><img src="https://mcychan.github.io/PnnQuant.js/demo/img/SE5x9.jpg" /></p>
 <p>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<br /><img src="https://i.stack.imgur.com/0sDDn.png" /></p>
 <p>Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://i.stack.imgur.com/SB6NJ.png" /></p><hr>
