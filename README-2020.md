@@ -1,6 +1,14 @@
 # nQuantCpp
 nQuantCpp includes top 6 color quantization algorithms for visual c++ producing high quality optimized images. I enhance each of the algorithms to support semi transparent images. 
-nQuantCpp also provides a command line wrapper in case you want to use it from the command line.
+
+Divisive hierarchical clustering algorithm utilizes the commonly used binary splitting strategy along with several carefully selected heuristics that ensure a good balance between effectiveness and efficiency.
+Fast pairwise nearest neighbor based algorithm is log linear and considerably faster than optimal thresholding, it is applicable in real-time image processing applications. 
+NeuQuant Neural-Net Quantization Algorithm is a self-organizing Kohonen neural network for quantizing colour graphics images.
+Xialoin Wu's fast optimal color quantizer, which is one of the most effective color quantization methods, provides excellent results.
+Efficient, Edge-Aware, Combined Color Quantization and Dithering is a novel algorithm to simultaneously accomplish color quantization and dithering of images.
+Spatial color quantization is a novel technique for palette selection and dithering with a simple perceptual model of human vision to produce superior results for many types of images.
+
+Fast pairwise nearest neighbor based algorithm minimized color loss for photo having red lips and supports 256 or less colors. NeuQuant Neural-Net Quantization Algorithm produces smooth photo quantization especially for natual landscape photo supports image reduction to 64 or more colors. Xialoin Wu's fast optimal color quantizer supports image reduction to 64 or more colors. Efficient, Edge-Aware, Combined Color Quantization and Dithering, Spatial color quantization supports 64 or less colors. nQuantCpp also provides a command line wrapper in case you want to use it from the command line.
 
 Either download nQuantCpp from this site or add it to your Visual Studio project seamlessly.
 PNG is useful because it's the only widely supported format which can store partially transparent images. The format uses compression, but the files can still be large. Use Color quantization algorithms can be chosen by command line since version 1.10 using the /a algorithm.
@@ -8,20 +16,19 @@ Only png can support semi transparent image and desired color depth. Gif can ens
 
 Here some examples of output:
 
-<p>Original photo of climbing<br /><img src="https://mcychan.github.io/PnnQuant.js/demo/img/climb.jpg" /></p>
-<p>Reduced to 256 colors by Divisive hierarchical clustering algorithm<br /><img src="https://i.stack.imgur.com/Qitc4.png" /></p>
-<p>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<br /><img src="https://i.stack.imgur.com/ebUOv.png" /></p>
-<p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://i.stack.imgur.com/07EFv.png" /></p>
-<p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm with CIELAB color space<br /><img src="https://i.stack.imgur.com/6GxLY.png" /></p>
-<p>Reduced to 16 colors by Xialoin Wu's fast optimal color Quantization Algorithm<br /><img src="https://i.stack.imgur.com/Wgwor.png" /></p><hr>
-<p>Original photo of Aetna's Hartford headquarters<br /><img src="https://mcychan.github.io/PnnQuant.js/demo/img/SE5x9.jpg" /></p>
+<p>Original image<br /><img src="http://i.imgur.com/h9ghTMB.png" /></p>
+<p>Reduced to 256 colors by Divisive hierarchical clustering algorithm<br /><img src="https://i.stack.imgur.com/viRTI.png" /></p>
+<p>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<br /><img src="https://i.stack.imgur.com/G1jkp.png" /></p>
+<p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://i.stack.imgur.com/ry1oi.png" /></p>
+<p>Reduced to 16 colors by Xialoin Wu's fast optimal color Quantization Algorithm<br /><img src="https://i.stack.imgur.com/De9xw.png" /></p><hr>
+<p>Original photo<br /><img src="https://i.stack.imgur.com/SE5x9.png" /></p>
 <p>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<br /><img src="https://i.stack.imgur.com/0sDDn.png" /></p>
 <p>Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://i.stack.imgur.com/SB6NJ.png" /></p><hr>
 
-<p>Original image of Hong Kong Cuisines<br /><img src="https://i.stack.imgur.com/F90bn.jpg" /></p>
+<p>Original image<br /><img src="https://i.stack.imgur.com/F90bn.jpg" /></p>
 <b><a href="http://www.cs.joensuu.fi/sipu/pub/Threshold-JEI.pdf">Fast pairwise nearest neighbor based algorithm with CIELAB color space</a></b> with 16 colors<br>
 High quality and fast<br />
-<img src="https://repository-images.githubusercontent.com/121180544/95f03a00-7780-11eb-9330-f2e6232c283f" alt="Fast pairwise nearest neighbor based algorithm with CIELAB color space with 16 colors"></p>
+<img src="https://i.stack.imgur.com/2kFxV.png" alt="Fast pairwise nearest neighbor based algorithm with CIELAB color space with 16 colors"></p>
 <p><b><a href="http://cg.cs.tsinghua.edu.cn/people/~huanghz/publications/TIP-2015-CombinedColorQuantization.pdf">Efficient, Edge-Aware, Combined Color Quantization and Dithering</a></b> with 16 colors<br />
 Higher quality for 32 or less colors but slower<br />
 <img src="https://i.stack.imgur.com/cVYMP.png" alt="Efficient, Edge-Aware, Combined Color Quantization and Dithering with 16 colors"></p>
