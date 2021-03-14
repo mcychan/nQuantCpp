@@ -102,7 +102,7 @@ namespace PnnLABQuant
 		bin1.nn = nn;
 	}
 
-	int PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors, bool quan_sqrt)
+	int PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors, short quan_rt)
 	{
 		auto bins = make_unique<pnnbin[]>(65536);
 
@@ -140,23 +140,29 @@ namespace PnnLABQuant
 		}
 
 		double proportional = sqr(nMaxColors) / maxbins;
-		if ((proportional < .022 || proportional > .5) && nMaxColors < 64)
-			quan_sqrt = false;
+		if (nMaxColors < 16)
+			quan_rt = -1;
+		else if ((proportional < .022 || proportional > .5) && nMaxColors < 64)
+			quan_rt = 0;
 
-		if (quan_sqrt)
+		if (quan_rt > 0)
 			bins[0].cnt = (int)_sqrt(bins[0].cnt);
+		else if (quan_rt < 0)
+			bins[0].cnt = (int)cbrt(bins[0].cnt);
 		for (int i = 0; i < maxbins - 1; ++i) {
 			bins[i].fw = i + 1;
 			bins[i + 1].bk = i;
 
-			if (quan_sqrt)
+			if (quan_rt > 0)
 				bins[i + 1].cnt = (int)_sqrt(bins[i + 1].cnt);
+			else if (quan_rt < 0)
+				bins[i + 1].cnt = (int)cbrt(bins[i + 1].cnt);
 		}
 
 		int h, l, l2;
-		if (quan_sqrt && nMaxColors < 64)
+		if (quan_rt && nMaxColors < 64)
 			ratio = min(1.0, proportional - nMaxColors * exp(4.172) / pixelMap.size());
-		else if (quan_sqrt)
+		else if (quan_rt)
 			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());
 		else
 			ratio = min(1.0, pow(nMaxColors, 2.07) / maxbins);
@@ -176,7 +182,7 @@ namespace PnnLABQuant
 			heap[l] = i;
 		}
 
-		if (quan_sqrt && nMaxColors < 64)
+		if (quan_rt && nMaxColors < 64)
 			ratio = min(1.0, proportional - nMaxColors * exp(4.12) / pixelMap.size());
 
 		/* Merge bins which increase error the least */
@@ -384,7 +390,7 @@ namespace PnnLABQuant
 
 		srand(time(NULL));
 		if (nMaxColors > 2)
-			pnnquan(pixels, pPalette, nMaxColors, true);
+			pnnquan(pixels, pPalette, nMaxColors, 1);
 		else {
 			if (m_transparentPixelIndex >= 0) {
 				pPalette->Entries[0] = m_transparentColor;
