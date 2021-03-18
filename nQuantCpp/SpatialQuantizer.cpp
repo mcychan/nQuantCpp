@@ -638,17 +638,10 @@ namespace SpatialQuant
 				palette[v][k] = val;
 
 				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k > 1) {
-					ARGB argb;
-					if (hasSemiTransparency) {
-						CIELABConvertor::Lab lab1;
-						lab1.alpha = palette[v][3] * BYTE_MAX;
-						lab1.L = palette[v][0], lab1.A = palette[v][1], lab1.B = palette[v][2];
-
-						argb = CIELABConvertor::LAB2RGB(lab1);
-					}
-					else
-						argb = Color::MakeARGB(BYTE_MAX, static_cast<BYTE>(BYTE_MAX * palette[v][0]), static_cast<BYTE>(BYTE_MAX * palette[v][1]), static_cast<BYTE>(BYTE_MAX * palette[v][2]));
-
+					CIELABConvertor::Lab lab1;
+					lab1.alpha = palette[v][3] * BYTE_MAX;
+					lab1.L = palette[v][0], lab1.A = palette[v][1], lab1.B = palette[v][2];
+					auto argb = CIELABConvertor::LAB2RGB(lab1);
 					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
 						swap(palette[0], palette[v]);
 				}
