@@ -93,7 +93,7 @@ namespace EdgeAwareSQuant
 	};
 
 	const short minLabValues[] = { 0, -128, -128, 0 };
-	const short maxLabValues[] = { 100, 127, 127, 1 };	
+	const short maxLabValues[] = { 100, 127, 127, 255 };	
 
 	int compute_max_coarse_level(int width, int height) {
 		// We want the coarsest layer to have at most MAX_PIXELS pixels
@@ -219,9 +219,9 @@ namespace EdgeAwareSQuant
 						if (tmpBvalue != 0) {
 							Color jPixel(image[j_y * a.get_width() + j_x]);
 							if (hasSemiTransparency) {
-								a(i_x, i_y)[0] += tmpBvalue * jPixel.GetR() / 255.0f;
-								a(i_x, i_y)[1] += tmpBvalue * jPixel.GetG() / 255.0f;
-								a(i_x, i_y)[2] += tmpBvalue * jPixel.GetB() / 255.0f;
+								a(i_x, i_y)[0] += tmpBvalue * jPixel.GetR();
+								a(i_x, i_y)[1] += tmpBvalue * jPixel.GetG();
+								a(i_x, i_y)[2] += tmpBvalue * jPixel.GetB();
 							}
 							else {
 								CIELABConvertor::Lab lab1;
@@ -231,7 +231,7 @@ namespace EdgeAwareSQuant
 								a(i_x, i_y)[1] += tmpBvalue * lab1.A;
 								a(i_x, i_y)[2] += tmpBvalue * lab1.B;
 							}
-							a(i_x, i_y)[3] += tmpBvalue * jPixel.GetA() / 255.0f;
+							a(i_x, i_y)[3] += tmpBvalue * jPixel.GetA();
 						}
 					}
 				}
@@ -359,10 +359,10 @@ namespace EdgeAwareSQuant
 			for (; v < palette.size(); ++v) {
 				auto val = palette_channel[v];
 				if (hasSemiTransparency) {
-					if (val < 0.0 || isnan(val))
-						val = 0.0;
-					if (val > 1.0)
-						val = 1.0;
+					if (val < minLabValues[3] || isnan(val))
+						val = minLabValues[3];
+					if (val > maxLabValues[3])
+						val = maxLabValues[3];
 				}
 				else {
 					if (val < minLabValues[k] || isnan(val))
@@ -382,7 +382,7 @@ namespace EdgeAwareSQuant
 
 				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k > 1) {
 					CIELABConvertor::Lab lab1;
-					lab1.alpha = palette[v][3] * BYTE_MAX;
+					lab1.alpha = palette[v][3];
 					lab1.L = palette[v][0], lab1.A = palette[v][1], lab1.B = palette[v][2];
 					auto argb = CIELABConvertor::LAB2RGB(lab1);
 					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
@@ -481,7 +481,7 @@ namespace EdgeAwareSQuant
 		compute_initial_s_ea_icm(s, *pIndexImg8, b_array[coarse_level]);
 
 		float paletteSize = palette.size() * 1.0f;
-		const double divisor = 1.0 / (255.0 * 255.0);
+		const double divisor = 1.0 / 255.0;
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
 			vector<vector<pair<float, int> > > centroidDist(paletteSize, vector<pair<float, int> >(paletteSize, pair<float, int>(0.0f, -1)));
@@ -489,10 +489,10 @@ namespace EdgeAwareSQuant
 				for (int l2 = l1; l2 < palette.size(); l2++) {
 					CIELABConvertor::Lab lab1, lab2;
 					if (hasSemiTransparency) {
-						Color c(static_cast<BYTE>(BYTE_MAX * palette[l1][3]), static_cast<BYTE>(BYTE_MAX * palette[l1][0]), static_cast<BYTE>(BYTE_MAX * palette[l1][1]), static_cast<BYTE>(BYTE_MAX * palette[l1][2]));
+						Color c(static_cast<BYTE>(palette[l1][3]), static_cast<BYTE>(palette[l1][0]), static_cast<BYTE>(palette[l1][1]), static_cast<BYTE>(palette[l1][2]));
 						getLab(c, lab1);
 
-						Color c2(static_cast<BYTE>(BYTE_MAX * palette[l2][3]), static_cast<BYTE>(BYTE_MAX * palette[l2][0]), static_cast<BYTE>(BYTE_MAX * palette[l2][1]), static_cast<BYTE>(BYTE_MAX * palette[l2][2]));
+						Color c2(static_cast<BYTE>(palette[l2][3]), static_cast<BYTE>(palette[l2][0]), static_cast<BYTE>(palette[l2][1]), static_cast<BYTE>(palette[l2][2]));
 						getLab(c2, lab2);
 					}
 					else {
@@ -681,7 +681,7 @@ namespace EdgeAwareSQuant
 		float saliencyBase = 0.1;
 		for (int y = 0; y < saliencyMap.get_height(); ++y) {
 			for (int x = 0; x < saliencyMap.get_width(); ++x)
-				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) / 255.0f;
+				saliencyMap(y, x) = BYTE_MAX * saliencyBase + (1 - saliencyBase);
 		}
 
 		if (nMaxColors > 256)
@@ -702,9 +702,9 @@ namespace EdgeAwareSQuant
 		for (UINT k = 0; k < nMaxColors; ++k) {
 			Color c(pPalette->Entries[k]);
 			if (hasSemiTransparency) {
-				palette[k][0] = c.GetR() / 255.0f;
-				palette[k][1] = c.GetG() / 255.0f;
-				palette[k][2] = c.GetB() / 255.0f;
+				palette[k][0] = c.GetR();
+				palette[k][1] = c.GetG();
+				palette[k][2] = c.GetB();
 			}
 			else {
 				CIELABConvertor::Lab lab1;
@@ -714,7 +714,7 @@ namespace EdgeAwareSQuant
 				palette[k][1] = lab1.A;
 				palette[k][2] = lab1.B;
 			}
-			palette[k][3] = c.GetA() / 255.0f;
+			palette[k][3] = c.GetA();
 		}
 
 		Mat<Mat<float> > weightMaps(bitmapHeight, bitmapWidth);
@@ -727,12 +727,12 @@ namespace EdgeAwareSQuant
 			/* Fill palette */
 			for (UINT k = 0; k < nMaxColors; ++k) {
 				if (hasSemiTransparency) {
-					pPalette->Entries[k] = Color::MakeARGB(static_cast<BYTE>(BYTE_MAX * palette[k][3]), static_cast<BYTE>(BYTE_MAX * palette[k][0]), static_cast<BYTE>(BYTE_MAX * palette[k][1]), static_cast<BYTE>(BYTE_MAX * palette[k][2]));
+					pPalette->Entries[k] = Color::MakeARGB(static_cast<BYTE>(palette[k][3]), static_cast<BYTE>(palette[k][0]), static_cast<BYTE>(palette[k][1]), static_cast<BYTE>(palette[k][2]));
 					continue;
 				}
 
 				CIELABConvertor::Lab lab1;
-				lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(BYTE_MAX * palette[k][3]) : BYTE_MAX;
+				lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[k][3]) : BYTE_MAX;
 				lab1.L = palette[k][0], lab1.A = palette[k][1], lab1.B = palette[k][2];
 				pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
 			}
