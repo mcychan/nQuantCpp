@@ -280,6 +280,12 @@ namespace SpatialQuant
 		return a * scalar;
 	}
 
+	const short minLabValues[] = { 0, -128, -128, 0 };
+	const short maxLabValues[] = { 100, 127, 127, 255 };
+
+	short getRandom(byte k) {
+		return rand() % maxLabValues[k] + minLabValues[k];
+	}
 
 	template <typename T>
 	class array3d
@@ -312,10 +318,10 @@ namespace SpatialQuant
 			return data[row * width * depth + col * depth + layer];
 		}
 
-		void fill_random() {
+		void fill_random(int length) {
 			const int volume = width * height * depth;
 			for (int i = 0; i < volume; ++i)
-				data[i] = ((double)rand()) / RAND_MAX;
+				data[i] = getRandom(i % length);
 		}
 
 		inline int get_width()  const { return width; }
@@ -412,20 +418,13 @@ namespace SpatialQuant
 
 						Color jPixel(image[j_y * a.get_width() + j_x]);
 						vector_fixed<double, 4> pixel;
-						if (hasSemiTransparency) {
-							pixel[0] = jPixel.GetR() / 255.0f;
-							pixel[1] = jPixel.GetG() / 255.0f;
-							pixel[2] = jPixel.GetB() / 255.0f;
-						}
-						else {
-							CIELABConvertor::Lab lab1;
-							getLab(jPixel, lab1);
+						CIELABConvertor::Lab lab1;
+						getLab(jPixel, lab1);
 
-							pixel[0] = lab1.L;
-							pixel[1] = lab1.A;
-							pixel[2] = lab1.B;
-						}
-						pixel[3] = jPixel.GetA() / 255.0f;
+						pixel[0] = lab1.L;
+						pixel[1] = lab1.A;
+						pixel[2] = lab1.B;
+						pixel[3] = jPixel.GetA();
 
 						a(i_x, i_y) += b_value(b, i_x, i_y, j_x, j_y).direct_product(pixel);
 					}
@@ -471,7 +470,7 @@ namespace SpatialQuant
 			result[i] = s[i][k];
 
 		return result;
-	}
+	}	
 
 	UINT best_match_color(const array3d<double>& vars, const int i_x, const int i_y, const UINT nMaxColor)
 	{
@@ -613,27 +612,17 @@ namespace SpatialQuant
 			}
 		}
 
-		const short DJ = hasSemiTransparency ? 4 : 3;
-		const short minLabValues[] = {0, -128, -128, 0 };
-		const short maxLabValues[] = { 100, 127, 127, 1 };
-		for (int k = 0; k < DJ; ++k) {
+		const short length = hasSemiTransparency ? 4 : 3;		
+		for (int k = 0; k < length; ++k) {
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
 			auto& palette_channel = (-2.0 * S_k).matrix_inverse() * R_k;
 			for (UINT v = 0; v < nMaxColor; ++v) {
 				auto val = palette_channel[v];
-				if (hasSemiTransparency) {
-					if (val < 0.0 || isnan(val))
-						val = 0.0;
-					else if (val > 1.0)
-						val = 1.0;
-				}
-				else {
-					if (val < minLabValues[k] || isnan(val))
-						val = minLabValues[k];
-					else if (val > maxLabValues[k])
-						val = maxLabValues[k];
-				}
+				if (val < minLabValues[k] || isnan(val))
+					val = minLabValues[k];
+				else if (val > maxLabValues[k])
+					val = maxLabValues[k];
 
 				palette[v][k] = val;
 
@@ -667,7 +656,7 @@ namespace SpatialQuant
 		unsigned short* quantized_image, const int bitmapWidth, vector<vector_fixed<double, 4> >& palette,
 		const double initial_temperature = 1.0, const double final_temperature = 0.001, const int temps_per_level = 3, const int repeats_per_temp = 1)
 	{
-		const int DJ = hasSemiTransparency ? 4 : 3;
+		const int length = hasSemiTransparency ? 4 : 3;
 		const int bitmapHeight = image.size() / bitmapWidth;
 
 		const auto nMaxColor = palette.size();
@@ -677,7 +666,7 @@ namespace SpatialQuant
 			bitmapHeight >> max_coarse_level,
 			nMaxColor);
 
-		p_coarse_variables->fill_random();
+		p_coarse_variables->fill_random(length);
 
 		double temperature = initial_temperature;
 
@@ -698,7 +687,7 @@ namespace SpatialQuant
 		const int diameter_width = (filter_weights.get_width() - 1), diameter_height = (filter_weights.get_height() - 1);
 		int coarse_level;
 		for (coarse_level = 1; coarse_level <= max_coarse_level; ++coarse_level) {
-			array2d<vector_fixed<double, 4> > bi(max(DJ, b_vec.back().get_width() - 2), max(DJ, b_vec.back().get_height() - 2));
+			array2d<vector_fixed<double, 4> > bi(max(length, b_vec.back().get_width() - 2), max(length, b_vec.back().get_height() - 2));
 			const int bi_width = bi.get_width(), bi_height = bi.get_height();
 
 			for (int J_y = 0; J_y < bi_height; ++J_y) {
@@ -725,7 +714,7 @@ namespace SpatialQuant
 		// Multiscale annealing
 		coarse_level = max_coarse_level;
 		const int iters_per_level = temps_per_level;
-		double temperature_multiplier = pow(final_temperature / initial_temperature, 1.0 / (max(DJ, max_coarse_level * iters_per_level)));
+		double temperature_multiplier = pow(final_temperature / initial_temperature, 1.0 / (max(length, max_coarse_level * iters_per_level)));
 
 		int iters_at_current_level = 0;
 		bool skip_palette_maintenance = false;
@@ -734,7 +723,7 @@ namespace SpatialQuant
 		auto p_palette_sum = make_unique<array2d< vector_fixed<double, 4> > >(p_coarse_variables->get_width(), p_coarse_variables->get_height());
 		compute_initial_j_palette_sum(*p_palette_sum, *p_coarse_variables, palette);
 
-		const double divisor = 1.0 / (255.0 * 255.0);
+		const double divisor = 1.0 / 255.0;
 		while (coarse_level >= 0 || temperature > final_temperature) {
 			// Need to reseat this reference in case we changed p_coarse_variables
 			auto& coarse_variables = *p_coarse_variables;
@@ -782,7 +771,7 @@ namespace SpatialQuant
 								continue;
 							auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 							auto& j_pal = (*p_palette_sum)(j_x, j_y);
-							for (byte p = 0; p < DJ; ++p)
+							for (byte p = 0; p < length; ++p)
 								p_i[p] += b_ij[p] * j_pal[p];
 						}
 					}
@@ -826,7 +815,7 @@ namespace SpatialQuant
 						double delta_m_iv = new_val - coarse_variables(i_x, i_y, v);
 
 						coarse_variables(i_x, i_y, v) = new_val;
-						for (byte p = 0; p < DJ; ++p)
+						for (byte p = 0; p < length; ++p)
 							j_pal[p] += delta_m_iv * palette[v][p];
 
 						if (abs(delta_m_iv) > 0.001 && !skip_palette_maintenance)
@@ -931,7 +920,7 @@ namespace SpatialQuant
 		vector<vector_fixed<double, 4> > palette(nMaxColors);
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			for (byte p = 0; p < length; ++p)
-				palette[i][p] = ((double)rand()) / RAND_MAX;
+				palette[i][p] = getRandom(p);
 		}
 
 		if (nMaxColors > 256)
@@ -954,13 +943,8 @@ namespace SpatialQuant
 		if (nMaxColors > 2) {
 			/* Fill palette */
 			for (UINT k = 0; k < nMaxColors; ++k) {
-				if (hasSemiTransparency) {
-					pPalette->Entries[k] = Color::MakeARGB(hasSemiTransparency ? static_cast<BYTE>(BYTE_MAX * palette[k][3]) : BYTE_MAX, static_cast<BYTE>(BYTE_MAX * palette[k][0]), static_cast<BYTE>(BYTE_MAX * palette[k][1]), static_cast<BYTE>(BYTE_MAX * palette[k][2]));
-					continue;
-				}
-
 				CIELABConvertor::Lab lab1;
-				lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(BYTE_MAX * palette[k][3]) : BYTE_MAX;
+				lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[k][3]) : BYTE_MAX;
 				lab1.L = palette[k][0], lab1.A = palette[k][1], lab1.B = palette[k][2];
 				pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
 			}

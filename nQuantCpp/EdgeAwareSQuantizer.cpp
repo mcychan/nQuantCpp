@@ -92,6 +92,9 @@ namespace EdgeAwareSQuant
 		int width, height, depth;
 	};
 
+	const short minLabValues[] = { 0, -128, -128, 0 };
+	const short maxLabValues[] = { 100, 127, 127, 1 };	
+
 	int compute_max_coarse_level(int width, int height) {
 		// We want the coarsest layer to have at most MAX_PIXELS pixels
 		const int MAX_PIXELS = 4000;
@@ -290,7 +293,7 @@ namespace EdgeAwareSQuant
 
 	void compute_initial_s_ea_icm(array2d<vector_fixed<float, 4> >& s, const Mat<BYTE>& indexImg8, Mat<Mat<float> >& b)
 	{
-		const int DJ = hasSemiTransparency ? 4 : 3;
+		const int length = hasSemiTransparency ? 4 : 3;
 		int palette_size = s.get_width();
 		int coarse_width = indexImg8.get_width();
 		int coarse_height = indexImg8.get_height();
@@ -316,13 +319,13 @@ namespace EdgeAwareSQuant
 						auto b_ij = b_value_ea(b, i_x, i_y, j_x, j_y);
 						int v = indexImg8(i_y, i_x);
 						int alpha = indexImg8(j_y, j_x);
-						for (byte p = 0; p < DJ; ++p)
+						for (byte p = 0; p < length; ++p)
 							s(v, alpha)[p] += b_ij;
 					}
 				}
 				int v = indexImg8(i_y, i_x);
 				auto b_ii = b_value_ea(b, i_x, i_y, i_x, i_y);
-				for (byte p = 0; p < DJ; ++p)
+				for (byte p = 0; p < length; ++p)
 					s(v, v)[p] += b_ii;
 			}
 		}
@@ -347,10 +350,8 @@ namespace EdgeAwareSQuant
 		}
 
 		float max_palette_delta = 0.0f, min_palette_delta = 1.0f;
-		const int DJ = hasSemiTransparency ? 4 : 3;
-		const short minLabValues[] = { 0, -128, -128, 0 };
-		const short maxLabValues[] = { 100, 127, 127, 1 };
-		for (short k = 0; k < DJ; ++k) {
+		const int length = hasSemiTransparency ? 4 : 3;		
+		for (short k = 0; k < length; ++k) {
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
 			auto& palette_channel = (-2.0f * S_k).matrix_inverse() * R_k;
@@ -503,7 +504,8 @@ namespace EdgeAwareSQuant
 					}
 
 					auto curDist = sqr(lab2.L - lab1.L) + sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B);
-					curDist += sqr(lab2.alpha - lab1.alpha) / exp(1.5);
+					if (hasSemiTransparency)
+						curDist += sqr(lab2.alpha - lab1.alpha) / exp(1.5);
 
 					centroidDist[l1][l2] = pair<float, int>(curDist, l2);
 					centroidDist[l2][l1] = pair<float, int>(curDist, l1);
@@ -699,9 +701,19 @@ namespace EdgeAwareSQuant
 		vector<vector_fixed<float, 4> > palette(nMaxColors);
 		for (UINT k = 0; k < nMaxColors; ++k) {
 			Color c(pPalette->Entries[k]);
-			palette[k][0] = c.GetR() / 255.0f;
-			palette[k][1] = c.GetG() / 255.0f;
-			palette[k][2] = c.GetB() / 255.0f;
+			if (hasSemiTransparency) {
+				palette[k][0] = c.GetR() / 255.0f;
+				palette[k][1] = c.GetG() / 255.0f;
+				palette[k][2] = c.GetB() / 255.0f;
+			}
+			else {
+				CIELABConvertor::Lab lab1;
+				getLab(c, lab1);
+
+				palette[k][0] = lab1.L;
+				palette[k][1] = lab1.A;
+				palette[k][2] = lab1.B;
+			}
 			palette[k][3] = c.GetA() / 255.0f;
 		}
 
