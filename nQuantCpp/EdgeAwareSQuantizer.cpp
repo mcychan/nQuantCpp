@@ -524,14 +524,14 @@ namespace EdgeAwareSQuant
 			int step_counter = 0;
 			int repeat_outter = 0;
 			int palette_changed = 0;
-			while (repeat_outter == 0 || palette_changed > palette.size() * 0.1) {
+			while (repeat_outter == 0 || palette_changed > palette.size() * 0.5) {
 				palette_changed = 0;
 				++repeat_outter;
 				//----update labeling
 				int pixels_changed = 0, pixels_visited = 0;
 				int repeat_inner = 0;
 
-				while (repeat_inner == 0 || pixels_changed > 0.001 * pIndexImg8->get_width() * pIndexImg8->get_height()) {
+				while (repeat_inner == 0 || pixels_changed > 0.05 * pIndexImg8->get_width() * pIndexImg8->get_height()) {
 					++repeat_inner;
 					pixels_changed = 0;
 					pixels_visited = 0;
