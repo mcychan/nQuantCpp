@@ -140,17 +140,15 @@ namespace PnnLABQuant
 		}
 
 		double proportional = sqr(nMaxColors) / maxbins;
-		if (nMaxColors < 16) {
+		if (nMaxColors < 16)
 			quan_rt = -1;
-			proportional += .022;
-		}
-		if ((proportional < .022 || proportional > .5) && nMaxColors < 64)
+		else if ((proportional < .022 || proportional > .5) && nMaxColors < 64)
 			quan_rt = 0;
 
 		if (quan_rt > 0)
 			bins[0].cnt = (int)_sqrt(bins[0].cnt);
 		else if (quan_rt < 0)
-			bins[0].cnt = (int)cbrt(bins[0].cnt);
+			bins[0].cnt = (int) pow(bins[0].cnt, 0.75);
 		for (int i = 0; i < maxbins - 1; ++i) {
 			bins[i].fw = i + 1;
 			bins[i + 1].bk = i;
@@ -158,7 +156,7 @@ namespace PnnLABQuant
 			if (quan_rt > 0)
 				bins[i + 1].cnt = (int)_sqrt(bins[i + 1].cnt);
 			else if (quan_rt < 0)
-				bins[i + 1].cnt = (int)cbrt(bins[i + 1].cnt);
+				bins[i + 1].cnt = (int) pow(bins[i + 1].cnt, 0.75);
 		}
 
 		int h, l, l2;
