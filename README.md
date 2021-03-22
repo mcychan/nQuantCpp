@@ -29,7 +29,7 @@ Higher quality for 32 or less colors but slower<br />
 <img src="https://i.stack.imgur.com/Srsz8.png" alt="Efficient, Edge-Aware, Combined Color Quantization and Dithering with 16 colors"></p>
 <p><b><a href="https://people.eecs.berkeley.edu/~dcoetzee/downloads/scolorq/">Spatial color quantization</a></b> with 16 colors<br />
 Higher quality for 32 or less colors but the slowest<br />
-<img src="https://i.stack.imgur.com/Mxb8y.png" alt="Spatial color quantization with 16 colors"></p>
+<img src="https://i.stack.imgur.com/YB3hZ.png" alt="Spatial color quantization with 16 colors"></p>
 
 If you are using the command line. Assuming you are in the same directory as nQuantCpp.exe, you would enter: nQuantCpp yourImage.jpg /m 16
 
