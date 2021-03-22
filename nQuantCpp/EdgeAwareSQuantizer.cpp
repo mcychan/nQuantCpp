@@ -486,6 +486,7 @@ namespace EdgeAwareSQuant
 
 		float paletteSize = palette.size() * 1.0f;
 		const double divisor = 1.0 / (255.0 * 255.0);
+		const double rate = log(palette.size()) / log(16);
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
 			vector<vector<pair<float, int> > > centroidDist(paletteSize, vector<pair<float, int> >(paletteSize, pair<float, int>(0.0f, -1)));
@@ -526,15 +527,15 @@ namespace EdgeAwareSQuant
 
 			int step_counter = 0;
 			int repeat_outter = 0;
-			int palette_changed = 0;
-			while (repeat_outter == 0 || palette_changed > palette.size() * 0.1) {
+			int palette_changed = 0;			
+			while (repeat_outter == 0 || palette_changed > palette.size() * 0.1 / rate) {
 				palette_changed = 0;
 				++repeat_outter;
 				//----update labeling
 				int pixels_changed = 0, pixels_visited = 0;
 				int repeat_inner = 0;
 
-				while (repeat_inner == 0 || pixels_changed > 0.001 * pIndexImg8->get_width() * pIndexImg8->get_height()) {
+				while (repeat_inner == 0 || pixels_changed > 0.001 / rate * pIndexImg8->get_width() * pIndexImg8->get_height()) {
 					++repeat_inner;
 					pixels_changed = 0;
 					pixels_visited = 0;
@@ -652,7 +653,13 @@ namespace EdgeAwareSQuant
 						float spaceD = sqr(y - yy) + sqr(x - xx);
 						Color pixelXY(img[y * weightMaps.get_width() + x]);
 						Color pixelXXYY(img[yy * weightMaps.get_width() + xx]);
-						float colorD = sqr(pixelXY.GetR() - pixelXXYY.GetR()) + sqr(pixelXY.GetG() - pixelXXYY.GetG()) + sqr(pixelXY.GetB() - pixelXXYY.GetB()) + sqr(pixelXY.GetA() - pixelXXYY.GetA());
+
+						CIELABConvertor::Lab lab1, lab2;
+						getLab(pixelXY, lab1);
+						getLab(pixelXXYY, lab2);
+						float colorD = sqr(lab2.L - lab1.L) + sqr(lab2.A - lab1.A) + sqr(lab2.B - lab2.B);
+						if (hasSemiTransparency)
+							colorD += sqr(pixelXY.GetA() - pixelXXYY.GetA()) / exp(1.5);
 						float tmpW = BYTE_MAX * exp(-spaceD / (2 * sigma_s * sigma_s) - colorD / (2 * sigma_r * sigma_r));
 
 						weightSum += tmpW;
