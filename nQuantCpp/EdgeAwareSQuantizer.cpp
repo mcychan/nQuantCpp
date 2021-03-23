@@ -92,18 +92,6 @@ namespace EdgeAwareSQuant
 		int width, height, depth;
 	};
 
-	int compute_max_coarse_level(int width, int height) {
-		// We want the coarsest layer to have at most MAX_PIXELS pixels
-		const int MAX_PIXELS = 4000;
-		int result = 0;
-		while (width * height > MAX_PIXELS) {
-			width >>= 1;
-			height >>= 1;
-			result++;
-		}
-		return result;
-	}
-
 	void fill_random_icm(Mat<BYTE>& indexImg8, int palette_size) {
 		for (int i = 0; i < indexImg8.get_height(); ++i) {
 			for (int j = 0; j < indexImg8.get_width(); ++j) {

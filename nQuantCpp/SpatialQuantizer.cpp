@@ -374,13 +374,13 @@ namespace SpatialQuant
 					if (k_y + offset_y < j_y - radius_width)
 						continue;
 					if (k_y + offset_y > j_y + radius_width)
-						continue;
+						break;
 
 					for (int k_x = 0; k_x < filter_weights.get_width(); ++k_x) {
 						if (k_x + offset_x < j_x - radius_width)
 							continue;
 						if (k_x + offset_x > j_x + radius_width)
-							continue;
+							break;
 						b(j_x, j_y) += filter_weights(k_x, k_y).direct_product(filter_weights(k_x + offset_x - j_x + radius_width, k_y + offset_y - j_y + radius_height));
 					}
 				}
@@ -752,15 +752,15 @@ namespace SpatialQuant
 					// Compute (25)
 					vector_fixed<double, 4> p_i;
 					for (int y = 0; y < b_height; ++y) {
-						int j_y = y - center_y + i_y;
-						if (j_y < 0 || j_y >= coarse_height)
-							continue;
+						int j_y = max(0, y - center_y + i_y);
+						if (j_y >= coarse_height)
+							break;
 						for (int x = 0; x < b_width; ++x) {
-							int j_x = x - center_x + i_x;
+							int j_x = max(0, x - center_x + i_x);
 							if (i_x == j_x && i_y == j_y)
 								continue;
-							if (j_x < 0 || j_x >= coarse_width)
-								continue;
+							if (j_x >= coarse_width)
+								break;
 							auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 							auto& j_pal = (*p_palette_sum)(j_x, j_y);
 							for (byte p = 0; p < length; ++p)
@@ -827,13 +827,13 @@ namespace SpatialQuant
 						//for (int y=center_y-1; y<center_y+1; y++) {
 						//   for (int x=center_x-1; x<center_x+1; x++) {
 						for (int y = min_y; y < max_y; ++y) {
-							int j_y = y - center_y + i_y;
-							if (j_y < 0 || j_y >= coarse_height)
-								continue;
+							int j_y = max(0, y - center_y + i_y);
+							if (j_y >= coarse_height)
+								break;
 							for (int x = min_x; x < max_x; ++x) {
-								int j_x = x - center_x + i_x;
-								if (j_x < 0 || j_x >= coarse_width)
-									continue;
+								int j_x = max(0, x - center_x + i_x);
+								if (j_x >= coarse_width)
+									break;
 								visit_queue.emplace_front(j_x, j_y);
 							}
 						}
@@ -909,14 +909,14 @@ namespace SpatialQuant
 			}
 		}
 
+		if (nMaxColors > 256)
+			nMaxColors = 256;
+
 		vector<vector_fixed<double, 4> > palette(nMaxColors);
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			for (byte p = 0; p < length; ++p)
 				palette[i][p] = getRandom(p % 4);
-		}
-
-		if (nMaxColors > 64)
-			nMaxColors = 64;
+		}		
 
 		auto pPaletteBytes = make_unique<BYTE[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
