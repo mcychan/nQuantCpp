@@ -281,7 +281,7 @@ namespace SpatialQuant
 	}
 
 	const short minLabValues[] = { 0, -128, -128, 0 };
-	const short maxLabValues[] = { 100, 127, 127, 1 };
+	const short maxLabValues[] = { 100, 127, 127, 255 };
 
 	short getRandom(byte k) {
 		return rand() % maxLabValues[k] + minLabValues[k];
@@ -404,34 +404,17 @@ namespace SpatialQuant
 		const int radius_width = (b.get_width() - 1) / 2, radius_height = (b.get_height() - 1) / 2;
 		for (int i_y = 0; i_y < a_height; ++i_y) {
 			for (int i_x = 0; i_x < a_width; ++i_x) {
-				for (int j_y = i_y - radius_height; j_y <= i_y + radius_height; ++j_y) {
-					if (j_y < 0)
-						j_y = 0;
-					if (j_y >= a_height)
-						break;
-
-					for (int j_x = i_x - radius_width; j_x <= i_x + radius_width; ++j_x) {
-						if (j_x < 0)
-							j_x = 0;
-						if (j_x >= a_width)
-							break;
-
+				for (int j_y = max(0, i_y - radius_height); j_y < a_height && j_y <= i_y + radius_height; ++j_y) {
+					for (int j_x = max(0, i_x - radius_width); j_x < a_width && j_x <= i_x + radius_width; ++j_x) {
 						Color jPixel(image[j_y * a.get_width() + j_x]);
 						vector_fixed<double, 4> pixel;
-						if (hasSemiTransparency) {
-							pixel[0] = jPixel.GetR() / 255.0f;
-							pixel[1] = jPixel.GetG() / 255.0f;
-							pixel[2] = jPixel.GetB() / 255.0f;
-						}
-						else {
-							CIELABConvertor::Lab lab1;
-							getLab(jPixel, lab1);
+						CIELABConvertor::Lab lab1;
+						getLab(jPixel, lab1);
 
-							pixel[0] = lab1.L;
-							pixel[1] = lab1.A;
-							pixel[2] = lab1.B;
-						}
-						pixel[3] = jPixel.GetA() / 255.0f;
+						pixel[0] = lab1.L;
+						pixel[1] = lab1.A;
+						pixel[2] = lab1.B;
+						pixel[3] = jPixel.GetA();
 
 						a(i_x, i_y) += b_value(b, i_x, i_y, j_x, j_y).direct_product(pixel);
 					}
@@ -553,6 +536,7 @@ namespace SpatialQuant
 					for (int j_x = max(0, i_x - center_x); j_x < max_j_x; ++j_x) {
 						if (i_x == j_x && i_y == j_y)
 							continue;
+
 						auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 						for (int v = 0; v < palette_size; ++v) {
 							auto v1 = coarse_variables(i_x, i_y, v);
@@ -626,33 +610,20 @@ namespace SpatialQuant
 			auto& palette_channel = (-2.0 * S_k).matrix_inverse() * R_k;
 			for (UINT v = 0; v < nMaxColor; ++v) {
 				auto val = palette_channel[v];
-				if (hasSemiTransparency) {
-					if (val < 0.0 || isnan(val))
-						val = 0.0;
-					else if (val > 1.0)
-						val = 1.0;
-				}
-				else {
-					if (val < minLabValues[k] || isnan(val))
-						val = minLabValues[k];
-					else if (val > maxLabValues[k])
-						val = maxLabValues[k];
-				}
+				if (val < minLabValues[k] || isnan(val))
+					val = minLabValues[k];
+				else if (val > maxLabValues[k])
+					val = maxLabValues[k];
 
 				palette[v][k] = val;
 
 				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k > 1) {
-					ARGB argb;
-					if (hasSemiTransparency) {
-						CIELABConvertor::Lab lab1;
-						lab1.alpha = palette[v][3] * BYTE_MAX;
-						lab1.L = palette[v][0], lab1.A = palette[v][1], lab1.B = palette[v][2];
+					CIELABConvertor::Lab lab1;
+					lab1.alpha = hasSemiTransparency ? palette[v][3] : BYTE_MAX;
+					lab1.L = palette[v][0], lab1.A = palette[v][1], lab1.B = palette[v][2];
 
-						argb = CIELABConvertor::LAB2RGB(lab1);
-					}
-					else
-						argb = Color::MakeARGB(BYTE_MAX, static_cast<BYTE>(BYTE_MAX * palette[v][0]), static_cast<BYTE>(BYTE_MAX * palette[v][1]), static_cast<BYTE>(BYTE_MAX * palette[v][2]));
-
+					auto argb = CIELABConvertor::LAB2RGB(lab1);
+					
 					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
 						swap(palette[0], palette[v]);
 				}
@@ -941,7 +912,7 @@ namespace SpatialQuant
 		vector<vector_fixed<double, 4> > palette(nMaxColors);
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			for (byte p = 0; p < length; ++p)
-				palette[i][p] = ((double)rand()) / RAND_MAX;
+				palette[i][p] = getRandom(p % 4);
 		}
 
 		if (nMaxColors > 64)
@@ -964,13 +935,8 @@ namespace SpatialQuant
 		if (nMaxColors > 2) {
 			/* Fill palette */
 			for (UINT k = 0; k < nMaxColors; ++k) {
-				if (hasSemiTransparency) {
-					pPalette->Entries[k] = Color::MakeARGB(hasSemiTransparency ? static_cast<BYTE>(BYTE_MAX * palette[k][3]) : BYTE_MAX, static_cast<BYTE>(BYTE_MAX * palette[k][0]), static_cast<BYTE>(BYTE_MAX * palette[k][1]), static_cast<BYTE>(BYTE_MAX * palette[k][2]));
-					continue;
-				}
-
 				CIELABConvertor::Lab lab1;
-				lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(BYTE_MAX * palette[k][3]) : BYTE_MAX;
+				lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[k][3]) : BYTE_MAX;
 				lab1.L = palette[k][0], lab1.A = palette[k][1], lab1.B = palette[k][2];
 				pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
 			}
