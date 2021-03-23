@@ -107,9 +107,7 @@ namespace EdgeAwareSQuant
 	void fill_random_icm(Mat<BYTE>& indexImg8, int palette_size) {
 		for (int i = 0; i < indexImg8.get_height(); ++i) {
 			for (int j = 0; j < indexImg8.get_width(); ++j) {
-				int ran_val = float(rand()) / RAND_MAX * (palette_size - 1);
-				if (ran_val < 0)
-					ran_val = 0;
+				int ran_val = max(0, float(rand()) / RAND_MAX * (palette_size - 1));
 				if (ran_val >= palette_size)
 					ran_val = palette_size - 1;
 				indexImg8(i, j) = ran_val;
@@ -155,21 +153,12 @@ namespace EdgeAwareSQuant
 				int j_y_min = i_y - extendedFilterRadius, j_y_max = i_y + extendedFilterRadius;
 				int j_x_min = i_x - extendedFilterRadius, j_x_max = i_x + extendedFilterRadius;
 				int wmI_y_min = i_y - filterRadius, wmI_y_max = i_y + filterRadius, wmI_x_min = i_x - filterRadius, wmI_x_max = i_x + filterRadius;
-				for (int j_y = j_y_min; j_y <= j_y_max; ++j_y) {
-					if (j_y < 0 || j_y >= imgHeight)
-						continue;
-					for (int j_x = j_x_min; j_x <= j_x_max; ++j_x) {
-						if (j_x < 0 || j_x >= imgWidth)
-							continue;
-
+				for (int j_y = max(0, j_y_min); j_y < imgHeight && j_y <= j_y_max; ++j_y) {
+					for (int j_x = max(0, j_x_min); j_x < imgWidth && j_x <= j_x_max; ++j_x) {
 						auto& wmap_j = weightMaps(j_y, j_x);
 						int wmJ_y_min = j_y - filterRadius, wmJ_y_max = j_y + filterRadius, wmJ_x_min = j_x - filterRadius, wmJ_x_max = j_x + filterRadius;
-						for (int wmJ_y = wmJ_y_min; wmJ_y <= wmJ_y_max; ++wmJ_y) {
-							if (wmJ_y < 0 || wmJ_y >= imgHeight)
-								continue;
-							for (int wmJ_x = wmJ_x_min; wmJ_x <= wmJ_x_max; ++wmJ_x) {
-								if (wmJ_x < 0 || wmJ_x >= imgWidth)
-									continue;
+						for (int wmJ_y = max(0, wmJ_y_min); wmJ_y < imgHeight && wmJ_y <= wmJ_y_max; ++wmJ_y) {
+							for (int wmJ_x = max(0, wmJ_x_min); wmJ_x < imgWidth && wmJ_x <= wmJ_x_max; ++wmJ_x) {
 								// if in overlap area
 								if (abs(wmJ_y - i_y) <= filterRadius && abs(wmJ_x - i_x) <= filterRadius)
 									b_yx(j_y - j_y_min, j_x - j_x_min) += saliencyMap(wmJ_y, wmJ_x) * wmap_i(wmJ_y - wmI_y_min, wmJ_x - wmI_x_min) * wmap_j(wmJ_y - wmJ_y_min, wmJ_x - wmJ_x_min);
@@ -200,36 +189,27 @@ namespace EdgeAwareSQuant
 		int extendedFilterRadius = (b(0, 0).get_width() - 1) / 2;
 		for (int i_y = 0; i_y < a.get_height(); ++i_y) {
 			for (int i_x = 0; i_x < a.get_width(); ++i_x) {
-				for (int j_y = i_y - extendedFilterRadius; j_y <= i_y + extendedFilterRadius; ++j_y) {
-					if (j_y < 0)
-						j_y = 0;
-					if (j_y >= a.get_height())
-						break;
+				for (int j_y = max(0, i_y - extendedFilterRadius); j_y < a.get_height() && j_y <= i_y + extendedFilterRadius; ++j_y) {
+					for (int j_x = max(0, i_x - extendedFilterRadius); j_x < a.get_width() && j_x <= i_x + extendedFilterRadius; ++j_x) {
+						auto tmpBvalue = b_value_ea(b, i_x, i_y, j_x, j_y);
+						if (tmpBvalue == 0)
+							continue;
 
-					for (int j_x = i_x - extendedFilterRadius; j_x <= i_x + extendedFilterRadius; ++j_x) {
-						if (j_x < 0)
-							j_x = 0;
-						if (j_x >= a.get_width())
-							break;
-
-						float tmpBvalue = b_value_ea(b, i_x, i_y, j_x, j_y);
-						if (tmpBvalue != 0) {
-							Color jPixel(image[j_y * a.get_width() + j_x]);
-							if (hasSemiTransparency) {
-								a(i_x, i_y)[0] += tmpBvalue * jPixel.GetR() / 255.0f;
-								a(i_x, i_y)[1] += tmpBvalue * jPixel.GetG() / 255.0f;
-								a(i_x, i_y)[2] += tmpBvalue * jPixel.GetB() / 255.0f;
-							}
-							else {
-								CIELABConvertor::Lab lab1;
-								getLab(jPixel, lab1);
-
-								a(i_x, i_y)[0] += tmpBvalue * lab1.L;
-								a(i_x, i_y)[1] += tmpBvalue * lab1.A;
-								a(i_x, i_y)[2] += tmpBvalue * lab1.B;
-							}
-							a(i_x, i_y)[3] += tmpBvalue * jPixel.GetA() / 255.0f;
+						Color jPixel(image[j_y * a.get_width() + j_x]);
+						if (hasSemiTransparency) {
+							a(i_x, i_y)[0] += tmpBvalue * jPixel.GetR() / 255.0f;
+							a(i_x, i_y)[1] += tmpBvalue * jPixel.GetG() / 255.0f;
+							a(i_x, i_y)[2] += tmpBvalue * jPixel.GetB() / 255.0f;
 						}
+						else {
+							CIELABConvertor::Lab lab1;
+							getLab(jPixel, lab1);
+
+							a(i_x, i_y)[0] += tmpBvalue * lab1.L;
+							a(i_x, i_y)[1] += tmpBvalue * lab1.A;
+							a(i_x, i_y)[2] += tmpBvalue * lab1.B;
+						}
+						a(i_x, i_y)[3] += tmpBvalue * jPixel.GetA() / 255.0f;
 					}
 				}
 				a(i_x, i_y) *= -2.0f;
@@ -276,11 +256,11 @@ namespace EdgeAwareSQuant
 	void zoom_float_icm(const Mat<BYTE>& smallVal, Mat<BYTE>& big)
 	{
 		for (int y = 0; y < big.get_height(); ++y) {
-			int small_y = y / 2.0;
+			int small_y = y / 2;
 			if (small_y >= smallVal.get_height())
 				continue;
 			for (int x = 0; x < big.get_width(); ++x) {
-				int small_x = x / 2.0;
+				int small_x = x / 2;
 				if (small_x >= smallVal.get_width())
 					continue;
 				big(y, x) = smallVal(small_y, small_x);
@@ -305,12 +285,8 @@ namespace EdgeAwareSQuant
 			for (int i_x = 0; i_x < coarse_width; ++i_x) {
 				int j_y_min = i_y - extendedFilterRadius, j_y_max = i_y + extendedFilterRadius;
 				int j_x_min = i_x - extendedFilterRadius, j_x_max = i_x + extendedFilterRadius;
-				for (int j_y = j_y_min; j_y <= j_y_max; ++j_y) {
-					if (j_y < 0 || j_y >= coarse_height)
-						continue;
-					for (int j_x = j_x_min; j_x <= j_x_max; ++j_x) {
-						if (j_x < 0 || j_x >= coarse_width)
-							continue;
+				for (int j_y = max(0, j_y_min); j_y < coarse_height && j_y <= j_y_max; ++j_y) {
+					for (int j_x = max(0, j_x_min); j_x < coarse_width && j_x <= j_x_max; ++j_x) {
 						if (i_x == j_x && i_y == j_y)
 							continue;
 						auto b_ij = b_value_ea(b, i_x, i_y, j_x, j_y);
@@ -346,7 +322,7 @@ namespace EdgeAwareSQuant
 			}
 		}
 
-		float max_palette_delta = 0.0f, min_palette_delta = 1.0f;
+		auto max_palette_delta = 0.0f, min_palette_delta = 1.0f;
 		const int length = hasSemiTransparency ? 4 : 3;
 		const short minLabValues[] = { 0, -128, -128, 0 };
 		const short maxLabValues[] = { 100, 127, 127, 1 };
@@ -354,21 +330,13 @@ namespace EdgeAwareSQuant
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
 			auto& palette_channel = (-2.0f * S_k).matrix_inverse() * R_k;
-			UINT v = 0;
-			for (; v < palette.size(); ++v) {
-				auto val = palette_channel[v];
-				if (hasSemiTransparency) {
-					if (val < 0.0 || isnan(val))
-						val = 0.0;
-					if (val > 1.0)
-						val = 1.0;
-				}
-				else {
-					if (val < minLabValues[k] || isnan(val))
-						val = minLabValues[k];
-					else if (val > maxLabValues[k])
-						val = maxLabValues[k];
-				}
+			short j = hasSemiTransparency ? 3 : k;
+			for (UINT v = 0; v < palette.size(); ++v) {
+				auto val = palette_channel[v];				
+				if (val < minLabValues[j] || isnan(val))
+					val = minLabValues[j];
+				else if (val > maxLabValues[j])
+					val = maxLabValues[j];
 
 				float palette_delta = abs(palette[v][k] - val);
 				if (palette_delta > max_palette_delta)
@@ -397,8 +365,7 @@ namespace EdgeAwareSQuant
 	}
 
 	void spatial_color_quant_ea_icm_saliency(const vector<ARGB>& image, Mat<Mat<float> >& weightMaps, Mat<float> saliencyMap,
-		unsigned short* quantized_image, vector<vector_fixed<float, 4> >& palette,
-		const float initial_temperature = 1.0, const float final_temperature = 0.00001, const int temps_per_level = 1, const int repeats_per_temp = 1, const int filter_radius = 1)
+		unsigned short* quantized_image, vector<vector_fixed<float, 4> >& palette, const int filter_radius = 1)
 	{
 		const int length = hasSemiTransparency ? 4 : 3;
 		const int bitmapWidth = weightMaps.get_width();
@@ -422,8 +389,7 @@ namespace EdgeAwareSQuant
 		a0.reset(bitmapWidth, bitmapHeight);
 		compute_a_image_ea(image, b0, a0);
 
-		int coarse_level = 1;
-		for (; coarse_level <= max_coarse_level; ++coarse_level) {
+		for (int coarse_level = 1; coarse_level <= max_coarse_level; ++coarse_level) {
 			auto& ai = a_array[coarse_level];
 			ai.reset(bitmapWidth >> coarse_level, bitmapHeight >> coarse_level);
 
@@ -441,26 +407,12 @@ namespace EdgeAwareSQuant
 					int J_y_min = I_y - newExtendedFilterRadius, J_y_max = I_y + newExtendedFilterRadius;
 					int J_x_min = I_x - newExtendedFilterRadius, J_x_max = I_x + newExtendedFilterRadius;
 
-					for (int J_y = J_y_min; J_y <= J_y_max; ++J_y) {
-						if (J_y < 0 || J_y >= ai.get_height())
-							continue;
-						for (int J_x = J_x_min; J_x <= J_x_max; ++J_x) {
-							if (J_x < 0 || J_x >= ai.get_width())
-								continue;
-
-							for (int i_y = I_y * 2; i_y < I_y * 2 + 2; ++i_y) {
-								if (i_y >= a0.get_height())
-									continue;
-								for (int i_x = I_x * 2; i_x < I_x * 2 + 2; ++i_x) {
-									if (i_x >= a0.get_width())
-										continue;
-									for (int j_y = J_y * 2; j_y < J_y * 2 + 2; ++j_y) {
-										if (j_y >= a0.get_height())
-											continue;
-										for (int j_x = J_x * 2; j_x < J_x * 2 + 2; ++j_x) {
-											if (j_x >= a0.get_width())
-												continue;
-
+					for (int J_y = max(0, J_y_min); J_y < ai.get_height() && J_y <= J_y_max; ++J_y) {
+						for (int J_x = max(0, J_x_min); J_x < ai.get_width() && J_x <= J_x_max; ++J_x) {
+							for (int i_y = I_y * 2; i_y < a0.get_height() && i_y < I_y * 2 + 2; ++i_y) {
+								for (int i_x = I_x * 2; i_x < a0.get_width() && i_x < I_x * 2 + 2; ++i_x) {
+									for (int j_y = J_y * 2; j_y < a0.get_height() && j_y < J_y * 2 + 2; ++j_y) {
+										for (int j_x = J_x * 2; j_x < a0.get_width() && j_x < J_x * 2 + 2; ++j_x) {
 											bi_yx(J_y - J_y_min, J_x - J_x_min) += b_value_ea(b0, i_x, i_y, j_x, j_y);
 										}
 									}
@@ -480,13 +432,13 @@ namespace EdgeAwareSQuant
 
 
 		// Multiscale ICM
-		coarse_level = max_coarse_level;
+		int coarse_level = max_coarse_level;
 		array2d<vector_fixed<float, 4> > s(palette.size(), palette.size());
 		compute_initial_s_ea_icm(s, *pIndexImg8, b_array[coarse_level]);
 
 		float paletteSize = palette.size() * 1.0f;
 		const double divisor = 1.0 / (255.0 * 255.0);
-		const double rate = log(palette.size()) / log(16);
+		const double rate = 4.0 / log2(palette.size());
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
 			vector<vector<pair<float, int> > > centroidDist(paletteSize, vector<pair<float, int> >(paletteSize, pair<float, int>(0.0f, -1)));
@@ -527,16 +479,15 @@ namespace EdgeAwareSQuant
 
 			int step_counter = 0;
 			int repeat_outter = 0;
-			int palette_changed = 0;			
-			while (repeat_outter == 0 || palette_changed > palette.size() * 0.1 / rate) {
+			int palette_changed = 0;
+			int total_pixels = pIndexImg8->get_width() * pIndexImg8->get_height();
+			while (repeat_outter++ == 0 || palette_changed > palette.size() * 0.1 * rate) {
 				palette_changed = 0;
-				++repeat_outter;
 				//----update labeling
 				int pixels_changed = 0, pixels_visited = 0;
 				int repeat_inner = 0;
 
-				while (repeat_inner == 0 || pixels_changed > 0.001 / rate * pIndexImg8->get_width() * pIndexImg8->get_height()) {
-					++repeat_inner;
+				while (repeat_inner++ == 0 || pixels_changed > 0.0001 * rate * total_pixels) {
 					pixels_changed = 0;
 					pixels_visited = 0;
 
@@ -552,15 +503,11 @@ namespace EdgeAwareSQuant
 
 						// Compute based on Puzicha's (28)
 						vector_fixed<float, 4> p_i;
-						for (int j_y = i_y - (b1.get_height() - 1) / 2; j_y <= i_y + (b1.get_height() - 1) / 2; ++j_y) {
-							if (j_y < 0 || j_y >= pIndexImg8->get_height())
-								continue;
-							for (int j_x = i_x - (b1.get_width() - 1) / 2; j_x <= i_x + (b1.get_width() - 1) / 2; ++j_x) {
-								//int j_x = x - center_x + i_x, j_y = y - center_y + i_y;
+						for (int j_y = max(0, i_y - center_y); j_y < pIndexImg8->get_height() && j_y <= i_y + center_y; ++j_y) {
+							for (int j_x = max(0, i_x - center_x); j_x < pIndexImg8->get_width() && j_x <= i_x + center_x; ++j_x) {
 								if (i_x == j_x && i_y == j_y)
 									continue;
-								if (j_x < 0 || j_x >= pIndexImg8->get_width())
-									continue;
+
 								auto b_ij = b_value_ea(b, i_x, i_y, j_x, j_y);
 								auto& pixelIndex = pIndexImg8->at(j_y, j_x);
 								for (byte p = 0; p < length; ++p)
@@ -639,18 +586,14 @@ namespace EdgeAwareSQuant
 		float wMin = 100;
 		for (int y = 0; y < weightMaps.get_height(); ++y) {
 			for (int x = 0; x < weightMaps.get_width(); ++x) {
-				float weightSum = 0.0f;
+				auto weightSum = 0.0f;
 
 				int yyMin = y - radius, yyMax = y + radius, xxMin = x - radius, xxMax = x + radius;
 				auto& weightMaps_yx = weightMaps(y, x);
 				weightMaps_yx.reset(2 * radius + 1, 2 * radius + 1);
-				for (int yy = yyMin; yy <= yyMax; ++yy) {
-					if (yy < 0 || yy >= weightMaps.get_height())
-						continue;
-					for (int xx = xxMin; xx <= xxMax; ++xx) {
-						if (xx < 0 || xx >= weightMaps.get_width())
-							continue;
-						float spaceD = sqr(y - yy) + sqr(x - xx);
+				for (int yy = max(0, yyMin); yy < weightMaps.get_height() && yy <= yyMax; ++yy) {
+					for (int xx = max(0, xxMin); xx < weightMaps.get_width() && xx <= xxMax; ++xx) {
+						auto spaceD = sqr(y - yy) + sqr(x - xx);
 						Color pixelXY(img[y * weightMaps.get_width() + x]);
 						Color pixelXXYY(img[yy * weightMaps.get_width() + xx]);
 
@@ -660,7 +603,7 @@ namespace EdgeAwareSQuant
 						float colorD = sqr(lab2.L - lab1.L) + sqr(lab2.A - lab1.A) + sqr(lab2.B - lab2.B);
 						if (hasSemiTransparency)
 							colorD += sqr(pixelXY.GetA() - pixelXXYY.GetA()) / exp(1.5);
-						float tmpW = BYTE_MAX * exp(-spaceD / (2 * sigma_s * sigma_s) - colorD / (2 * sigma_r * sigma_r));
+						auto tmpW = BYTE_MAX * exp(-spaceD / (2 * sigma_s * sigma_s) - colorD / (2 * sigma_r * sigma_r));
 
 						weightSum += tmpW;
 
@@ -694,14 +637,14 @@ namespace EdgeAwareSQuant
 				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) / 255.0f;
 		}
 
-		if (nMaxColors > 256)
-			nMaxColors = 256;
+		if (nMaxColors > 128)
+			nMaxColors = 128;
 
 		auto pPaletteBytes = make_unique<BYTE[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
+		if (nMaxColors == 128 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
 			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
 
 		DivQuant::DivQuantizer divQuantizer;
