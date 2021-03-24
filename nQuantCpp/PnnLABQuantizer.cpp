@@ -331,8 +331,7 @@ namespace PnnLABQuant
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
 				getLab(c2, lab2);
-				closest[4] = sqr(lab2.alpha - lab1.alpha) + CIELABConvertor::CIEDE2000(lab2, lab1);
-				//closest[4] = abs(lab2.alpha - lab1.alpha) + abs(lab2.L - lab1.L) + abs(lab2.A - lab1.A) + abs(lab2.B - lab1.B);
+				closest[4] = abs(lab2.alpha - lab1.alpha) + abs(lab2.L - lab1.L) + abs(lab2.A - lab1.A) + abs(lab2.B - lab1.B);
 				if (closest[4] < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];
@@ -363,7 +362,7 @@ namespace PnnLABQuant
 	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
 		if (dither)
-			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
+			return dither_image(pixels, pPalette, closestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
 
 		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		UINT pixelIndex = 0;
