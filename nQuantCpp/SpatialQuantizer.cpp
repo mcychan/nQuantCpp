@@ -536,7 +536,6 @@ namespace SpatialQuant
 					for (int j_x = max(0, i_x - center_x); j_x < max_j_x; ++j_x) {
 						if (i_x == j_x && i_y == j_y)
 							continue;
-
 						auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 						for (int v = 0; v < palette_size; ++v) {
 							auto v1 = coarse_variables(i_x, i_y, v);
@@ -603,7 +602,7 @@ namespace SpatialQuant
 			}
 		}
 
-		const short length = hasSemiTransparency ? 4 : 3;		
+		const short length = hasSemiTransparency ? 4 : 3;
 		for (int k = 0; k < length; ++k) {
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
@@ -621,9 +620,7 @@ namespace SpatialQuant
 					CIELABConvertor::Lab lab1;
 					lab1.alpha = hasSemiTransparency ? palette[v][3] : BYTE_MAX;
 					lab1.L = palette[v][0], lab1.A = palette[v][1], lab1.B = palette[v][2];
-
 					auto argb = CIELABConvertor::LAB2RGB(lab1);
-					
 					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
 						swap(palette[0], palette[v]);
 				}
@@ -715,7 +712,7 @@ namespace SpatialQuant
 		auto p_palette_sum = make_unique<array2d< vector_fixed<double, 4> > >(p_coarse_variables->get_width(), p_coarse_variables->get_height());
 		compute_initial_j_palette_sum(*p_palette_sum, *p_coarse_variables, palette);
 
-		const double divisor = 1.0 / (255.0 * 255.0);
+		const double divisor = 1.0 / 255.0;
 		while (coarse_level >= 0 || temperature > final_temperature) {
 			// Need to reseat this reference in case we changed p_coarse_variables
 			auto& coarse_variables = *p_coarse_variables;
@@ -752,15 +749,15 @@ namespace SpatialQuant
 					// Compute (25)
 					vector_fixed<double, 4> p_i;
 					for (int y = 0; y < b_height; ++y) {
-						int j_y = max(0, y - center_y + i_y);
-						if (j_y >= coarse_height)
-							break;
+						int j_y = y - center_y + i_y;
+						if (j_y < 0 || j_y >= coarse_height)
+							continue;
 						for (int x = 0; x < b_width; ++x) {
-							int j_x = max(0, x - center_x + i_x);
+							int j_x = x - center_x + i_x;
 							if (i_x == j_x && i_y == j_y)
 								continue;
-							if (j_x >= coarse_width)
-								break;
+							if (j_x < 0 || j_x >= coarse_width)
+								continue;
 							auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 							auto& j_pal = (*p_palette_sum)(j_x, j_y);
 							for (byte p = 0; p < length; ++p)
@@ -827,13 +824,13 @@ namespace SpatialQuant
 						//for (int y=center_y-1; y<center_y+1; y++) {
 						//   for (int x=center_x-1; x<center_x+1; x++) {
 						for (int y = min_y; y < max_y; ++y) {
-							int j_y = max(0, y - center_y + i_y);
-							if (j_y >= coarse_height)
-								break;
+							int j_y = y - center_y + i_y;
+							if (j_y < 0 || j_y >= coarse_height)
+								continue;
 							for (int x = min_x; x < max_x; ++x) {
-								int j_x = max(0, x - center_x + i_x);
-								if (j_x >= coarse_width)
-									break;
+								int j_x = x - center_x + i_x;
+								if (j_x < 0 || j_x >= coarse_width)
+									continue;
 								visit_queue.emplace_front(j_x, j_y);
 							}
 						}
@@ -915,14 +912,14 @@ namespace SpatialQuant
 		vector<vector_fixed<double, 4> > palette(nMaxColors);
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			for (byte p = 0; p < length; ++p)
-				palette[i][p] = getRandom(p % 4);
+				palette[i][p] = getRandom(p);
 		}		
 
 		auto pPaletteBytes = make_unique<BYTE[]>(pDest->GetPaletteSize());
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		if (nMaxColors == 64 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
+		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
 			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
