@@ -331,7 +331,7 @@ namespace PnnLABQuant
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
 				getLab(c2, lab2);
-				closest[4] = abs(lab2.alpha - lab1.alpha) + abs(lab2.L - lab1.L) + abs(lab2.A - lab1.A) + abs(lab2.B - lab1.B);
+				closest[4] = sqr(lab2.L - lab1.L) + sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B);
 				if (closest[4] < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];
