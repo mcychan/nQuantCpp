@@ -361,10 +361,10 @@ namespace PnnLABQuant
 
 	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
+		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 64) ? nearestColorIndex : closestColorIndex;
 		if (dither)
-			return dither_image(pixels, pPalette, closestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
-
-		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
+			return dither_image(pixels, pPalette, ditherFn, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
+		
 		UINT pixelIndex = 0;
 		for (int j = 0; j < height; ++j) {
 			for (int i = 0; i < width; ++i)
