@@ -46,6 +46,8 @@ namespace EdgeAwareSQuant
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
 
 	const int DECOMP_SVD = 1;
+	const short minLabValues[] = { 0, -128, -128, 0 };
+	const short maxLabValues[] = { 100, 127, 127, 255 };
 
 	static bool mycmp(pair<float, int> p1, pair<float, int> p2)
 	{
@@ -94,12 +96,8 @@ namespace EdgeAwareSQuant
 
 	void fill_random_icm(Mat<BYTE>& indexImg8, int palette_size) {
 		for (int i = 0; i < indexImg8.get_height(); ++i) {
-			for (int j = 0; j < indexImg8.get_width(); ++j) {
-				int ran_val = rand() % palette_size;
-				if (ran_val >= palette_size)
-					ran_val = palette_size - 1;
-				indexImg8(i, j) = ran_val;
-			}
+			for (int j = 0; j < indexImg8.get_width(); ++j)
+				indexImg8(i, j) = rand() % palette_size;
 		}
 	}
 
@@ -303,10 +301,7 @@ namespace EdgeAwareSQuant
 			}
 		}
 
-		auto max_palette_delta = 0.0f, min_palette_delta = 1.0f;
-		const int length = hasSemiTransparency ? 4 : 3;
-		const short minLabValues[] = { 0, -128, -128, 0 };
-		const short maxLabValues[] = { 100, 127, 127, 255 };
+		const int length = hasSemiTransparency ? 4 : 3;		
 		for (short k = 0; k < length; ++k) {
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
@@ -319,11 +314,7 @@ namespace EdgeAwareSQuant
 					val = maxLabValues[k];
 
 				float palette_delta = abs(palette[v][k] - val);
-				if (palette_delta > max_palette_delta)
-					max_palette_delta = palette_delta;
-				if (palette_delta > min_palette_delta)
-					min_palette_delta = palette_delta;
-				if (palette_delta > 1.0f / (maxLabValues[k] - minLabValues[k]))
+				if (palette_delta > 1.0f)
 					++palatte_changed;
 				palette[v][k] = val;
 
@@ -411,7 +402,8 @@ namespace EdgeAwareSQuant
 		array2d<vector_fixed<float, 4> > s(palette.size(), palette.size());
 		compute_initial_s_ea_icm(s, *pIndexImg8, b_array[coarse_level]);
 
-		float paletteSize = palette.size() * 1.0f;
+		const int total_pixels = pIndexImg8->get_width() * pIndexImg8->get_height();
+		const float paletteSize = palette.size() * 1.0f;
 		const double divisor = 1.0;
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
@@ -445,8 +437,7 @@ namespace EdgeAwareSQuant
 
 			int step_counter = 0;
 			int repeat_outter = 0;
-			int palette_changed = 0;
-			int total_pixels = pIndexImg8->get_width() * pIndexImg8->get_height();
+			int palette_changed = 0;			
 			while (repeat_outter++ == 0 || palette_changed > palette.size() * 0.1) {
 				palette_changed = 0;
 				//----update labeling
@@ -548,10 +539,15 @@ namespace EdgeAwareSQuant
 	void filter_bila(const vector<ARGB>& img, Mat<Mat<float> >& weightMaps, const float sigma_s = 1.0f, const float sigma_r = 2.0f)
 	{
 		// pixel-wise filter		
-		const int radius = 1;		
-		const auto colorDivisor = hasSemiTransparency ? 2 * sigma_r * sigma_r * sigma_r : 2 * sigma_r * sigma_r;
-		const auto spacerDivisor = 2 * sigma_s * sigma_s;
+		const int radius = 1;
 		float wMin = 100;
+		auto colorDivisor = 2 * sigma_r * sigma_r;
+		auto spacerDivisor = 2 * sigma_s * sigma_s;
+		if (hasSemiTransparency) {
+			colorDivisor *= sigma_r;
+			spacerDivisor *= sigma_s;
+		}
+		
 		for (int y = 0; y < weightMaps.get_height(); ++y) {
 			for (int x = 0; x < weightMaps.get_width(); ++x) {
 				auto weightSum = 0.0f;
