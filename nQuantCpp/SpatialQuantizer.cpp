@@ -284,7 +284,7 @@ namespace SpatialQuant
 	const short maxLabValues[] = { 100, 127, 127, 255 };
 
 	short getRandom(byte k) {
-		return rand() % (maxLabValues[k] + minLabValues[k] - 1);
+		return rand() % maxLabValues[k] + minLabValues[k];
 	}
 
 	template <typename T>
