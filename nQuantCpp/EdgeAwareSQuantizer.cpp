@@ -413,7 +413,6 @@ namespace EdgeAwareSQuant
 
 		float paletteSize = palette.size() * 1.0f;
 		const double divisor = 1.0;
-		const double rate = 4.0 / log2(palette.size());
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
 			vector<vector<pair<float, int> > > centroidDist(paletteSize, vector<pair<float, int> >(paletteSize, pair<float, int>(0.0f, -1)));
@@ -448,13 +447,13 @@ namespace EdgeAwareSQuant
 			int repeat_outter = 0;
 			int palette_changed = 0;
 			int total_pixels = pIndexImg8->get_width() * pIndexImg8->get_height();
-			while (repeat_outter++ == 0 || palette_changed > palette.size() * 0.1 * rate) {
+			while (repeat_outter++ == 0 || palette_changed > palette.size() * 0.1) {
 				palette_changed = 0;
 				//----update labeling
 				int pixels_changed = 0, pixels_visited = 0;
 				int repeat_inner = 0;
 
-				while (repeat_inner++ == 0 || pixels_changed > 0.0001 * rate * total_pixels) {
+				while (repeat_inner++ == 0 || pixels_changed > 0.0001 * total_pixels) {
 					pixels_changed = 0;
 					pixels_visited = 0;
 
