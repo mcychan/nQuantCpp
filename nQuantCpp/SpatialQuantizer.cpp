@@ -712,7 +712,7 @@ namespace SpatialQuant
 		auto p_palette_sum = make_unique<array2d< vector_fixed<double, 4> > >(p_coarse_variables->get_width(), p_coarse_variables->get_height());
 		compute_initial_j_palette_sum(*p_palette_sum, *p_coarse_variables, palette);
 
-		const double divisor = 1.0 / 255.0;
+		const double divisor = 1.0;
 		while (coarse_level >= 0 || temperature > final_temperature) {
 			// Need to reseat this reference in case we changed p_coarse_variables
 			auto& coarse_variables = *p_coarse_variables;

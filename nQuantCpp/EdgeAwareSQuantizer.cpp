@@ -323,11 +323,11 @@ namespace EdgeAwareSQuant
 					max_palette_delta = palette_delta;
 				if (palette_delta > min_palette_delta)
 					min_palette_delta = palette_delta;
-				if (palette_delta > 1.0f / 255.0f)
-					palatte_changed++;
+				if (palette_delta > 1.0f / (maxLabValues[k] - minLabValues[k]))
+					++palatte_changed;
 				palette[v][k] = val;
 
-				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k == length - 1) {
+				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k > 1) {
 					CIELABConvertor::Lab lab1;
 					lab1.alpha = BYTE_MAX;
 					lab1.L = palette[v][0], lab1.A = palette[v][1], lab1.B = palette[v][2];
@@ -412,7 +412,7 @@ namespace EdgeAwareSQuant
 		compute_initial_s_ea_icm(s, *pIndexImg8, b_array[coarse_level]);
 
 		float paletteSize = palette.size() * 1.0f;
-		const double divisor = 1.0 / 255.0;
+		const double divisor = 1.0;
 		const double rate = 4.0 / log2(palette.size());
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
