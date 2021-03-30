@@ -218,7 +218,7 @@ namespace DivQuant
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
 			// Calculate the squared Euclidean distance between cp and cinit
-			UINT min_dist = abs(c.GetA() - cmap[index].alpha) + abs(lab1.L - cmap[index].L) + abs(lab1.A - cmap[index].A) + abs(lab1.B - cmap[index].B);
+			UINT min_dist = sqr(c.GetA() - cmap[index].alpha) / exp(1.5) + sqr(lab1.L - cmap[index].L) + sqr(lab1.A - cmap[index].A) + sqr(lab1.B - cmap[index].B);
 			int upi = index, downi = index;
 			bool up = true, down = true;
 			while (up || down) {
@@ -228,7 +228,7 @@ namespace DivQuant
 						up = false;          
 					}
 					else {
-						UINT dist = abs(c.GetA() - cmap[upi].alpha) + abs(lab1.L - cmap[upi].L) + abs(lab1.A - cmap[upi].A) + abs(lab1.B - cmap[upi].B);          
+						UINT dist = sqr(c.GetA() - cmap[upi].alpha) / exp(1.5) + sqr(lab1.L - cmap[upi].L) + sqr(lab1.A - cmap[upi].A) + sqr(lab1.B - cmap[upi].B);
 						if (dist < min_dist) {
 							min_dist = dist;
 							index = upi;            
@@ -242,7 +242,7 @@ namespace DivQuant
 						down = false;
 					}
 					else {
-						UINT dist = abs(c.GetA() - cmap[downi].alpha) + abs(lab1.L - cmap[downi].L) + abs(lab1.A - cmap[downi].A) + abs(lab1.B - cmap[downi].B);
+						UINT dist = sqr(c.GetA() - cmap[downi].alpha) / exp(1.5) + sqr(lab1.L - cmap[downi].L) + sqr(lab1.A - cmap[downi].A) + sqr(lab1.B - cmap[downi].B);
 						if (dist < min_dist) {
 							min_dist = dist;
 							index = downi;            
