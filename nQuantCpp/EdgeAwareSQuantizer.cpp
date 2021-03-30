@@ -302,21 +302,21 @@ namespace EdgeAwareSQuant
 		}
 
 		const int length = hasSemiTransparency ? 4 : 3;
+		const float divisor = hasSemiTransparency ? 1.0f : 255.0f;
 		
 		for (short k = 0; k < length; ++k) {
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
 			auto& palette_channel = (-2.0f * S_k).matrix_inverse() * R_k;
-			short j = hasSemiTransparency ? 3 : k;
 			for (UINT v = 0; v < palette.size(); ++v) {
 				auto val = palette_channel[v];				
-				if (val < minLabValues[j] || isnan(val))
-					val = minLabValues[j];
-				else if (val > maxLabValues[j])
-					val = maxLabValues[j];
+				if (val < minLabValues[k] || isnan(val))
+					val = minLabValues[k];
+				else if (val > maxLabValues[k])
+					val = maxLabValues[k];
 
 				float palette_delta = abs(palette[v][k] - val);
-				if (palette_delta > 1.0f / 255.0f)
+				if (palette_delta > 1.0f / divisor)
 					++palatte_changed;
 				palette[v][k] = val;
 
@@ -406,10 +406,10 @@ namespace EdgeAwareSQuant
 
 		const int total_pixels = pIndexImg8->get_width() * pIndexImg8->get_height();
 		float paletteSize = palette.size() * 1.0f;
-		const double divisor = hasSemiTransparency ? 1.0 : 1.0 / 255.0;
-		double rate = hasSemiTransparency ? 4.0 / log2(palette.size()) : 1.0;
-		if (hasSemiTransparency && palette.size() > 64)
-			rate = 2.0 / log2(palette.size());
+		const double divisor = 1.0 / 255.0;
+		double rate = hasSemiTransparency ? 1.5 / log2(palette.size()) : 1.0;
+		if (hasSemiTransparency && palette.size() > 96 && palette.size() < 192)
+			rate = 4.0 / log2(palette.size());
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
 			vector<vector<pair<float, int> > > centroidDist(paletteSize, vector<pair<float, int> >(paletteSize, pair<float, int>(0.0f, -1)));
@@ -419,7 +419,7 @@ namespace EdgeAwareSQuant
 					lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[l1][3]) : BYTE_MAX;
 					lab1.L = palette[l1][0], lab1.A = palette[l1][1], lab1.B = palette[l1][2];
 
-					lab2.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[l1][3]) : BYTE_MAX;
+					lab2.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[l2][3]) : BYTE_MAX;
 					lab2.L = palette[l2][0], lab2.A = palette[l2][1], lab2.B = palette[l2][2];
 
 					auto curDist = sqr(lab2.L - lab1.L) + sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B);
