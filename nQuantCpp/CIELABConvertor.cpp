@@ -68,16 +68,16 @@ inline constexpr double rad2Deg(const double rad)
 
 double CIELABConvertor::L_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2)
 {
-	const double k_L = 1.0;
+	const double k_L = 1.0; // kL
 	double deltaLPrime = lab2.L - lab1.L;	
 	double barLPrime = (lab1.L + lab2.L) / 2.0;
-	double S_L = 1 + ((0.015 * pow(barLPrime - 50.0, 2.0)) / _sqrt(20 + pow(barLPrime - 50.0, 2.0)));
+	double S_L = 1 + ((0.015 * sqr(barLPrime - 50.0)) / _sqrt(20 + sqr(barLPrime - 50.0)));
 	return deltaLPrime / (k_L * S_L);
 }
 
 double CIELABConvertor::C_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2, double& a1Prime, double& a2Prime, double& CPrime1, double& CPrime2)
 {
-	const double k_C = 1.0;
+	const double k_C = 1.0, K1 = 0.045; // K1
 	const double pow25To7 = 6103515625.0; /* pow(25, 7) */
 	double C1 = _sqrt((lab1.A * lab1.A) + (lab1.B * lab1.B));
 	double C2 = _sqrt((lab2.A * lab2.A) + (lab2.B * lab2.B));
@@ -91,13 +91,13 @@ double CIELABConvertor::C_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2, do
 	double deltaCPrime = CPrime2 - CPrime1;
 	double barCPrime = (CPrime1 + CPrime2) / 2.0;
 	
-	double S_C = 1 + (0.045 * barCPrime);
+	double S_C = 1 + (K1 * barCPrime);
 	return deltaCPrime / (k_C * S_C);
 }
 
 double CIELABConvertor::H_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2, const double a1Prime, const double a2Prime, const double CPrime1, const double CPrime2, double& barCPrime, double& barhPrime)
 {
-	const double k_H = 1.0;
+	const double k_H = 1.0, K2 = 0.015; // K2
 	constexpr double deg360InRad = deg2Rad(360.0);
 	constexpr double deg180InRad = deg2Rad(180.0);
 	double CPrimeProduct = CPrime1 * CPrime2;
@@ -158,7 +158,7 @@ double CIELABConvertor::H_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2, co
 		(0.24 * cos(2.0 * barhPrime)) +
 		(0.32 * cos((3.0 * barhPrime) + deg2Rad(6.0))) -
 		(0.20 * cos((4.0 * barhPrime) - deg2Rad(63.0)));
-	double S_H = 1 + (0.015 * barCPrime * T);
+	double S_H = 1 + (K2 * barCPrime * T);
 	return deltaHPrime / (k_H * S_H);
 }
 
