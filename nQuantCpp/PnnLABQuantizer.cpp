@@ -114,7 +114,8 @@ namespace PnnLABQuant
 			Color c(pixel);
 			byte a = c.GetA();
 			if (a <= alphaThreshold) {
-				bins[0].cnt++;
+				int index = GetARGBIndex(m_transparentColor, hasSemiTransparency);
+				bins[index].cnt++;
 				continue;
 			}
 			if (a < BYTE_MAX) {
