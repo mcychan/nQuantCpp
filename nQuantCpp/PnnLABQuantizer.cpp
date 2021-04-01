@@ -14,6 +14,7 @@ Copyright (c) 2018-2019 Miller Cy Chan
 namespace PnnLABQuant
 {
 	double PR = .299, PG = .587, PB = .114;
+	byte alphaThreshold = 0;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	double ratio = 1.0;
@@ -111,12 +112,23 @@ namespace PnnLABQuant
 			// !!! Can throw gamma correction in here, but what to do about perceptual
 			// !!! nonuniformity then?			
 			Color c(pixel);
+			byte a = c.GetA();
+			if (a <= alphaThreshold) {
+				bins[0].cnt++;
+				continue;
+			}
+			if (a < BYTE_MAX) {
+				int alpha = a * 2;
+				a = alpha > BYTE_MAX ? BYTE_MAX : alpha;
+				c = Color::MakeARGB(a, c.GetR(), c.GetG(), c.GetB());
+			}
+
 			int index = GetARGBIndex(c, hasSemiTransparency);
 
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
 			auto& tb = bins[index];
-			tb.ac += c.GetA();
+			tb.ac += a;
 			tb.Lc += lab1.L;
 			tb.Ac += lab1.A;
 			tb.Bc += lab1.B;

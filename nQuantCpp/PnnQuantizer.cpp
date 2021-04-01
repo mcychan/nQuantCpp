@@ -11,6 +11,7 @@ Copyright (c) 2018-2019 Miller Cy Chan
 
 namespace PnnQuant
 {
+	byte alphaThreshold = 0;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
@@ -60,10 +61,20 @@ namespace PnnQuant
 			// !!! Can throw gamma correction in here, but what to do about perceptual
 			// !!! nonuniformity then?
 			Color c(pixel);
+			byte a = c.GetA();
+			if (a <= alphaThreshold) {
+				bins[0].cnt++;
+				continue;
+			}
+			if (a < BYTE_MAX) {
+				int alpha = a * 2;
+				a = alpha > BYTE_MAX ? BYTE_MAX : alpha;
+				c = Color::MakeARGB(a, c.GetR(), c.GetG(), c.GetB());
+			}
+
 			int index = GetARGBIndex(c, hasSemiTransparency);
 			auto& tb = bins[index];
-			if (hasSemiTransparency)
-				tb.ac += c.GetA();
+			tb.ac += a;
 			tb.rc += c.GetR();
 			tb.gc += c.GetG();
 			tb.bc += c.GetB();
@@ -78,8 +89,7 @@ namespace PnnQuant
 				continue;
 
 			double d = 1.0 / (double)bins[i].cnt;
-			if (hasSemiTransparency)
-				bins[i].ac *= d;
+			bins[i].ac *= d;
 			bins[i].rc *= d;
 			bins[i].gc *= d;
 			bins[i].bc *= d;
