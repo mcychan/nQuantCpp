@@ -295,12 +295,13 @@ namespace nQuant
 				for (UINT x = 0; x < bitmapWidth; ++x, ++pixelIndex) {
 					Color color;
 					sourceImage->GetPixel(x, y, &color);
-					if (color.GetA() < BYTE_MAX) {
-						hasSemiTransparency = true;
+					if (color.GetA() < BYTE_MAX) {						
 						if (color.GetA() == 0) {
 							m_transparentPixelIndex = pixelIndex;
 							m_transparentColor = color.GetValue();
 						}
+						else
+							hasSemiTransparency = true;
 					}
 					CompileColorData(colorData, color, alphaThreshold, alphaFader);
 				}
@@ -340,11 +341,12 @@ namespace nQuant
 
 				Color color(Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue));
 				if (pixelAlpha < BYTE_MAX) {
-					hasSemiTransparency = true;
 					if (pixelAlpha == 0) {
 						m_transparentPixelIndex = pixelIndex;
 						m_transparentColor = color.GetValue();
 					}
+					else
+						hasSemiTransparency = true;
 				}
 				CompileColorData(colorData, color, alphaThreshold, alphaFader);
 			}

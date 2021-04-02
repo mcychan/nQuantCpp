@@ -199,6 +199,8 @@ namespace PnnQuant
 
 		unsigned short k = 0;
 		Color c(argb);
+		if (c.GetA() <= alphaThreshold)
+			return k;
 
 		double mindist = INT_MAX;
 		for (UINT i = 0; i < nMaxColors; ++i) {

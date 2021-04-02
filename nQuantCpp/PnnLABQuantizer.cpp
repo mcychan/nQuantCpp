@@ -265,6 +265,8 @@ namespace PnnLABQuant
 
 		unsigned short k = 0;
 		Color c(argb);
+		if (c.GetA() <= alphaThreshold)
+			return k;
 
 		double mindist = SHORT_MAX;
 		CIELABConvertor::Lab lab1, lab2;
