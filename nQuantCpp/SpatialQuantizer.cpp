@@ -38,6 +38,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SpatialQuant
 {
+	byte alphaThreshold = 0;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
@@ -407,6 +408,9 @@ namespace SpatialQuant
 				for (int j_y = max(0, i_y - radius_height); j_y < a_height && j_y <= i_y + radius_height; ++j_y) {
 					for (int j_x = max(0, i_x - radius_width); j_x < a_width && j_x <= i_x + radius_width; ++j_x) {
 						Color jPixel(image[j_y * a.get_width() + j_x]);
+						if (jPixel.GetA() <= alphaThreshold)
+							jPixel = m_transparentColor;
+
 						vector_fixed<double, 4> pixel;
 						CIELABConvertor::Lab lab1;
 						getLab(jPixel, lab1);
