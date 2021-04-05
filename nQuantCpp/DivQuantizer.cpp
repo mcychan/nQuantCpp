@@ -27,6 +27,7 @@ namespace DivQuant
 {
 	double PR = .299, PG = .587, PB = .114;
 	const int COLOR_HASH_SIZE = 20023;
+	byte alphaThreshold = 0;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
@@ -85,7 +86,9 @@ namespace DivQuant
   
 		for (UINT ir = 0; ir < numRows; ir += dec_factor) {
 			for (UINT ic = 0; ic < numCols; ic += dec_factor) {
-				Color c(inPixels[ic + (ir * numRows)]);				
+				Color c(inPixels[ic + (ir * numRows)]);
+				if (c.GetA() <= alphaThreshold)
+					c = m_transparentColor;
       
 				/* Determine the bucket */
 				int hash = c.GetValue() % COLOR_HASH_SIZE;
@@ -266,6 +269,9 @@ namespace DivQuant
   
 		for (int ip = 0; ip < num_points; ++ip) {
 			Color c(data[ip]);
+			if (c.GetA() <= alphaThreshold)
+				c = m_transparentColor;
+
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
     
@@ -919,6 +925,8 @@ namespace DivQuant
 
 		unsigned short k = 0;
 		Color c(argb);
+		if (c.GetA() <= alphaThreshold)
+			return k;
 
 		double mindist = INT_MAX;
 		CIELABConvertor::Lab lab1, lab2;
