@@ -111,12 +111,9 @@ namespace PnnLABQuant
 		for (const auto& pixel : pixels) {
 			// !!! Can throw gamma correction in here, but what to do about perceptual
 			// !!! nonuniformity then?			
-			const Color c(pixel);
-			if (c.GetA() <= alphaThreshold) {
-				int index = GetARGBIndex(m_transparentColor, hasSemiTransparency);
-				bins[index].cnt++;
-				continue;
-			}
+			Color c(pixel);
+			if (c.GetA() <= alphaThreshold)
+				c = m_transparentColor;
 
 			int index = GetARGBIndex(c, hasSemiTransparency);
 
@@ -170,8 +167,10 @@ namespace PnnLABQuant
 		else
 			ratio = min(1.0, pow(nMaxColors, 2.07) / maxbins);
 
-		if (quan_rt < 0)
+		if (quan_rt < 0 || hasSemiTransparency)
 			ratio += 0.5;
+
+		ratio = min(1.0, ratio);
 
 		/* Initialize nearest neighbors and build heap of them */
 		auto heap = make_unique<int[]>(65537);

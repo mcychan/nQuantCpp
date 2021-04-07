@@ -60,12 +60,9 @@ namespace PnnQuant
 		for (const auto& pixel : pixels) {
 			// !!! Can throw gamma correction in here, but what to do about perceptual
 			// !!! nonuniformity then?
-			const Color c(pixel);
-			if (c.GetA() <= alphaThreshold) {
-				int index = GetARGBIndex(m_transparentColor, hasSemiTransparency);
-				bins[index].cnt++;
-				continue;
-			}
+			Color c(pixel);
+			if (c.GetA() <= alphaThreshold)
+				c = m_transparentColor;
 
 			int index = GetARGBIndex(c, hasSemiTransparency);
 			auto& tb = bins[index];
