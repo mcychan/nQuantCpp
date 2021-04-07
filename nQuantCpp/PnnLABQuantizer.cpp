@@ -144,7 +144,7 @@ namespace PnnLABQuant
 		}
 
 		double proportional = sqr(nMaxColors) / maxbins;
-		if (nMaxColors < 16)
+		if (nMaxColors < 16 || hasSemiTransparency)
 			quan_rt = -1;
 		else if ((proportional < .022 || proportional > .5) && nMaxColors < 64)
 			quan_rt = 0;
@@ -167,10 +167,10 @@ namespace PnnLABQuant
 		else
 			ratio = min(1.0, pow(nMaxColors, 2.07) / maxbins);
 
-		if (quan_rt < 0 || hasSemiTransparency)
-			ratio += 0.5;
-
-		ratio = min(1.0, ratio);
+		if (quan_rt < 0) {
+			ratio += 0.45;
+			ratio = min(1.0, ratio);
+		}
 
 		/* Initialize nearest neighbors and build heap of them */
 		auto heap = make_unique<int[]>(65537);
