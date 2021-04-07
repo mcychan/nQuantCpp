@@ -5,7 +5,8 @@ cmake_minimum_required (VERSION 3.8)
 
 project ("nQuantCpp")
 add_definitions(-DUNICODE -D_UNICODE)
-find_library(GDIPLUS gdiplus)
+find_library(GDIPLUS_LIBRARY NAMES libgdiplus gdiplus)
+set(GDIPLUS_LIBRARY gdiplus)
 
 # 包含子專案。
 add_subdirectory ("nQuantCpp")
