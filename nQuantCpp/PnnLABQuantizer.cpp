@@ -168,7 +168,7 @@ namespace PnnLABQuant
 			ratio = min(1.0, pow(nMaxColors, 2.07) / maxbins);
 
 		if (quan_rt < 0) {
-			ratio += 0.45;
+			ratio += 0.5;
 			ratio = min(1.0, ratio);
 		}
 
