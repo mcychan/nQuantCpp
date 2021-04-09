@@ -87,8 +87,6 @@ namespace DivQuant
 		for (UINT ir = 0; ir < numRows; ir += dec_factor) {
 			for (UINT ic = 0; ic < numCols; ic += dec_factor) {
 				Color c(inPixels[ic + (ir * numRows)]);
-				if (c.GetA() <= alphaThreshold)
-					c = m_transparentColor;
       
 				/* Determine the bucket */
 				int hash = c.GetValue() % COLOR_HASH_SIZE;
