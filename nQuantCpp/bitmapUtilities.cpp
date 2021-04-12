@@ -503,7 +503,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 			int a_pix = pDitherPixel[3];
 			auto argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 			Color c1(argb);
-			qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, argb);
+			qPixels[pixelIndex] = (c.GetA() == 0 && a_pix > 0) ? 0 : ditherFn(pPalette, nMaxColors, argb);
 
 			Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 

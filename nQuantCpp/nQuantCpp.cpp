@@ -166,6 +166,9 @@ bool QuantizeImage(const string& algorithm, const wstring& sourceFile, const wst
 	destPath += algo + L"quant";
 	destPath += std::to_wstring(nMaxColors) + L".png";
 	
+	// image/gif  : {557cf402-1a04-11d3-9a73-0000f81ef32e}
+	const CLSID gifEncoderClsId = { 0x557cf402, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };
+
 	// image/png  : {557cf406-1a04-11d3-9a73-0000f81ef32e}
 	const CLSID pngEncoderClsId = { 0x557cf406, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };
 	Status status = pDest->Save(destPath.c_str(), &pngEncoderClsId);
