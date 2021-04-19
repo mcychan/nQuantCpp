@@ -870,8 +870,10 @@ namespace SpatialQuant
 
 		int pixelIndex = 0;
 		for (int i_y = 0; i_y < bitmapHeight; ++i_y) {
-			for (int i_x = 0; i_x < bitmapWidth; ++i_x)
-				quantized_image[pixelIndex++] = best_match_color(*p_coarse_variables, i_x, i_y, nMaxColor);
+			for (int i_x = 0; i_x < bitmapWidth; ++i_x) {
+				Color jPixel(image[pixelIndex]);
+				quantized_image[pixelIndex++] = jPixel.GetA() > 0 ? best_match_color(*p_coarse_variables, i_x, i_y, nMaxColor) : 0;
+			}
 		}
 
 		return true;

@@ -536,8 +536,10 @@ namespace EdgeAwareSQuant
 
 		int pixelIndex = 0;
 		for (int i_y = 0; i_y < bitmapHeight; ++i_y) {
-			for (int i_x = 0; i_x < bitmapWidth; ++i_x)
-				quantized_image[pixelIndex++] = pIndexImg8->at(i_y, i_x);
+			for (int i_x = 0; i_x < bitmapWidth; ++i_x) {
+				Color jPixel(image[pixelIndex]);
+				quantized_image[pixelIndex++] = jPixel.GetA() > 0 ? pIndexImg8->at(i_y, i_x) : 0;
+			}
 		}
 	}
 
