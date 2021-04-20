@@ -250,7 +250,7 @@ namespace EdgeAwareSQuant
 
 	void compute_initial_s_ea_icm(array2d<vector_fixed<float, 4> >& s, const Mat<BYTE>& indexImg8, Mat<Mat<float> >& b)
 	{
-		const int length = hasSemiTransparency ? 4 : 3;
+		const int length = m_transparentPixelIndex > -1 ? 4 : 3;
 		int palette_size = s.get_width();
 		int coarse_width = indexImg8.get_width();
 		int coarse_height = indexImg8.get_height();
@@ -302,8 +302,8 @@ namespace EdgeAwareSQuant
 			}
 		}
 
-		const int length = hasSemiTransparency ? 4 : 3;
-		const float divisor = hasSemiTransparency ? 1.0f : 255.0f;
+		const int length = m_transparentPixelIndex > -1 ? 4 : 3;
+		const float divisor = m_transparentPixelIndex > -1 ? 1.0f : 255.0f;
 		
 		for (short k = 0; k < length; ++k) {
 			auto& S_k = extract_vector_layer_2d(s, k);
@@ -321,12 +321,12 @@ namespace EdgeAwareSQuant
 					++palatte_changed;
 				palette[v][k] = val;
 
-				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k > 1) {
+				if (m_transparentPixelIndex >= 0 && k == length - 1) {
 					CIELABConvertor::Lab lab1;
-					lab1.alpha = BYTE_MAX;
+					lab1.alpha = palette[v][3];
 					lab1.L = palette[v][0], lab1.A = palette[v][1], lab1.B = palette[v][2];
 					auto argb = CIELABConvertor::LAB2RGB(lab1);
-					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
+					if (argb == m_transparentColor)
 						swap(palette[0], palette[v]);
 				}
 			}
@@ -336,7 +336,7 @@ namespace EdgeAwareSQuant
 	void spatial_color_quant_ea_icm_saliency(const vector<ARGB>& image, Mat<Mat<float> >& weightMaps, Mat<float> saliencyMap,
 		unsigned short* quantized_image, vector<vector_fixed<float, 4> >& palette, const int filter_radius = 1)
 	{
-		const int length = hasSemiTransparency ? 4 : 3;
+		const int length = m_transparentPixelIndex > -1 ? 4 : 3;
 		const int bitmapWidth = weightMaps.get_width();
 		const int bitmapHeight = weightMaps.get_height();
 		int allNeiLevel = 1;
@@ -417,10 +417,10 @@ namespace EdgeAwareSQuant
 			for (int l1 = 0; l1 < palette.size(); ++l1) {
 				for (int l2 = l1; l2 < palette.size(); ++l2) {
 					CIELABConvertor::Lab lab1, lab2;
-					lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[l1][3]) : BYTE_MAX;
+					lab1.alpha = m_transparentPixelIndex > -1 ? static_cast<BYTE>(palette[l1][3]) : BYTE_MAX;
 					lab1.L = palette[l1][0], lab1.A = palette[l1][1], lab1.B = palette[l1][2];
 
-					lab2.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[l2][3]) : BYTE_MAX;
+					lab2.alpha = m_transparentPixelIndex > -1 ? static_cast<BYTE>(palette[l2][3]) : BYTE_MAX;
 					lab2.L = palette[l2][0], lab2.A = palette[l2][1], lab2.B = palette[l2][2];
 
 					auto curDist = sqr(lab2.L - lab1.L) + sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B);
@@ -641,7 +641,7 @@ namespace EdgeAwareSQuant
 			/* Fill palette */
 			for (UINT k = 0; k < nMaxColors; ++k) {
 				CIELABConvertor::Lab lab1;
-				lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[k][3]) : BYTE_MAX;
+				lab1.alpha = m_transparentPixelIndex > -1 ? static_cast<BYTE>(palette[k][3]) : BYTE_MAX;
 				lab1.L = palette[k][0], lab1.A = palette[k][1], lab1.B = palette[k][2];
 				pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
 			}
