@@ -793,13 +793,25 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	hasSemiTransparency = false;
 	transparentPixelIndex = -1;
 
-	int pixelIndex = 0;
-	if (pSource->GetPixelFormat() == PixelFormat8bppIndexed) {
-		int paletteSize = pSource->GetPaletteSize();
-		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + (1 << bitDepth) * sizeof(ARGB));
-		auto pPalette = (ColorPalette*) pPaletteBytes.get();
+	int paletteSize = pSource->GetPaletteSize();
+	auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + (1 << bitDepth) * sizeof(ARGB));
+	auto pPalette = (ColorPalette*)pPaletteBytes.get();
+	if(paletteSize > 0)
 		pSource->GetPalette(pPalette, paletteSize);
 
+	auto nSize = pSource->GetPropertyItemSize(PropertyTagIndexTransparent);
+	if (nSize > 0) {
+		auto pPropertyItem = make_unique<PropertyItem[]>(nSize);
+		pSource->GetPropertyItem(PropertyTagIndexTransparent, nSize, pPropertyItem.get());
+		if (pPropertyItem.get()->length > 0) {
+			transparentPixelIndex = *(BYTE*)pPropertyItem.get()->value;
+			Color c(pPalette->Entries[transparentPixelIndex]);
+			transparentColor = Color::MakeARGB(0, c.GetR(), c.GetG(), c.GetB());
+		}
+	}
+
+	int pixelIndex = 0;
+	if (pSource->GetPixelFormat() == PixelFormat8bppIndexed) {
 		BitmapData data;
 		Status status = pSource->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, pSource->GetPixelFormat(), &data);
 		if (status != Ok)
@@ -843,18 +855,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 			pRowSource += strideSource;
 		}
 
-		pSource->UnlockBits(&data);
-
-		auto nSize = pSource->GetPropertyItemSize(PropertyTagIndexTransparent);
-		if (nSize > 0) {
-			auto pPropertyItem = make_unique<PropertyItem[]>(nSize);
-			pSource->GetPropertyItem(PropertyTagIndexTransparent, nSize, pPropertyItem.get());
-			if (pPropertyItem.get()->length > 0) {
-				transparentPixelIndex = *(BYTE*)pPropertyItem.get()->value;
-				Color c(pPalette->Entries[transparentPixelIndex]);
-				transparentColor = Color::MakeARGB(0, c.GetR(), c.GetG(), c.GetB());
-			}
-		}
+		pSource->UnlockBits(&data);		
 		return true;
 	}
 
@@ -892,6 +893,8 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 					transparentColor = argb;
 					transparentPixelIndex = pixelIndex;
 				}
+				else if (pSource->GetPixelFormat() <= PixelFormat8bppIndexed && Color(transparentColor).ToCOLORREF() == Color(argb).ToCOLORREF())
+					transparentPixelIndex = pixelIndex;
 				else
 					hasSemiTransparency = true;
 			}
