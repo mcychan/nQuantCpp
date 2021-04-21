@@ -173,7 +173,7 @@ namespace PnnQuant
 		/* Fill palette */
 		UINT k = 0;
 		for (int i = 0;; ++k) {
-			auto alpha = hasSemiTransparency ? rint(bins[i].ac) : BYTE_MAX;
+			auto alpha = m_transparentPixelIndex > -1 ? rint(bins[i].ac) : BYTE_MAX;
 			pPalette->Entries[k] = Color::MakeARGB(alpha, (byte) bins[i].rc, (byte) bins[i].gc, (byte) bins[i].bc);
 			if (m_transparentPixelIndex >= 0 && pPalette->Entries[k] == m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[k]);
