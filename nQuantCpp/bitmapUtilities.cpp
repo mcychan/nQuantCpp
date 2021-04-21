@@ -807,7 +807,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 		if (pPropertyItem.get()->length > 0) {
 			transparentIndex = *(BYTE*)pPropertyItem.get()->value;
 			Color c(pPalette->Entries[transparentIndex]);
-			transparentColor = Color::MakeARGB(0, c.GetR(), c.GetG(), c.GetB());
+			pPalette->Entries[transparentIndex] = transparentColor = Color::MakeARGB(0, c.GetR(), c.GetG(), c.GetB());
 		}
 	}
 
@@ -840,8 +840,6 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 
 				BYTE index = *pPixelSource++;
 				auto argb = pPalette->Entries[index];
-				if (index == transparentIndex)
-					pixelAlpha = 0;
 
 				if (pixelAlpha < BYTE_MAX) {
 					hasSemiTransparency = true;
