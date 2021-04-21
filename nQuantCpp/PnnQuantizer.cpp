@@ -157,8 +157,7 @@ namespace PnnQuant
 			n1 = tb.cnt;
 			n2 = nb.cnt;
 			double d = 1.0 / (n1 + n2);
-			if (hasSemiTransparency)
-				tb.ac = d * rint(n1 * tb.ac + n2 * nb.ac);
+			tb.ac = d * rint(n1 * tb.ac + n2 * nb.ac);
 			tb.rc = d * rint(n1 * tb.rc + n2 * nb.rc);
 			tb.gc = d * rint(n1 * tb.gc + n2 * nb.gc);
 			tb.bc = d * rint(n1 * tb.bc + n2 * nb.bc);
@@ -174,7 +173,7 @@ namespace PnnQuant
 		/* Fill palette */
 		UINT k = 0;
 		for (int i = 0;; ++k) {
-			auto alpha = hasSemiTransparency ? (byte) bins[i].ac : BYTE_MAX;
+			auto alpha = hasSemiTransparency ? rint(bins[i].ac) : BYTE_MAX;
 			pPalette->Entries[k] = Color::MakeARGB(alpha, (byte) bins[i].rc, (byte) bins[i].gc, (byte) bins[i].bc);
 			if (m_transparentPixelIndex >= 0 && pPalette->Entries[k] == m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[k]);
@@ -282,9 +281,8 @@ namespace PnnQuant
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
 
-		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);		
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);	
 		
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
@@ -314,7 +312,7 @@ namespace PnnQuant
 
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
-			if(nMaxColors > 2)
+			if (nMaxColors > 2)
 				pPalette->Entries[k] = m_transparentColor;
 			else if (pPalette->Entries[k] != m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[1]);

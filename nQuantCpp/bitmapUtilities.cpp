@@ -836,17 +836,17 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 			auto pPixelSource = pRowSource;
 
 			for (UINT x = 0; x < bitmapWidth; ++x) {	// ...for each pixel...
-				BYTE pixelAlpha = BYTE_MAX;
-
 				BYTE index = *pPixelSource++;
 				auto argb = pPalette->Entries[index];
+				Color c(argb);
 
-				if (pixelAlpha < BYTE_MAX) {
-					hasSemiTransparency = true;
-					if (pixelAlpha == 0) {
+				if (c.GetA() < BYTE_MAX) {					
+					if (c.GetA() == 0) {
 						transparentColor = argb;
 						transparentPixelIndex = pixelIndex;
 					}
+					else
+						hasSemiTransparency = true;
 				}
 				pixels[pixelIndex++] = argb;
 			}
