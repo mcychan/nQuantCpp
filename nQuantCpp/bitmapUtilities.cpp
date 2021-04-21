@@ -503,7 +503,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 			int a_pix = pDitherPixel[3];
 			auto argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 			Color c1(argb);
-			qPixels[pixelIndex] = (c.GetA() == 0 && a_pix > 0) ? 0 : ditherFn(pPalette, nMaxColors, argb);
+			qPixels[pixelIndex] = (c.GetA() == 0) ? 0 : ditherFn(pPalette, nMaxColors, argb);
 
 			Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 
@@ -793,6 +793,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	hasSemiTransparency = false;
 	transparentPixelIndex = -1;
 
+	int transparentIndex = -1;
 	int paletteSize = pSource->GetPaletteSize();
 	auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + (1 << bitDepth) * sizeof(ARGB));
 	auto pPalette = (ColorPalette*)pPaletteBytes.get();
@@ -804,8 +805,8 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 		auto pPropertyItem = make_unique<PropertyItem[]>(nSize);
 		pSource->GetPropertyItem(PropertyTagIndexTransparent, nSize, pPropertyItem.get());
 		if (pPropertyItem.get()->length > 0) {
-			transparentPixelIndex = *(BYTE*)pPropertyItem.get()->value;
-			Color c(pPalette->Entries[transparentPixelIndex]);
+			transparentIndex = *(BYTE*)pPropertyItem.get()->value;
+			Color c(pPalette->Entries[transparentIndex]);
 			transparentColor = Color::MakeARGB(0, c.GetR(), c.GetG(), c.GetB());
 		}
 	}
@@ -839,7 +840,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 
 				BYTE index = *pPixelSource++;
 				auto argb = pPalette->Entries[index];
-				if (index == transparentPixelIndex)
+				if (index == transparentIndex)
 					pixelAlpha = 0;
 
 				if (pixelAlpha < BYTE_MAX) {
@@ -886,15 +887,17 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 			BYTE pixelGreen = *pPixelSource++;
 			BYTE pixelRed = *pPixelSource++;
 			BYTE pixelAlpha = *pPixelSource++;
-			auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);			
+			auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
+			if (transparentIndex > -1 && Color(transparentColor).ToCOLORREF() == Color(argb).ToCOLORREF()) {
+				pixelAlpha = 0;
+				argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
+			}
 
 			if (pixelAlpha < BYTE_MAX) {									
 				if (pixelAlpha == 0) {
 					transparentColor = argb;
 					transparentPixelIndex = pixelIndex;
 				}
-				else if (pSource->GetPixelFormat() <= PixelFormat8bppIndexed && Color(transparentColor).ToCOLORREF() == Color(argb).ToCOLORREF())
-					transparentPixelIndex = pixelIndex;
 				else
 					hasSemiTransparency = true;
 			}
