@@ -267,8 +267,6 @@ namespace DivQuant
   
 		for (int ip = 0; ip < num_points; ++ip) {
 			Color c(data[ip]);
-			if (c.GetA() <= alphaThreshold)
-				c = m_transparentColor;
 
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
