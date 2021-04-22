@@ -465,7 +465,7 @@ namespace SpatialQuant
 
 	UINT best_match_color(const array3d<double>& vars, const int i_x, const int i_y, const UINT nMaxColor)
 	{
-		UINT max_v = nMaxColor;
+		UINT max_v = 0;
 
 		auto max_weight = vars(i_x, i_y, max_v);
 		for (UINT v = 1; v < nMaxColor; ++v) {
@@ -519,7 +519,7 @@ namespace SpatialQuant
 
 	void compute_initial_s(array2d<vector_fixed<double, 4> >& s, const array3d<double>& coarse_variables, array2d<vector_fixed<double, 4> >& b)
 	{
-		const int length = (m_transparentPixelIndex >= 0 || hasSemiTransparency) ? 4 : 3;
+		const int length = hasSemiTransparency ? 4 : 3;
 		const int palette_size = s.get_width();
 		const int coarse_width = coarse_variables.get_width(), coarse_height = coarse_variables.get_height();
 		const int center_x = (b.get_width() - 1) / 2, center_y = (b.get_height() - 1) / 2;
@@ -557,7 +557,7 @@ namespace SpatialQuant
 	void update_s(array2d<vector_fixed<double, 4> >& s, const array3d<double>& coarse_variables, array2d<vector_fixed<double, 4> >& b,
 		const int j_x, const int j_y, const int alpha, const double delta)
 	{
-		const int length = (m_transparentPixelIndex >= 0 || hasSemiTransparency) ? 4 : 3;
+		const int length = hasSemiTransparency ? 4 : 3;
 		const int palette_size = s.get_width();
 		const int coarse_width = coarse_variables.get_width(), coarse_height = coarse_variables.get_height();
 		const int center_x = (b.get_width() - 1) / 2, center_y = (b.get_height() - 1) / 2;
@@ -603,7 +603,7 @@ namespace SpatialQuant
 			}
 		}
 
-		const short length = (m_transparentPixelIndex >= 0 || hasSemiTransparency) ? 4 : 3;
+		const short length = hasSemiTransparency ? 4 : 3;
 		for (int k = 0; k < length; ++k) {
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
@@ -617,8 +617,12 @@ namespace SpatialQuant
 
 				palette[v][k] = val;
 
-				if (m_transparentPixelIndex >= 0 && k == length - 1) {
-					if (rint(palette[v][3]) == 0)
+				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k > 1) {
+					CIELABConvertor::Lab lab1;
+					lab1.alpha = hasSemiTransparency ? palette[v][3] : BYTE_MAX;
+					lab1.L = palette[v][0], lab1.A = palette[v][1], lab1.B = palette[v][2];
+					auto argb = CIELABConvertor::LAB2RGB(lab1);
+					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
 						swap(palette[0], palette[v]);
 				}
 			}
@@ -643,7 +647,7 @@ namespace SpatialQuant
 		unsigned short* quantized_image, const int bitmapWidth, vector<vector_fixed<double, 4> >& palette,
 		const double initial_temperature = 1.0, const double final_temperature = 0.001, const int temps_per_level = 3, const int repeats_per_temp = 1)
 	{
-		const int length = (m_transparentPixelIndex >= 0 || hasSemiTransparency) ? 4 : 3;
+		const int length = hasSemiTransparency ? 4 : 3;
 		const int bitmapHeight = image.size() / bitmapWidth;
 
 		const auto nMaxColor = palette.size();
@@ -868,7 +872,7 @@ namespace SpatialQuant
 		for (int i_y = 0; i_y < bitmapHeight; ++i_y) {
 			for (int i_x = 0; i_x < bitmapWidth; ++i_x) {
 				Color jPixel(image[pixelIndex]);
-				quantized_image[pixelIndex++] = jPixel.GetA() > 0 ? best_match_color(*p_coarse_variables, i_x, i_y, nMaxColor) : 0;
+				quantized_image[pixelIndex++] = (!hasSemiTransparency && jPixel.GetA() == 0) ? 0 : best_match_color(*p_coarse_variables, i_x, i_y, nMaxColor);
 			}
 		}
 
@@ -886,7 +890,7 @@ namespace SpatialQuant
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
-		const int length = (m_transparentPixelIndex >= 0 || hasSemiTransparency) ? 4 : 3;
+		const int length = hasSemiTransparency ? 4 : 3;
 		double dithering_level = 1.0;
 		array2d<vector_fixed<double, 4> > filter3_weights(3, 3);
 		double sum = 0.0;
@@ -932,7 +936,7 @@ namespace SpatialQuant
 			/* Fill palette */
 			for (UINT k = 0; k < nMaxColors; ++k) {
 				CIELABConvertor::Lab lab1;
-				lab1.alpha = rint(palette[k][3]);				
+				lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[k][3]) : BYTE_MAX;
 				lab1.L = palette[k][0], lab1.A = palette[k][1], lab1.B = palette[k][2];
 				pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
 			}
