@@ -620,8 +620,6 @@ namespace SpatialQuant
 				if (m_transparentPixelIndex >= 0 && k == length - 1) {
 					if (rint(palette[v][3]) == 0)
 						swap(palette[0], palette[v]);
-					else if (!hasSemiTransparency && v > 0)
-						palette[v][3] = BYTE_MAX;
 				}
 			}
 		}
