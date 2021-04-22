@@ -465,7 +465,7 @@ namespace SpatialQuant
 
 	UINT best_match_color(const array3d<double>& vars, const int i_x, const int i_y, const UINT nMaxColor)
 	{
-		UINT max_v = 0;
+		UINT max_v = nMaxColor;
 
 		auto max_weight = vars(i_x, i_y, max_v);
 		for (UINT v = 1; v < nMaxColor; ++v) {
@@ -618,12 +618,10 @@ namespace SpatialQuant
 				palette[v][k] = val;
 
 				if (m_transparentPixelIndex >= 0 && k == length - 1) {
-					CIELABConvertor::Lab lab1;
-					lab1.alpha = palette[v][3];
-					lab1.L = palette[v][0], lab1.A = palette[v][1], lab1.B = palette[v][2];
-					auto argb = CIELABConvertor::LAB2RGB(lab1);
-					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
+					if (rint(palette[v][3]) == 0)
 						swap(palette[0], palette[v]);
+					else if (!hasSemiTransparency && v > 0)
+						palette[v][3] = BYTE_MAX;
 				}
 			}
 		}
@@ -936,7 +934,7 @@ namespace SpatialQuant
 			/* Fill palette */
 			for (UINT k = 0; k < nMaxColors; ++k) {
 				CIELABConvertor::Lab lab1;
-				lab1.alpha = (m_transparentPixelIndex >= 0 || hasSemiTransparency) ? rint(palette[k][3]) : BYTE_MAX;				
+				lab1.alpha = rint(palette[k][3]);				
 				lab1.L = palette[k][0], lab1.A = palette[k][1], lab1.B = palette[k][2];
 				pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
 			}

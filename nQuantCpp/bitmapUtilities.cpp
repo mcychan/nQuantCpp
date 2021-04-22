@@ -768,7 +768,7 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsig
 				nibbles = pRowDest[x / 2];
 				if ((x & 1) == 0) {
 					nibbles &= 0x0F;
-					nibbles |= (BYTE)(index << 4);
+					nibbles |= (byte)(index << 4);
 				}
 				else {
 					nibbles &= 0xF0;
