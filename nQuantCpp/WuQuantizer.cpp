@@ -891,7 +891,7 @@ namespace nQuant
 		closestMap.clear();
 		nearestMap.clear();
 
-		return ProcessImagePixels(pDest, pPalette, qPixels.get());
+		return ProcessImagePixels(pDest, pPalette, qPixels.get(), m_transparentPixelIndex >= 0);
 	}
 
 }

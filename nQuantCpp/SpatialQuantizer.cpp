@@ -616,6 +616,15 @@ namespace SpatialQuant
 					val = maxLabValues[k];
 
 				palette[v][k] = val;
+
+				if (m_transparentPixelIndex >= 0 && k == length - 1) {
+					CIELABConvertor::Lab lab1;
+					lab1.alpha = palette[v][3];
+					lab1.L = palette[v][0], lab1.A = palette[v][1], lab1.B = palette[v][2];
+					auto argb = CIELABConvertor::LAB2RGB(lab1);
+					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
+						swap(palette[0], palette[v]);
+				}
 			}
 		}
 	}
@@ -927,7 +936,7 @@ namespace SpatialQuant
 			/* Fill palette */
 			for (UINT k = 0; k < nMaxColors; ++k) {
 				CIELABConvertor::Lab lab1;
-				lab1.alpha = (m_transparentPixelIndex >= 0 || hasSemiTransparency) ? rint(palette[k][3]) : BYTE_MAX;
+				lab1.alpha = (m_transparentPixelIndex >= 0 || hasSemiTransparency) ? rint(palette[k][3]) : BYTE_MAX;				
 				lab1.L = palette[k][0], lab1.A = palette[k][1], lab1.B = palette[k][2];
 				pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
 			}
@@ -948,7 +957,7 @@ namespace SpatialQuant
 			}
 		}
 
-		return ProcessImagePixels(pDest, pPalette, qPixels.get());
+		return ProcessImagePixels(pDest, pPalette, qPixels.get(), m_transparentPixelIndex >= 0);
 	}
 
 }
