@@ -57,7 +57,7 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab2;
 			lab2.alpha = bins[i].ac, lab2.L = bins[i].Lc, lab2.A = bins[i].Ac, lab2.B = bins[i].Bc;
-			double alphaDiff = hasSemiTransparency ? abs(lab2.alpha - lab1.alpha) : 0;
+			double alphaDiff = (m_transparentPixelIndex >= 0 || hasSemiTransparency) ? abs(lab2.alpha - lab1.alpha) : 0;
 			double nerr = nerr2 * sqr(alphaDiff) / exp(1.5);
 			if (nerr >= err)
 				continue;
@@ -113,7 +113,7 @@ namespace PnnLABQuant
 			// !!! nonuniformity then?			
 			Color c(pixel);
 
-			int index = GetARGBIndex(c, hasSemiTransparency);
+			int index = GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
 
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
@@ -142,7 +142,7 @@ namespace PnnLABQuant
 		}
 
 		double proportional = sqr(nMaxColors) / maxbins;
-		if (nMaxColors < 16 || (hasSemiTransparency && nMaxColors < 32))
+		if (nMaxColors < 16 || ((m_transparentPixelIndex >= 0 || hasSemiTransparency) && nMaxColors < 32))
 			quan_rt = -1;
 		else if ((proportional < .022 || proportional > .5) && nMaxColors < 64)
 			quan_rt = 0;
@@ -370,7 +370,7 @@ namespace PnnLABQuant
 		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 64) ? nearestColorIndex : closestColorIndex;
 		if (dither)
 			return dither_image(pixels, pPalette, ditherFn, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
-		
+
 		UINT pixelIndex = 0;
 		for (int j = 0; j < height; ++j) {
 			for (int i = 0; i < width; ++i)

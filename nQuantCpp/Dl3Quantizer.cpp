@@ -105,7 +105,7 @@ namespace Dl3Quant
 	void build_table3(CUBE3* rgb_table3, ARGB argb)
 	{
 		Color c(argb);
-		int index = GetARGBIndex(c, hasSemiTransparency);
+		int index = GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
 
 		rgb_table3[index].a += c.GetA();
 		rgb_table3[index].r += c.GetR();

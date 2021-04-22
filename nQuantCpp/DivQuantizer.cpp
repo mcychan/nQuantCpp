@@ -253,7 +253,7 @@ namespace DivQuant
 			}
 
 			Color c2(pPalette->Entries[index]);			
-			qPixels[ik] = hasSemiTransparency ? c2.GetValue() : GetARGBIndex(c2, hasSemiTransparency);
+			qPixels[ik] = hasSemiTransparency ? c2.GetValue() : GetARGBIndex(c2, hasSemiTransparency, m_transparentPixelIndex >= 0);
 		}
 		return true;
 	}
@@ -1041,7 +1041,7 @@ namespace DivQuant
 
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
-			if(nMaxColors > 2)
+			if(nMaxColors == 2)
 				pPalette->Entries[k] = m_transparentColor;
 			else if (pPalette->Entries[k] != m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[1]);

@@ -485,7 +485,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	auto row0 = erowErr.get();
 	auto row1 = orowErr.get();
 
-	bool noBias = hasSemiTransparency || nMaxColors < 64;
+	bool noBias = (transparentPixelIndex >= 0 || hasSemiTransparency) || nMaxColors < 64;
 	int dir = 1;
 	for (int i = 0; i < height; ++i) {
 		if (dir < 0)
@@ -552,6 +552,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, ARGB* qPixels, const UINT width, const UINT height)
 {
 	UINT pixelIndex = 0;
+	bool hasTransparency = (transparentPixelIndex >= 0 || hasSemiTransparency);
 	const int DJ = 4;
 	const int BLOCK_SIZE = 256;
 	const int DITHER_MAX = 20;
@@ -586,7 +587,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 		for (UINT j = 0; j < width; ++j) {
 			Color c(pixels[pixelIndex]);
 
-			CalcDitherPixel(pDitherPixel.get(), c, clamp.get(), row0, cursor0, hasSemiTransparency);
+			CalcDitherPixel(pDitherPixel.get(), c, clamp.get(), row0, cursor0, hasTransparency);
 			int r_pix = pDitherPixel[0];
 			int g_pix = pDitherPixel[1];
 			int b_pix = pDitherPixel[2];
@@ -595,7 +596,7 @@ bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn dither
 			Color c1(argb);
 
 			Color c2(pPalette->Entries[ditherFn(pPalette, nMaxColors, argb)]);
-			qPixels[pixelIndex] = hasSemiTransparency ? c2.GetValue() : GetARGBIndex(c2, false);
+			qPixels[pixelIndex] = hasSemiTransparency ? c2.GetValue() : GetARGBIndex(c2, false, transparentPixelIndex >= 0);
 
 			r_pix = limtb[c1.GetR() - c2.GetR() + BLOCK_SIZE];
 			g_pix = limtb[c1.GetG() - c2.GetG() + BLOCK_SIZE];
@@ -646,11 +647,11 @@ bool ProcessImagePixels(Bitmap* pDest, const ARGB* qPixels, const bool& hasSemiT
 		return false;
 	
 	if(hasSemiTransparency && pDest->GetPixelFormat() < PixelFormat32bppARGB)
-		pDest->ConvertFormat(PixelFormat32bppARGB, DitherTypeSolid, PaletteTypeOptimal, nullptr, 0);
+		pDest->ConvertFormat(PixelFormat32bppARGB, DitherTypeNone, PaletteTypeCustom, nullptr, 0);
 	else if (transparentPixelIndex >= 0 && pDest->GetPixelFormat() < PixelFormat16bppARGB1555)
-		pDest->ConvertFormat(PixelFormat16bppARGB1555, DitherTypeSolid, PaletteTypeOptimal, nullptr, 0);
+		pDest->ConvertFormat(PixelFormat16bppARGB1555, DitherTypeNone, PaletteTypeCustom, nullptr, 0);
 	else if(pDest->GetPixelFormat() != PixelFormat16bppRGB565)
-		pDest->ConvertFormat(PixelFormat16bppRGB565, DitherTypeSolid, PaletteTypeOptimal, nullptr, 0);
+		pDest->ConvertFormat(PixelFormat16bppRGB565, DitherTypeNone, PaletteTypeCustom, nullptr, 0);
 
 	BitmapData targetData;
 	UINT w = pDest->GetWidth();

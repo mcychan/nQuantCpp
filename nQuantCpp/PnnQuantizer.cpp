@@ -37,7 +37,7 @@ namespace PnnQuant
 		auto wb = bin1.bc;
 		for (i = bin1.fw; i; i = bins[i].fw) {
 			double nerr = sqr(bins[i].rc - wr) + sqr(bins[i].gc - wg) + sqr(bins[i].bc - wb);
-			if(hasSemiTransparency)
+			if (m_transparentPixelIndex >= 0 || hasSemiTransparency)
 				nerr += sqr(bins[i].ac - wa);
 			double n2 = bins[i].cnt;
 			nerr *= (n1 * n2) / (n1 + n2);
@@ -62,7 +62,7 @@ namespace PnnQuant
 			// !!! nonuniformity then?
 			Color c(pixel);
 
-			int index = GetARGBIndex(c, hasSemiTransparency);
+			int index = GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
 			auto& tb = bins[index];
 			tb.ac += c.GetA();
 			tb.rc += c.GetR();
