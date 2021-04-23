@@ -407,9 +407,10 @@ namespace EdgeAwareSQuant
 
 		const int total_pixels = pIndexImg8->get_width() * pIndexImg8->get_height();
 		float paletteSize = palette.size() * 1.0f;
-		const double divisor = 1.0 / 255.0;
-		double rate = hasSemiTransparency ? 1.5 / log2(palette.size()) : 1.0;
-		if (hasSemiTransparency && palette.size() > 96 && palette.size() < 192)
+		bool hasTransparency = m_transparentPixelIndex >= 0 || hasSemiTransparency;
+		const double divisor = 1.0;
+		double rate = hasTransparency ? 1.5 / log2(palette.size()) : 1.0;
+		if (hasTransparency && palette.size() > 96 && palette.size() < 192)
 			rate = 4.0 / log2(palette.size());
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
