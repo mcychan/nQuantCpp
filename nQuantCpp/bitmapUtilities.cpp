@@ -11,13 +11,13 @@ ULONG GetBitmapHeaderSize(LPCVOID pDib)
 
 	switch (nHeaderSize)
 	{
-	case sizeof(BITMAPCOREHEADER) :
-	case sizeof(BITMAPINFOHEADER) :
-	case sizeof(BITMAPV4HEADER) :
-	case sizeof(BITMAPV5HEADER) :
-	{
-		return nHeaderSize;
-	}
+		case sizeof(BITMAPCOREHEADER) :
+			case sizeof(BITMAPINFOHEADER) :
+			case sizeof(BITMAPV4HEADER) :
+			case sizeof(BITMAPV5HEADER) :
+		{
+			return nHeaderSize;
+		}
 	}
 
 	return 0;
@@ -40,7 +40,7 @@ ULONG GetBitmapLineWidthInBytes(ULONG nWidthInPixels, ULONG nBitCount)
 // GetBitmapDimensions
 //
 
-BOOL GetBitmapDimensions(LPCVOID pDib, UINT *pWidth, UINT *pHeight)
+BOOL GetBitmapDimensions(LPCVOID pDib, UINT* pWidth, UINT* pHeight)
 {
 	ULONG nHeaderSize = GetBitmapHeaderSize(pDib);
 
@@ -459,7 +459,7 @@ void CalcDitherPixel(int* pDitherPixel, const Color& c, const BYTE* clamp, const
 bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height)
 {
 	UINT pixelIndex = 0;
-	
+
 	const int DJ = 4;
 	const int BLOCK_SIZE = 256;
 	const int DITHER_MAX = 20;
@@ -645,12 +645,12 @@ bool ProcessImagePixels(Bitmap* pDest, const ARGB* qPixels, const bool& hasSemiT
 	UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());
 	if (bpp < 16)
 		return false;
-	
-	if(hasSemiTransparency && pDest->GetPixelFormat() < PixelFormat32bppARGB)
+
+	if (hasSemiTransparency && pDest->GetPixelFormat() < PixelFormat32bppARGB)
 		pDest->ConvertFormat(PixelFormat32bppARGB, DitherTypeNone, PaletteTypeCustom, nullptr, 0);
 	else if (transparentPixelIndex >= 0 && pDest->GetPixelFormat() < PixelFormat16bppARGB1555)
 		pDest->ConvertFormat(PixelFormat16bppARGB1555, DitherTypeNone, PaletteTypeCustom, nullptr, 0);
-	else if(pDest->GetPixelFormat() != PixelFormat16bppRGB565)
+	else if (pDest->GetPixelFormat() != PixelFormat16bppRGB565)
 		pDest->ConvertFormat(PixelFormat16bppRGB565, DitherTypeNone, PaletteTypeCustom, nullptr, 0);
 
 	BitmapData targetData;
@@ -727,7 +727,7 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsig
 		pDest->SetPropertyItem(pPropertyItem.get());
 	}
 
-	pDest->SetPalette(pPalette);	
+	pDest->SetPalette(pPalette);
 
 	BitmapData targetData;
 	UINT w = pDest->GetWidth();
@@ -802,7 +802,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	const UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
 	const UINT bitmapWidth = pSource->GetWidth();
 	const UINT bitmapHeight = pSource->GetHeight();
-	
+
 	hasSemiTransparency = false;
 	transparentPixelIndex = -1;
 
@@ -810,7 +810,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	int paletteSize = pSource->GetPaletteSize();
 	auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + (1 << bitDepth) * sizeof(ARGB));
 	auto pPalette = (ColorPalette*)pPaletteBytes.get();
-	if(paletteSize > 0)
+	if (paletteSize > 0)
 		pSource->GetPalette(pPalette, paletteSize);
 
 	auto nSize = pSource->GetPropertyItemSize(PropertyTagIndexTransparent);
@@ -853,7 +853,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 				auto argb = pPalette->Entries[index];
 				Color c(argb);
 
-				if (c.GetA() < BYTE_MAX) {					
+				if (c.GetA() < BYTE_MAX) {
 					if (c.GetA() == 0) {
 						transparentColor = argb;
 						transparentPixelIndex = pixelIndex;
@@ -891,7 +891,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 		pRowSource += bitmapHeight * data.Stride;
 		strideSource = -data.Stride;
 	}
-	
+
 	// First loop: gather color information
 	for (UINT y = 0; y < bitmapHeight; ++y) {	// For each row...
 		auto pPixelSource = pRowSource;
@@ -907,11 +907,11 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 				argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
 			}
 
-			if (pixelAlpha < BYTE_MAX) {									
+			if (pixelAlpha < BYTE_MAX) {
 				if (pixelAlpha == 0) {
 					transparentColor = argb;
 					transparentPixelIndex = pixelIndex;
-					if(transparentColor == 0 && transparentIndex < 0)
+					if (transparentColor == 0 && transparentIndex < 0)
 						argb = transparentColor = Color::MakeARGB(0, 51, 102, 102);
 				}
 				else
