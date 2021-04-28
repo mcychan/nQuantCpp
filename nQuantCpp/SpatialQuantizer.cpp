@@ -872,7 +872,7 @@ namespace SpatialQuant
 		for (int i_y = 0; i_y < bitmapHeight; ++i_y) {
 			for (int i_x = 0; i_x < bitmapWidth; ++i_x) {
 				Color jPixel(image[pixelIndex]);
-				quantized_image[pixelIndex++] = (jPixel.GetA() == 0) ? 0 : best_match_color(*p_coarse_variables, i_x, i_y, nMaxColor);
+				quantized_image[pixelIndex++] = (!hasSemiTransparency && jPixel.GetA() == 0) ? 0 : best_match_color(*p_coarse_variables, i_x, i_y, nMaxColor);
 			}
 		}
 
@@ -937,10 +937,13 @@ namespace SpatialQuant
 			for (UINT k = 0; k < nMaxColors; ++k) {
 				CIELABConvertor::Lab lab1;
 				lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[k][3]) : BYTE_MAX;
-				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k == 0)
-					lab1.alpha = 0;
 				lab1.L = palette[k][0], lab1.A = palette[k][1], lab1.B = palette[k][2];
 				pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
+			}
+
+			if (m_transparentPixelIndex >= 0) {
+				UINT k = qPixels[m_transparentPixelIndex];
+				pPalette->Entries[k] = m_transparentColor;
 			}
 		}
 		else {
