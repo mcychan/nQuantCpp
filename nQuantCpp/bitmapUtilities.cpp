@@ -717,6 +717,7 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsig
 {
 	if (hasTransparent) {
 		byte value = 0;
+
 		auto pPropertyItem = make_unique<PropertyItem>();
 		pPropertyItem.get()->id = PropertyTagIndexTransparent;
 		pPropertyItem.get()->length = 1;
@@ -856,6 +857,8 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 					if (c.GetA() == 0) {
 						transparentColor = argb;
 						transparentPixelIndex = pixelIndex;
+						if (transparentColor == 0 && transparentIndex < 0)
+							argb = transparentColor = Color::MakeARGB(0, 51, 102, 102);
 					}
 					else
 						hasSemiTransparency = true;
@@ -866,7 +869,8 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 			pRowSource += strideSource;
 		}
 
-		pSource->UnlockBits(&data);		
+		pSource->UnlockBits(&data);
+
 		return true;
 	}
 
@@ -907,6 +911,8 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 				if (pixelAlpha == 0) {
 					transparentColor = argb;
 					transparentPixelIndex = pixelIndex;
+					if(transparentColor == 0 && transparentIndex < 0)
+						argb = transparentColor = Color::MakeARGB(0, 51, 102, 102);
 				}
 				else
 					hasSemiTransparency = true;
