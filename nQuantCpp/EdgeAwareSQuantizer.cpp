@@ -444,6 +444,7 @@ namespace EdgeAwareSQuant
 				int repeat_inner = 0;
 
 				while (repeat_inner++ == 0 || pixels_changed > 0.0001 * rate * total_pixels) {
+					rate += 0.001;
 					pixels_changed = 0;
 					pixels_visited = 0;
 
