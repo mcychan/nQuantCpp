@@ -646,10 +646,8 @@ namespace EdgeAwareSQuant
 						Color c(pixels[pixelIndex]);
 						if (qPixels[pixelIndex] == k || c.GetA() == 0)
 							qPixels[pixelIndex] = 0;
-						else if (qPixels[pixelIndex] == 0) {
-							if (c.GetA() > 0)
-								qPixels[pixelIndex] = k;
-						}
+						if (qPixels[pixelIndex] == 0 && c.GetA() > 0)
+							qPixels[pixelIndex] = k;
 					}
 				}
 			}
