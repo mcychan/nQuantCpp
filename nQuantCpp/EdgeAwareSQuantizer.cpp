@@ -182,6 +182,8 @@ namespace EdgeAwareSQuant
 							continue;
 
 						Color jPixel(image[j_y * a.get_width() + j_x]);
+						if(jPixel.GetA() == 0)
+							continue;
 
 						CIELABConvertor::Lab lab1;
 						getLab(jPixel, lab1);
@@ -611,14 +613,14 @@ namespace EdgeAwareSQuant
 		DivQuant::DivQuantizer divQuantizer;
 		divQuantizer.quant_varpart_fast(pixels.data(), pixels.size(), pPalette);
 
-		// init
+		const float divisor = hasSemiTransparency ? 255.0f : 1.0f;
 		vector<vector_fixed<float, 4> > palette(nMaxColors);
 		for (UINT k = 0; k < nMaxColors; ++k) {
 			Color c(pPalette->Entries[k]);
 			palette[k][0] = c.GetR() / 255.0f;
 			palette[k][1] = c.GetG() / 255.0f;
 			palette[k][2] = c.GetB() / 255.0f;
-			palette[k][3] = c.GetA() / 255.0f;
+			palette[k][3] = c.GetA() / divisor;
 		}
 
 		Mat<Mat<float> > weightMaps(bitmapHeight, bitmapWidth);
