@@ -717,13 +717,6 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsig
 {
 	if (hasTransparent) {
 		byte value = 0;
-		for (short k = 0; k < pPalette->Count; ++k) {
-			Color c(pPalette->Entries[k]);
-			if (c.GetA() == 0) {
-				value = k;
-				break;
-			}
-		}
 
 		auto pPropertyItem = make_unique<PropertyItem>();
 		pPropertyItem.get()->id = PropertyTagIndexTransparent;

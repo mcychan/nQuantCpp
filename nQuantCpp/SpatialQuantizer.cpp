@@ -863,7 +863,7 @@ namespace SpatialQuant
 		for (int i_y = 0; i_y < bitmapHeight; ++i_y) {
 			for (int i_x = 0; i_x < bitmapWidth; ++i_x) {
 				Color jPixel(image[pixelIndex]);
-				quantized_image[pixelIndex++] = (!hasSemiTransparency && jPixel.GetA() == 0) ? 0 : best_match_color(*p_coarse_variables, i_x, i_y, nMaxColor);
+				quantized_image[pixelIndex++] = best_match_color(*p_coarse_variables, i_x, i_y, nMaxColor);
 			}
 		}
 
@@ -935,6 +935,19 @@ namespace SpatialQuant
 			if (m_transparentPixelIndex >= 0) {
 				UINT k = qPixels[m_transparentPixelIndex];
 				pPalette->Entries[k] = m_transparentColor;
+
+				if (k > 0) {
+					swap(pPalette->Entries[k], pPalette->Entries[0]);
+					for (int pixelIndex = 0; pixelIndex < pixels.size(); ++pixelIndex) {
+						Color c(pixels[pixelIndex]);
+						if (qPixels[pixelIndex] == k || c.GetA() == 0)
+							qPixels[pixelIndex] = 0;
+						else if (qPixels[pixelIndex] == 0) {							
+							if(c.GetA() > 0)
+								qPixels[pixelIndex] = k;
+						}
+					}
+				}
 			}
 		}
 		else {
