@@ -549,7 +549,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	return true;
 }
 
-bool dithering_image(const ARGB* pixels, ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, ARGB* qPixels, const UINT width, const UINT height)
+bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, ARGB* qPixels, const UINT width, const UINT height)
 {
 	UINT pixelIndex = 0;
 	bool hasTransparency = (transparentPixelIndex >= 0 || hasSemiTransparency);
@@ -717,6 +717,13 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsig
 {
 	if (hasTransparent) {
 		byte value = 0;
+		for (short k = 0; k < pPalette->Count; ++k) {
+			Color c(pPalette->Entries[k]);
+			if (c.GetA() == 0) {
+				value = k;
+				break;
+			}
+		}
 
 		auto pPropertyItem = make_unique<PropertyItem>();
 		pPropertyItem.get()->id = PropertyTagIndexTransparent;

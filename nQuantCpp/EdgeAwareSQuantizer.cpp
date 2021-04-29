@@ -320,15 +320,6 @@ namespace EdgeAwareSQuant
 				if (palette_delta > 1.0f / divisor)
 					++palatte_changed;
 				palette[v][k] = val;
-
-				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k > 1) {
-					CIELABConvertor::Lab lab1;
-					lab1.alpha = BYTE_MAX;
-					lab1.L = palette[v][0], lab1.A = palette[v][1], lab1.B = palette[v][2];
-					auto argb = CIELABConvertor::LAB2RGB(lab1);
-					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
-						swap(palette[0], palette[v]);
-				}
 			}
 		}
 	}
@@ -629,7 +620,7 @@ namespace EdgeAwareSQuant
 			palette[k][0] = c.GetR() / 255.0f;
 			palette[k][1] = c.GetG() / 255.0f;
 			palette[k][2] = c.GetB() / 255.0f;
-			palette[k][3] = c.GetA();
+			palette[k][3] = c.GetA() / 255.0f;
 		}
 
 		Mat<Mat<float> > weightMaps(bitmapHeight, bitmapWidth);

@@ -616,15 +616,6 @@ namespace SpatialQuant
 					val = maxLabValues[k];
 
 				palette[v][k] = val;
-
-				if (m_transparentPixelIndex >= 0 && !hasSemiTransparency && k > 1) {
-					CIELABConvertor::Lab lab1;
-					lab1.alpha = hasSemiTransparency ? palette[v][3] : BYTE_MAX;
-					lab1.L = palette[v][0], lab1.A = palette[v][1], lab1.B = palette[v][2];
-					auto argb = CIELABConvertor::LAB2RGB(lab1);
-					if (Color(argb).ToCOLORREF() == Color(m_transparentColor).ToCOLORREF())
-						swap(palette[0], palette[v]);
-				}
 			}
 		}
 	}
@@ -844,7 +835,7 @@ namespace SpatialQuant
 					++step_counter;
 				}
 				if (skip_palette_maintenance)
-					compute_initial_s(s, *p_coarse_variables, b_vec[coarse_level]);
+					compute_initial_s(s, coarse_variables, b_vec[coarse_level]);
 
 				refine_palette(s, coarse_variables, a, palette);
 				compute_initial_j_palette_sum(*p_palette_sum, coarse_variables, palette);
@@ -858,10 +849,10 @@ namespace SpatialQuant
 
 				auto p_old_coarse_variables = make_unique<array3d<double> >(bitmapWidth >> coarse_level, bitmapHeight >> coarse_level, nMaxColor);
 				swap(p_old_coarse_variables, p_coarse_variables);
-				zoom_double(*p_old_coarse_variables, *p_coarse_variables);
+				zoom_double(*p_old_coarse_variables, coarse_variables);
 				iters_at_current_level = 0;
 				p_palette_sum = make_unique<array2d<vector_fixed<double, 4> > >(p_coarse_variables->get_width(), p_coarse_variables->get_height());
-				compute_initial_j_palette_sum(*p_palette_sum, *p_coarse_variables, palette);
+				compute_initial_j_palette_sum(*p_palette_sum, coarse_variables, palette);
 				skip_palette_maintenance = true;
 			}
 			if (temperature > final_temperature)
