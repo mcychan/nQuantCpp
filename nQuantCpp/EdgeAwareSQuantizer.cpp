@@ -274,13 +274,13 @@ namespace EdgeAwareSQuant
 						auto b_ij = b_value_ea(b, i_x, i_y, j_x, j_y);
 						int v = indexImg8(i_y, i_x);
 						int alpha = indexImg8(j_y, j_x);
-						for (byte p = 0; p < length; ++p)
+						for (BYTE p = 0; p < length; ++p)
 							s(v, alpha)[p] += b_ij;
 					}
 				}
 				int v = indexImg8(i_y, i_x);
 				auto b_ii = b_value_ea(b, i_x, i_y, i_x, i_y);
-				for (byte p = 0; p < length; ++p)
+				for (BYTE p = 0; p < length; ++p)
 					s(v, v)[p] += b_ii;
 			}
 		}
@@ -467,7 +467,7 @@ namespace EdgeAwareSQuant
 
 								auto b_ij = b_value_ea(b, i_x, i_y, j_x, j_y);
 								auto& pixelIndex = pIndexImg8->at(j_y, j_x);
-								for (byte p = 0; p < length; ++p)
+								for (BYTE p = 0; p < length; ++p)
 									p_i[p] += b_ij * palette[pixelIndex][p];
 							}
 						}
@@ -604,8 +604,8 @@ namespace EdgeAwareSQuant
 		if (nMaxColors > 256)
 			nMaxColors = 256;
 
-		auto pPaletteBytes = make_unique<BYTE[]>(pDest->GetPaletteSize());
-		auto pPalette = (ColorPalette*)pPaletteBytes.get();
+		auto pPaletteBYTEs = make_unique<BYTE[]>(pDest->GetPaletteSize());
+		auto pPalette = (ColorPalette*)pPaletteBYTEs.get();
 		pPalette->Count = nMaxColors;
 
 		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)

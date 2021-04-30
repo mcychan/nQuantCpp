@@ -27,7 +27,7 @@ namespace DivQuant
 {
 	double PR = .299, PG = .587, PB = .114;
 	const int COLOR_HASH_SIZE = 20023;
-	byte alphaThreshold = 0;
+	BYTE alphaThreshold = 0;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;

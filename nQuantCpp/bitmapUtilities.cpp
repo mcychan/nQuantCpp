@@ -716,7 +716,7 @@ bool ProcessImagePixels(Bitmap* pDest, const ARGB* qPixels, const bool& hasSemiT
 bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsigned short* qPixels, const bool hasTransparent)
 {
 	if (hasTransparent) {
-		byte value = 0;
+		BYTE value = 0;
 
 		auto pPropertyItem = make_unique<PropertyItem>();
 		pPropertyItem.get()->id = PropertyTagIndexTransparent;
@@ -769,7 +769,7 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsig
 				nibbles = pRowDest[x / 2];
 				if ((x & 1) == 0) {
 					nibbles &= 0x0F;
-					nibbles |= (byte)(index << 4);
+					nibbles |= (BYTE)(index << 4);
 				}
 				else {
 					nibbles &= 0xF0;

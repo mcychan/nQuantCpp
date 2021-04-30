@@ -283,7 +283,7 @@ namespace SpatialQuant
 	const short minLabValues[] = { 0, -128, -128, 0 };
 	const short maxLabValues[] = { 100, 127, 127, 255 };
 
-	short getRandom(byte k) {
+	short getRandom(BYTE k) {
 		return rand() % maxLabValues[k] + minLabValues[k];
 	}
 
@@ -544,7 +544,7 @@ namespace SpatialQuant
 							auto v1 = coarse_variables(i_x, i_y, v);
 							for (int alpha = v; alpha < palette_size; ++alpha) {
 								auto mult = v1 * coarse_variables(j_x, j_y, alpha);
-								for (byte p = 0; p < length; ++p)
+								for (BYTE p = 0; p < length; ++p)
 									s(v, alpha)[p] += mult * b_ij[p];
 							}
 						}
@@ -572,12 +572,12 @@ namespace SpatialQuant
 					continue;
 				for (int v = 0; v <= alpha; ++v) {
 					auto mult = coarse_variables(i_x, i_y, v);
-					for (byte p = 0; p < length; ++p)
+					for (BYTE p = 0; p < length; ++p)
 						s(v, alpha)[p] += mult * delta_b_ij[p];
 				}
 				for (int v = alpha; v < palette_size; ++v) {
 					auto mult = coarse_variables(i_x, i_y, v);
-					for (byte p = 0; p < length; ++p)
+					for (BYTE p = 0; p < length; ++p)
 						s(alpha, v)[p] += mult * delta_b_ij[p];
 				}
 			}
@@ -754,7 +754,7 @@ namespace SpatialQuant
 								continue;
 							auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 							auto& j_pal = (*p_palette_sum)(j_x, j_y);
-							for (byte p = 0; p < length; ++p)
+							for (BYTE p = 0; p < length; ++p)
 								p_i[p] += b_ij[p] * j_pal[p];
 						}
 					}
@@ -798,7 +798,7 @@ namespace SpatialQuant
 						double delta_m_iv = new_val - coarse_variables(i_x, i_y, v);
 
 						coarse_variables(i_x, i_y, v) = new_val;
-						for (byte p = 0; p < length; ++p)
+						for (BYTE p = 0; p < length; ++p)
 							j_pal[p] += delta_m_iv * palette[v][p];
 
 						if (abs(delta_m_iv) > 0.001 && !skip_palette_maintenance)
@@ -905,12 +905,12 @@ namespace SpatialQuant
 
 		vector<vector_fixed<double, 4> > palette(nMaxColors);
 		for (UINT i = 0; i < nMaxColors; ++i) {
-			for (byte p = 0; p < length; ++p)
+			for (BYTE p = 0; p < length; ++p)
 				palette[i][p] = getRandom(p);
 		}
 
-		auto pPaletteBytes = make_unique<BYTE[]>(pDest->GetPaletteSize());
-		auto pPalette = (ColorPalette*)pPaletteBytes.get();
+		auto pPaletteBYTEs = make_unique<BYTE[]>(pDest->GetPaletteSize());
+		auto pPalette = (ColorPalette*)pPaletteBYTEs.get();
 		pPalette->Count = nMaxColors;
 
 		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)

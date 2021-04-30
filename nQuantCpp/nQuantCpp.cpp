@@ -4,6 +4,9 @@
 #include "stdafx.h"
 #include <algorithm>
 #include <iostream>
+#include <filesystem>
+namespace fs = std::filesystem;
+
 #include "nQuantCpp.h"
 
 #include "PnnQuantizer.h"
@@ -73,7 +76,8 @@ bool ProcessArgs(int argc, string& algo, UINT& nMaxColors, wstring& targetPath, 
 		if (currentArg.length() > 1 && 
 			(currentCmd == '-' || currentCmd == '–' || currentCmd == '/')) {
 			if (currentArg[1] == 'A') {
-				auto tmpAlgo = argv[index + 1];
+				string tmpAlgo = argv[index + 1];
+				transform(tmpAlgo.begin(), tmpAlgo.end(), tmpAlgo.begin(), ::toupper);
 				if (index >= argc - 1 || !isAlgo(tmpAlgo)) {
 					PrintUsage();
 					return false;
@@ -154,7 +158,9 @@ bool QuantizeImage(const string& algorithm, const wstring& sourceFile, const wst
 	if(!bSucceeded)
 		return bSucceeded;
 
-	auto fileName = sourceFile.substr(0, sourceFile.find_last_of('.'));
+	auto sourcePath = fs::canonical(fs::path(sourceFile));
+	auto fileName = sourcePath.filename().wstring();
+	fileName = fileName.substr(0, fileName.find_last_of(L'.'));
 
 	auto targetPath = targetDir;
 	if (targetPath.find_last_of(L"\\/") != targetPath.length() - 1)
@@ -251,7 +257,7 @@ int main(int argc, char** argv)
 				targetDir = szDir.substr(0, sourcePath.find_last_of(L"\\/"));
 
 			bool dither = true;
-			auto sourceFile = sourcePath.substr(0, sourcePath.find_last_of(L"\\/"));
+			auto sourceFile = (sourcePath[sourcePath.length() - 1] != L'/' && sourcePath[sourcePath.length() - 1] != L'\\') ? sourcePath : sourcePath.substr(0, sourcePath.find_last_of(L"\\/"));
 			if (algo == "") {
 				//QuantizeImage(_T("MMC"), sourceFile, targetDir, pSource.get(), nMaxColors, dither);
 				QuantizeImage("DIV", sourceFile, targetDir, pSource.get(), nMaxColors, dither);

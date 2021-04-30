@@ -14,7 +14,7 @@ Copyright (c) 2018-2019 Miller Cy Chan
 namespace PnnLABQuant
 {
 	double PR = .299, PG = .587, PB = .114;
-	byte alphaThreshold = 0;
+	BYTE alphaThreshold = 0;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	double ratio = 1.0;
@@ -396,7 +396,6 @@ namespace PnnLABQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		srand(time(NULL));
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors, 1);
 		else {

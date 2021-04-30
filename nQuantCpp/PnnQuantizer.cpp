@@ -11,7 +11,7 @@ Copyright (c) 2018-2019 Miller Cy Chan
 
 namespace PnnQuant
 {
-	byte alphaThreshold = 0;
+	BYTE alphaThreshold = 0;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
@@ -174,7 +174,7 @@ namespace PnnQuant
 		UINT k = 0;
 		for (int i = 0;; ++k) {
 			auto alpha = m_transparentPixelIndex > -1 ? rint(bins[i].ac) : BYTE_MAX;
-			pPalette->Entries[k] = Color::MakeARGB(alpha, (byte) bins[i].rc, (byte) bins[i].gc, (byte) bins[i].bc);
+			pPalette->Entries[k] = Color::MakeARGB(alpha, (BYTE) bins[i].rc, (BYTE) bins[i].gc, (BYTE) bins[i].bc);
 			if (m_transparentPixelIndex >= 0 && pPalette->Entries[k] == m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[k]);
 
