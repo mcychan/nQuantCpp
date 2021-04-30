@@ -2,7 +2,7 @@
 /*
  
  Copyright (c) 2015, M. Emre Celebi
- Copyright (c) 2019 Miller Cy Chan
+ Copyright (c) 2019-2021 Miller Cy Chan
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -823,7 +823,11 @@ namespace DivQuant
 				CIELABConvertor::Lab lab1;
 				lab1.alpha = rint(mean[ic].alpha);
 				lab1.L = mean[ic].L, lab1.A = mean[ic].A, lab1.B = mean[ic].B;
+				auto k = colortableOffset;
 				pPalette->Entries[colortableOffset++] = CIELABConvertor::LAB2RGB(lab1);
+
+				if (m_transparentPixelIndex >= 0 && pPalette->Entries[k] == m_transparentColor)
+					swap(pPalette->Entries[0], pPalette->Entries[k]);
 			}
 			else {
 				/* Empty cluster */

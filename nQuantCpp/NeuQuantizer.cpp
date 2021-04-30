@@ -15,7 +15,7 @@ namespace NeuralNet
 	* ------------------------------------------
 	*
 	* Copyright (c) 1994 Anthony Dekker
-	* Copyright (c) 2019 Miller Cy Chan
+	* Copyright (c) 2019-2021 Miller Cy Chan
 	*
 	* NEUQUANT Neural-Net quantization algorithm by Anthony Dekker, 1994.
 	* See "Kohonen neural networks for optimal colour quantization"
@@ -429,6 +429,9 @@ namespace NeuralNet
 			lab1.alpha = round_biased(network[k].al);
 			lab1.L = network[k].L, lab1.A = network[k].A, lab1.B = network[k].B;
 			pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
+
+			if (m_transparentPixelIndex >= 0 && pPalette->Entries[k] == m_transparentColor)
+				swap(pPalette->Entries[0], pPalette->Entries[k]);
 		}
 	}
 

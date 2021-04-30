@@ -6,7 +6,7 @@
  * Author: Dennis Lee   E-mail: denlee@ecf.utoronto.ca
  *
  * Copyright (C) 1993-1997 Dennis Lee
- * Copyright (c) 2019 Miller Cy Chan
+ * Copyright (c) 2019-2021 Miller Cy Chan
  *
  * C implementation of DL3 Quantization.
  * DL3 Quantization is a 2-pass color quantizer that uses an
@@ -295,8 +295,12 @@ namespace Dl3Quant
 	{
 		for (UINT k = 0; k < pPalette->Count; ++k) {
 			UINT sum = rgb_table3[k].pixel_count;
-			if (sum > 0)
+			if (sum > 0) {
 				pPalette->Entries[k] = Color::MakeARGB(rgb_table3[k].aa, rgb_table3[k].rr, rgb_table3[k].gg, rgb_table3[k].bb);
+
+				if (m_transparentPixelIndex >= 0 && pPalette->Entries[k] == m_transparentColor)
+					swap(pPalette->Entries[0], pPalette->Entries[k]);
+			}
 		}
 	}
 
