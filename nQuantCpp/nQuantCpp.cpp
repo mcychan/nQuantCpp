@@ -112,7 +112,12 @@ bool ProcessArgs(int argc, string& algo, UINT& nMaxColors, wstring& targetPath, 
 	return true;
 }
 
-bool QuantizeImage(const string& algorithm, const wstring& sourceFile, const wstring& targetDir, Bitmap* pSource, UINT nMaxColors, bool dither)
+inline bool fileExists(const wstring& path)
+{
+	return fs::exists(fs::path(path));
+}
+
+bool QuantizeImage(const string& algorithm, const wstring& sourceFile, wstring& targetDir, Bitmap* pSource, UINT nMaxColors, bool dither)
 {	
 	// Create 8 bpp indexed bitmap of the same size
 	auto pDest = make_unique<Bitmap>(pSource->GetWidth(), pSource->GetHeight(), (nMaxColors > 256) ? PixelFormat16bppARGB1555 : (nMaxColors > 16) ? PixelFormat8bppIndexed : (nMaxColors > 2) ? PixelFormat4bppIndexed : PixelFormat1bppIndexed);
@@ -162,12 +167,9 @@ bool QuantizeImage(const string& algorithm, const wstring& sourceFile, const wst
 	auto fileName = sourcePath.filename().wstring();
 	fileName = fileName.substr(0, fileName.find_last_of(L'.'));
 
-	auto targetPath = targetDir;
-	if (targetPath.find_last_of(L"\\/") != targetPath.length() - 1)
-		targetPath += L"/";
-	targetPath += fileName;
-
-	auto destPath = targetPath + L"-";
+	if (!fileExists(targetDir))
+		targetDir = fs::current_path().wstring();
+	auto destPath = targetDir + L"/" + fileName + L"-";
 	wstring algo(algorithm.begin(), algorithm.end());
 	destPath += algo + L"quant";
 	destPath += std::to_wstring(nMaxColors) + L".png";
@@ -189,33 +191,6 @@ bool QuantizeImage(const string& algorithm, const wstring& sourceFile, const wst
 	return status == Status::Ok;
 }
 
-bool fileExists(const wstring& path)
-{
-#ifdef WIN32
-
-	return _waccess(path.c_str(), 0) == 0;
-
-#else   
-	// hopefully this will work on most *nixes...
-
-	size_t outSize = path.size() * sizeof(wchar_t) + 1;// max possible bytes plus \0 char
-	auto conv = make_unique<char[]>(outSize);
-	memset(conv.get(), 0, outSize);
-
-	char* oldLocale = setlocale(LC_ALL, NULL);
-	setlocale(LC_ALL, "en_US.UTF-8"); // let's hope, most machines will have "en_US.UTF-8" available
-
-	size_t wcsSize = wcstombs(conv.get(), path.c_str(), outSize);
-	// we might get an error code (size_t-1) in wcsSize, ignoring for now
-
-	// now be good, restore the locale
-	setlocale(LC_ALL, oldLocale);
-
-	return access(conv.get(), 0) == 0;
-
-#endif
-}
-
 int main(int argc, char** argv)
 {
 	if (argc <= 1) {
@@ -225,9 +200,7 @@ int main(int argc, char** argv)
 #endif
 	}
 	
-	wchar_t szDirectory[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szDirectory);
-	wstring szDir = szDirectory;	
+	auto szDir = fs::current_path().wstring();
 	
 	UINT nMaxColors = 256;	
 	string algo = "";
@@ -240,7 +213,7 @@ int main(int argc, char** argv)
 		return 0;
 
 	wstring sourcePath(argv[1], argv[1] + strlen(argv[1]));
-	if (sourcePath.find_first_of(L"\\/") != wstring::npos)
+	if (!fileExists(sourcePath) && sourcePath.find_first_of(L"\\/") != wstring::npos)
 		sourcePath = szDir + L"/" + sourcePath;
 #endif	
 	
@@ -254,7 +227,7 @@ int main(int argc, char** argv)
 		Status status = pSource->GetLastStatus();
 		if (status == Ok) {
 			if (!fileExists(targetDir))
-				targetDir = szDir.substr(0, sourcePath.find_last_of(L"\\/"));
+				targetDir = fs::path(sourcePath).parent_path().wstring();
 
 			bool dither = true;
 			auto sourceFile = (sourcePath[sourcePath.length() - 1] != L'/' && sourcePath[sourcePath.length() - 1] != L'\\') ? sourcePath : sourcePath.substr(0, sourcePath.find_last_of(L"\\/"));
