@@ -592,12 +592,13 @@ namespace EdgeAwareSQuant
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
+		UINT pixelIndex = 0;
 		// see equation (7) in the paper
 		Mat<float> saliencyMap(bitmapHeight, bitmapWidth);
 		float saliencyBase = 0.1;
 		for (int y = 0; y < saliencyMap.get_height(); ++y) {
 			for (int x = 0; x < saliencyMap.get_width(); ++x)
-				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) / 255.0f;
+				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) * pixels[pixelIndex++] / 255.0f;
 		}
 
 		if (nMaxColors > 256)
