@@ -597,8 +597,10 @@ namespace EdgeAwareSQuant
 		Mat<float> saliencyMap(bitmapHeight, bitmapWidth);
 		float saliencyBase = 0.1;
 		for (int y = 0; y < saliencyMap.get_height(); ++y) {
-			for (int x = 0; x < saliencyMap.get_width(); ++x)
-				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) * pixels[pixelIndex++] / 255.0f;
+			for (int x = 0; x < saliencyMap.get_width(); ++x) {
+				auto pixel = hasSemiTransparency ? 1.0 : pixels[pixelIndex++] * 1.0;
+				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) * pixel / 255.0f;
+			}
 		}
 
 		if (nMaxColors > 256)
