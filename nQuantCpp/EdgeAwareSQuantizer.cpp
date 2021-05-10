@@ -598,8 +598,9 @@ namespace EdgeAwareSQuant
 		float saliencyBase = 0.1;
 		for (int y = 0; y < saliencyMap.get_height(); ++y) {
 			for (int x = 0; x < saliencyMap.get_width(); ++x) {
-				auto pixel = hasSemiTransparency ? 1.0 : pixels[pixelIndex++] * 1.0;
-				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) * pixel / 255.0f;
+				CIELABConvertor::Lab lab1;
+				getLab(pixels[pixelIndex++], lab1);					
+				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) * lab1.L / 255.0f;
 			}
 		}
 
