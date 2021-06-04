@@ -52,8 +52,9 @@ namespace PnnQuant
 
 	int pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors, short quan_rt)
 	{
-		auto bins = make_unique<pnnbin[]>(65536);
-		auto heap = make_unique<int[]>(65537);
+		vector<pnnbin> bins(65536);
+
+		auto heap = make_unique<int[]>(bins.size() + 1);
 		double err, n1, n2;
 
 		/* Build histogram */
@@ -62,7 +63,7 @@ namespace PnnQuant
 			// !!! nonuniformity then?
 			Color c(pixel);
 
-			int index = GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
+			int index = GetARGBIndex(c, hasSemiTransparency, nMaxColors < 64 || m_transparentPixelIndex >= 0);
 			auto& tb = bins[index];
 			tb.ac += c.GetA();
 			tb.rc += c.GetR();
@@ -74,7 +75,7 @@ namespace PnnQuant
 		/* Cluster nonempty bins at one end of array */
 		int maxbins = 0;
 
-		for (int i = 0; i < 65536; ++i) {
+		for (int i = 0; i < bins.size(); ++i) {
 			if (!bins[i].cnt)
 				continue;
 
@@ -109,7 +110,7 @@ namespace PnnQuant
 		int h, l, l2;
 		/* Initialize nearest neighbors and build heap of them */
 		for (int i = 0; i < maxbins; ++i) {
-			find_nn(bins.get(), i);
+			find_nn(bins.data(), i);
 			/* Push slot on heap */
 			err = bins[i].err;
 			for (l = ++heap[0]; l > 1; l = l2) {
@@ -136,7 +137,7 @@ namespace PnnQuant
 					b1 = heap[1] = heap[heap[0]--];
 				else /* Too old error value */
 				{
-					find_nn(bins.get(), b1);
+					find_nn(bins.data(), b1);
 					tb.tm = i;
 				}
 				/* Push slot down */

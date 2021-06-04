@@ -105,7 +105,7 @@ namespace PnnLABQuant
 
 	int PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors, short quan_rt)
 	{
-		auto bins = make_unique<pnnbin[]>(65536);
+		vector<pnnbin> bins(65536);
 
 		/* Build histogram */
 		for (const auto& pixel : pixels) {
@@ -128,7 +128,7 @@ namespace PnnLABQuant
 		/* Cluster nonempty bins at one end of array */
 		int maxbins = 0;
 
-		for (int i = 0; i < 65536; ++i) {
+		for (int i = 0; i < bins.size(); ++i) {
 			if (!bins[i].cnt)
 				continue;
 
@@ -175,9 +175,9 @@ namespace PnnLABQuant
 		}
 
 		/* Initialize nearest neighbors and build heap of them */
-		auto heap = make_unique<int[]>(65537);
+		auto heap = make_unique<int[]>(bins.size() + 1);
 		for (int i = 0; i < maxbins; ++i) {
-			find_nn(bins.get(), i);
+			find_nn(bins.data(), i);
 			/* Push slot on heap */
 			auto err = bins[i].err;
 			for (l = ++heap[0]; l > 1; l = l2) {
@@ -207,7 +207,7 @@ namespace PnnLABQuant
 					b1 = heap[1] = heap[heap[0]--];
 				else /* Too old error value */
 				{
-					find_nn(bins.get(), b1);
+					find_nn(bins.data(), b1);
 					tb.tm = i;
 				}
 				/* Push slot down */
