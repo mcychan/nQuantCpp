@@ -118,32 +118,32 @@ inline bool fileExists(const wstring& path)
 }
 
 bool QuantizeImage(const string& algorithm, const wstring& sourceFile, wstring& targetDir, Bitmap* pSource, UINT nMaxColors, bool dither)
-{	
+{
 	// Create 8 bpp indexed bitmap of the same size
 	auto pDest = make_unique<Bitmap>(pSource->GetWidth(), pSource->GetHeight(), (nMaxColors > 256) ? PixelFormat16bppARGB1555 : (nMaxColors > 16) ? PixelFormat8bppIndexed : (nMaxColors > 2) ? PixelFormat4bppIndexed : PixelFormat1bppIndexed);
 
 	bool bSucceeded = false;
-	if(algorithm == "PNN") {
+	if (algorithm == "PNN") {
 		PnnQuant::PnnQuantizer pnnQuantizer;
 		bSucceeded = pnnQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
-	else if(algorithm == "PNNLAB") {
+	else if (algorithm == "PNNLAB") {
 		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
 		bSucceeded = pnnLABQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
-	else if(algorithm == "NEU") {
+	else if (algorithm == "NEU") {
 		NeuralNet::NeuQuantizer neuQuantizer;
 		bSucceeded = neuQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
-	else if(algorithm == "WU") {
+	else if (algorithm == "WU") {
 		nQuant::WuQuantizer wuQuantizer;
 		bSucceeded = wuQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
-	else if(algorithm == "EAS") {
+	else if (algorithm == "EAS") {
 		EdgeAwareSQuant::EdgeAwareSQuantizer easQuantizer;
 		bSucceeded = easQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors);
 	}
-	else if(algorithm == "SPA") {
+	else if (algorithm == "SPA") {
 		SpatialQuant::SpatialQuantizer spaQuantizer;
 		bSucceeded = spaQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors);
 	}
@@ -153,22 +153,21 @@ bool QuantizeImage(const string& algorithm, const wstring& sourceFile, wstring& 
 	}
 	else if (algorithm == "MODE") {
 		MoDEQuant::MoDEQuantizer moDEQuantizer;
-		bSucceeded = moDEQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);		
+		bSucceeded = moDEQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
 	else if (algorithm == "MMC") {
 		MedianCutQuant::MedianCut mmcQuantizer;
 		bSucceeded = mmcQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
-	
-	if(!bSucceeded)
+
+	if (!bSucceeded)
 		return bSucceeded;
 
 	auto sourcePath = fs::canonical(fs::path(sourceFile));
 	auto fileName = sourcePath.filename().wstring();
 	fileName = fileName.substr(0, fileName.find_last_of(L'.'));
 
-	if (!fileExists(targetDir))
-		targetDir = fs::current_path().wstring();
+	targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();	
 	auto destPath = targetDir + L"/" + fileName + L"-";
 	wstring algo(algorithm.begin(), algorithm.end());
 	destPath += algo + L"quant";
