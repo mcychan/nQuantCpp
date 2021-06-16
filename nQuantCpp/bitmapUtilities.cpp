@@ -504,7 +504,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 			int a_pix = pDitherPixel[3];
 			auto argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 			Color c1(argb);
-			if (nMaxColors < 64) {
+			if (noBias) {
 				int offset = GetARGBIndex(c1, hasSemiTransparency, transparentPixelIndex >= 0);
 				if (!lookup[offset])
 					lookup[offset] = ditherFn(pPalette, nMaxColors, argb) + 1;
