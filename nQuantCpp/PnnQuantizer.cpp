@@ -54,9 +54,6 @@ namespace PnnQuant
 	{
 		vector<pnnbin> bins(65536);
 
-		auto heap = make_unique<int[]>(bins.size() + 1);
-		double err, n1, n2;
-
 		/* Build histogram */
 		for (const auto& pixel : pixels) {
 			// !!! Can throw gamma correction in here, but what to do about perceptual
@@ -79,24 +76,26 @@ namespace PnnQuant
 			if (!bins[i].cnt)
 				continue;
 
-			double d = 1.0 / (double)bins[i].cnt;
-			bins[i].ac *= d;
-			bins[i].rc *= d;
-			bins[i].gc *= d;
-			bins[i].bc *= d;
+			auto& tb = bins[i];
+			double d = 1.0 / (double) tb.cnt;
+			tb.ac *= d;
+			tb.rc *= d;
+			tb.gc *= d;
+			tb.bc *= d;
 			
-			bins[maxbins++] = bins[i];
+			bins[maxbins++] = tb;
 		}
 
 		if (nMaxColors < 16)
 			quan_rt = -1;
-		if (sqr(nMaxColors) / maxbins < .022)
+		if (sqr(nMaxColors) / maxbins < .03)
 			quan_rt = 0;
 
 		if (quan_rt > 0)
 			bins[0].cnt = _sqrt(bins[0].cnt);
 		else if (quan_rt < 0)
 			bins[0].cnt = cbrt(bins[0].cnt);
+
 		for (int i = 0; i < maxbins - 1; ++i) {
 			bins[i].fw = i + 1;
 			bins[i + 1].bk = i;
@@ -107,12 +106,13 @@ namespace PnnQuant
 				bins[i + 1].cnt = cbrt(bins[i + 1].cnt);
 		}		
 
+		auto heap = make_unique<int[]>(bins.size() + 1);
 		int h, l, l2;
 		/* Initialize nearest neighbors and build heap of them */
 		for (int i = 0; i < maxbins; ++i) {
 			find_nn(bins.data(), i);
 			/* Push slot on heap */
-			err = bins[i].err;
+			auto err = bins[i].err;
 			for (l = ++heap[0]; l > 1; l = l2) {
 				l2 = l >> 1;
 				if (bins[h = heap[l2]].err <= err)
@@ -141,10 +141,10 @@ namespace PnnQuant
 					tb.tm = i;
 				}
 				/* Push slot down */
-				err = bins[b1].err;
+				auto err = bins[b1].err;
 				for (l = 1; (l2 = l + l) <= heap[0]; l = l2) {
 					if ((l2 < heap[0]) && (bins[heap[l2]].err > bins[heap[l2 + 1]].err))
-						l2++;
+						++l2;
 					if (err <= bins[h = heap[l2]].err)
 						break;
 					heap[l] = h;
@@ -155,8 +155,8 @@ namespace PnnQuant
 			/* Do a merge */
 			auto& tb = bins[b1];
 			auto& nb = bins[tb.nn];
-			n1 = tb.cnt;
-			n2 = nb.cnt;
+			double n1 = tb.cnt;
+			double n2 = nb.cnt;
 			double d = 1.0 / (n1 + n2);
 			tb.ac = d * rint(n1 * tb.ac + n2 * nb.ac);
 			tb.rc = d * rint(n1 * tb.rc + n2 * nb.rc);
@@ -175,7 +175,7 @@ namespace PnnQuant
 		UINT k = 0;
 		for (int i = 0;; ++k) {
 			auto alpha = m_transparentPixelIndex > -1 ? rint(bins[i].ac) : BYTE_MAX;
-			pPalette->Entries[k] = Color::MakeARGB(alpha, (BYTE) bins[i].rc, (BYTE) bins[i].gc, (BYTE) bins[i].bc);
+			pPalette->Entries[k] = Color::MakeARGB(alpha, rint(bins[i].rc), rint(bins[i].gc), rint(bins[i].bc));
 			if (m_transparentPixelIndex >= 0 && pPalette->Entries[k] == m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[k]);
 

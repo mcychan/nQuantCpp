@@ -132,13 +132,14 @@ namespace PnnLABQuant
 			if (!bins[i].cnt)
 				continue;
 
-			double d = 1.0 / (double)bins[i].cnt;
-			bins[i].ac *= d;
-			bins[i].Lc *= d;
-			bins[i].Ac *= d;
-			bins[i].Bc *= d;
+			auto& tb = bins[i];
+			double d = 1.0 / (double)tb.cnt;
+			tb.ac *= d;
+			tb.Lc *= d;
+			tb.Ac *= d;
+			tb.Bc *= d;
 
-			bins[maxbins++] = bins[i];
+			bins[maxbins++] = tb;
 		}
 
 		double proportional = sqr(nMaxColors) / maxbins;
@@ -156,8 +157,7 @@ namespace PnnLABQuant
 			if (quan_rt > 0)
 				bins[i + 1].cnt = (int)_sqrt(bins[i + 1].cnt);
 		}
-
-		int h, l, l2;
+		
 		if (quan_rt != 0 && nMaxColors < 64) {
 			if(proportional > .018 && proportional < .022)
 				ratio = min(1.0, proportional + nMaxColors * exp(5.474) / pixelMap.size());
@@ -173,9 +173,10 @@ namespace PnnLABQuant
 			ratio += 0.5;
 			ratio = min(1.0, ratio);
 		}
-
-		/* Initialize nearest neighbors and build heap of them */
+		
 		auto heap = make_unique<int[]>(bins.size() + 1);
+		int h, l, l2;
+		/* Initialize nearest neighbors and build heap of them */
 		for (int i = 0; i < maxbins; ++i) {
 			find_nn(bins.data(), i);
 			/* Push slot on heap */

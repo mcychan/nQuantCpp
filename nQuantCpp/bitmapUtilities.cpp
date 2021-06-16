@@ -468,6 +468,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 	auto erowErr = make_unique<short[]>(err_len);
 	auto orowErr = make_unique<short[]>(err_len);
 	auto limtb = make_unique<char[]>(2 * BLOCK_SIZE);
+	auto lookup = make_unique<short[]>(65536);
 	auto pDitherPixel = make_unique<int[]>(DJ);
 
 	for (int i = 0; i < BLOCK_SIZE; ++i) {
@@ -503,7 +504,14 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 			int a_pix = pDitherPixel[3];
 			auto argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 			Color c1(argb);
-			qPixels[pixelIndex] = (c.GetA() == 0) ? 0 : ditherFn(pPalette, nMaxColors, argb);
+			if (nMaxColors < 64) {
+				int offset = GetARGBIndex(c1, hasSemiTransparency, transparentPixelIndex >= 0);
+				if (!lookup[offset])
+					lookup[offset] = ditherFn(pPalette, nMaxColors, argb) + 1;
+				qPixels[pixelIndex] = lookup[offset] - 1;
+			}
+			else
+				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, argb);
 
 			Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 
@@ -516,25 +524,25 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 			row1[cursor1 - DJ] = r_pix;
 			row1[cursor1 + DJ] += (r_pix += k);
 			row1[cursor1] += (r_pix += k);
-			row0[cursor0 + DJ] += (r_pix += k);
+			row0[cursor0 + DJ] += (r_pix + k);
 
 			k = g_pix * 2;
 			row1[cursor1 + 1 - DJ] = g_pix;
 			row1[cursor1 + 1 + DJ] += (g_pix += k);
 			row1[cursor1 + 1] += (g_pix += k);
-			row0[cursor0 + 1 + DJ] += (g_pix += k);
+			row0[cursor0 + 1 + DJ] += (g_pix + k);
 
 			k = b_pix * 2;
 			row1[cursor1 + 2 - DJ] = b_pix;
 			row1[cursor1 + 2 + DJ] += (b_pix += k);
 			row1[cursor1 + 2] += (b_pix += k);
-			row0[cursor0 + 2 + DJ] += (b_pix += k);
+			row0[cursor0 + 2 + DJ] += (b_pix + k);
 
 			k = a_pix * 2;
 			row1[cursor1 + 3 - DJ] = a_pix;
 			row1[cursor1 + 3 + DJ] += (a_pix += k);
 			row1[cursor1 + 3] += (a_pix += k);
-			row0[cursor0 + 3 + DJ] += (a_pix += k);
+			row0[cursor0 + 3 + DJ] += (a_pix + k);
 
 			cursor0 += DJ;
 			cursor1 -= DJ;
@@ -561,6 +569,7 @@ bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn 
 	auto erowErr = make_unique<short[]>(err_len);
 	auto orowErr = make_unique<short[]>(err_len);
 	auto limtb = make_unique<char[]>(2 * BLOCK_SIZE);
+	auto lookup = make_unique<short[]>(65536);
 	auto pDitherPixel = make_unique<int[]>(DJ);
 
 	for (int i = 0; i < BLOCK_SIZE; ++i) {
@@ -572,7 +581,7 @@ bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn 
 		limtb[i] = -DITHER_MAX;
 		limtb[i + BLOCK_SIZE] = DITHER_MAX;
 	}
-	for (int i = -DITHER_MAX; i <= DITHER_MAX; ++i)
+	for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
 		limtb[i + BLOCK_SIZE] = i;
 
 	auto row0 = erowErr.get();
@@ -594,38 +603,46 @@ bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn 
 			int a_pix = pDitherPixel[3];
 			auto argb = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 			Color c1(argb);
+			if (nMaxColors < 64) {
+				int offset = GetARGBIndex(c1, hasSemiTransparency, transparentPixelIndex >= 0);
+				if (!lookup[offset])
+					lookup[offset] = ditherFn(pPalette, nMaxColors, argb) + 1;
+				qPixels[pixelIndex] = lookup[offset] - 1;
+			}
+			else
+				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, argb);
 
-			Color c2(pPalette->Entries[ditherFn(pPalette, nMaxColors, argb)]);
+			Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 			qPixels[pixelIndex] = hasSemiTransparency ? c2.GetValue() : GetARGBIndex(c2, false, transparentPixelIndex >= 0);
 
-			r_pix = limtb[c1.GetR() - c2.GetR() + BLOCK_SIZE];
-			g_pix = limtb[c1.GetG() - c2.GetG() + BLOCK_SIZE];
-			b_pix = limtb[c1.GetB() - c2.GetB() + BLOCK_SIZE];
-			a_pix = limtb[c1.GetA() - c2.GetA() + BLOCK_SIZE];
+			r_pix = limtb[BLOCK_SIZE + c1.GetR() - c2.GetR()];
+			g_pix = limtb[BLOCK_SIZE + c1.GetG() - c2.GetG()];
+			b_pix = limtb[BLOCK_SIZE + c1.GetB() - c2.GetB()];
+			a_pix = limtb[BLOCK_SIZE + c1.GetA() - c2.GetA()];
 
 			int k = r_pix * 2;
 			row1[cursor1 - DJ] = r_pix;
 			row1[cursor1 + DJ] += (r_pix += k);
 			row1[cursor1] += (r_pix += k);
-			row0[cursor0 + DJ] += (r_pix += k);
+			row0[cursor0 + DJ] += (r_pix + k);
 
 			k = g_pix * 2;
 			row1[cursor1 + 1 - DJ] = g_pix;
 			row1[cursor1 + 1 + DJ] += (g_pix += k);
 			row1[cursor1 + 1] += (g_pix += k);
-			row0[cursor0 + 1 + DJ] += (g_pix += k);
+			row0[cursor0 + 1 + DJ] += (g_pix + k);
 
 			k = b_pix * 2;
 			row1[cursor1 + 2 - DJ] = b_pix;
 			row1[cursor1 + 2 + DJ] += (b_pix += k);
 			row1[cursor1 + 2] += (b_pix += k);
-			row0[cursor0 + 2 + DJ] += (b_pix += k);
+			row0[cursor0 + 2 + DJ] += (b_pix + k);
 
 			k = a_pix * 2;
 			row1[cursor1 + 3 - DJ] = a_pix;
 			row1[cursor1 + 3 + DJ] += (a_pix += k);
 			row1[cursor1 + 3] += (a_pix += k);
-			row0[cursor0 + 3 + DJ] += (a_pix += k);
+			row0[cursor0 + 3 + DJ] += (a_pix + k);
 
 			cursor0 += DJ;
 			cursor1 -= DJ;
