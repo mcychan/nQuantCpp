@@ -248,9 +248,9 @@ namespace nQuant
 		default:
 			return 0;
 		}
-	}
+	}	
 
-	void CompileColorData(ColorData& colorData, const Color& color, const BYTE alphaThreshold, const BYTE alphaFader)
+	void Histogram3d(ColorData& colorData, const Color& color, const BYTE alphaThreshold, const BYTE alphaFader)
 	{
 		BYTE pixelBlue = color.GetB();
 		BYTE pixelGreen = color.GetG();
@@ -278,12 +278,32 @@ namespace nQuant
 				colorData.momentsAlpha[index] += pixelAlpha;
 				colorData.moments[index] += sqr(pixelAlpha) + sqr(pixelRed) + sqr(pixelGreen) + sqr(pixelBlue);
 			}
-		}
+		}		
 
 		colorData.AddPixel(Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue));
 	}
 
-	void BuildHistogram(ColorData& colorData, Bitmap* sourceImage, BYTE alphaThreshold, BYTE alphaFader)
+	void AdjustMoments(const ColorData& colorData, const UINT& nMaxColors)
+	{
+		bool noBias = (m_transparentPixelIndex >= 0 || hasSemiTransparency) || nMaxColors < 64;
+		if (noBias)
+			return;
+
+		for (int i = 0; i < TOTAL_SIDESIZE; ++i) {
+			double d = colorData.weights[i];
+			if (d <= 0)
+				continue;
+
+			d = (colorData.weights[i] = _sqrt(d)) / d;
+			colorData.momentsRed[i] *= d;
+			colorData.momentsGreen[i] *= d;
+			colorData.momentsBlue[i] *= d;
+			colorData.momentsAlpha[i] *= d;
+			colorData.moments[i] *= d;
+		}
+	}
+
+	void BuildHistogram(ColorData& colorData, Bitmap* sourceImage, const UINT& nMaxColors, BYTE alphaThreshold, BYTE alphaFader)
 	{
 		const UINT bitDepth = GetPixelFormatSize(sourceImage->GetPixelFormat());
 		const UINT bitmapWidth = sourceImage->GetWidth();
@@ -303,9 +323,11 @@ namespace nQuant
 						else
 							hasSemiTransparency = true;
 					}
-					CompileColorData(colorData, color, alphaThreshold, alphaFader);
+					Histogram3d(colorData, color, alphaThreshold, alphaFader);
 				}
 			}
+
+			AdjustMoments(colorData, nMaxColors);
 			return;
 		}
 
@@ -348,13 +370,14 @@ namespace nQuant
 					else
 						hasSemiTransparency = true;
 				}
-				CompileColorData(colorData, color, alphaThreshold, alphaFader);
+				Histogram3d(colorData, color, alphaThreshold, alphaFader);
 			}
 
 			pRowSource += strideSource;
 		}
 
 		sourceImage->UnlockBits(&data);
+		AdjustMoments(colorData, nMaxColors);
 	}
 
 	void CalculateMoments(ColorData& data)
@@ -762,7 +785,7 @@ namespace nQuant
 			auto row0 = erowErr.get();
 			auto row1 = orowErr.get();
 
-			bool noBias = hasSemiTransparency || pPalette->Count < 64;
+			bool noBias = (m_transparentPixelIndex >= 0 || hasSemiTransparency) || pPalette->Count < 64;
 			int dir = 1;
 			for (int i = 0; i < height; ++i) {
 				if (dir < 0)
@@ -793,25 +816,25 @@ namespace nQuant
 					row1[cursor1 - DJ] = r_pix;
 					row1[cursor1 + DJ] += (r_pix += k);
 					row1[cursor1] += (r_pix += k);
-					row0[cursor0 + DJ] += (r_pix += k);
+					row0[cursor0 + DJ] += (r_pix + k);
 
 					k = g_pix * 2;
 					row1[cursor1 + 1 - DJ] = g_pix;
 					row1[cursor1 + 1 + DJ] += (g_pix += k);
 					row1[cursor1 + 1] += (g_pix += k);
-					row0[cursor0 + 1 + DJ] += (g_pix += k);
+					row0[cursor0 + 1 + DJ] += (g_pix + k);
 
 					k = b_pix * 2;
 					row1[cursor1 + 2 - DJ] = b_pix;
 					row1[cursor1 + 2 + DJ] += (b_pix += k);
 					row1[cursor1 + 2] += (b_pix += k);
-					row0[cursor0 + 2 + DJ] += (b_pix += k);
+					row0[cursor0 + 2 + DJ] += (b_pix + k);
 
 					k = a_pix * 2;
 					row1[cursor1 + 3 - DJ] = a_pix;
 					row1[cursor1 + 3 + DJ] += (a_pix += k);
 					row1[cursor1 + 3] += (a_pix += k);
-					row0[cursor0 + 3 + DJ] += (a_pix += k);
+					row0[cursor0 + 3 + DJ] += (a_pix + k);
 
 					cursor0 += DJ;
 					cursor1 -= DJ;
@@ -847,7 +870,7 @@ namespace nQuant
 		auto qPixels = make_unique<unsigned short[]>(bitmapWidth * bitmapHeight);
 		if (nMaxColors > 2) {
 			ColorData colorData(SIDESIZE, bitmapWidth, bitmapHeight);
-			BuildHistogram(colorData, pSource, alphaThreshold, alphaFader);
+			BuildHistogram(colorData, pSource, nMaxColors, alphaThreshold, alphaFader);
 			CalculateMoments(colorData);
 			vector<Box> cubes;
 			SplitData(cubes, nMaxColors, colorData);
