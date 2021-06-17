@@ -285,15 +285,18 @@ namespace nQuant
 
 	void AdjustMoments(const ColorData& colorData, const UINT& nMaxColors)
 	{
-		bool noBias = (m_transparentPixelIndex >= 0 || hasSemiTransparency) || nMaxColors < 64;
-		if (noBias)
-			return;
-
+		vector<int> indices;
 		for (int i = 0; i < TOTAL_SIDESIZE; ++i) {
 			double d = colorData.weights[i];
-			if (d <= 0)
-				continue;
+			if (d > 0)
+				indices.emplace_back(i);
+		}
 
+		if (sqr(nMaxColors) / indices.size() < .03)
+			return;
+
+		for (const auto& i : indices) {
+			double d = colorData.weights[i];
 			d = (colorData.weights[i] = _sqrt(d)) / d;
 			colorData.momentsRed[i] *= d;
 			colorData.momentsGreen[i] *= d;
