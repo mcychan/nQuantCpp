@@ -292,7 +292,7 @@ namespace nQuant
 				indices.emplace_back(i);
 		}
 
-		if (nMaxColors / indices.size() < .03)
+		if (sqr(nMaxColors) / indices.size() < .04)
 			return;
 
 		for (const auto& i : indices) {
