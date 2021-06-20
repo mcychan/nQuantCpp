@@ -13,7 +13,7 @@ Let's climb up the mountain: Ready, Go!!!
 <p>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<br /><img src="https://i.stack.imgur.com/ebUOv.png" /></p>
 <p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://i.stack.imgur.com/07EFv.png" /></p>
 <p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm with CIELAB color space<br /><img src="https://i.stack.imgur.com/6GxLY.png" /></p>
-<p>Reduced to 16 colors by Xialoin Wu's fast optimal color Quantization Algorithm<br /><img src="https://i.stack.imgur.com/Wgwor.png" /></p>
+<p>Reduced to 16 colors by Xialoin Wu's fast optimal color Quantization Algorithm<br /><img src="https://i.stack.imgur.com/8PEDu.png" /></p>
 Other color quantizations also suffered from Petrificus Totalus when less than 33 colors. Any experts please come to rescure them.
 <hr />
 <p>Original photo of Aetna's Hartford headquarters<br /><img src="https://mcychan.github.io/PnnQuant.js/demo/img/SE5x9.jpg" /></p>
@@ -26,7 +26,7 @@ High quality and fast<br />
 <img src="https://repository-images.githubusercontent.com/121180544/95f03a00-7780-11eb-9330-f2e6232c283f" alt="Fast pairwise nearest neighbor based algorithm with CIELAB color space with 16 colors"></p>
 <p><b><a href="http://cg.cs.tsinghua.edu.cn/people/~huanghz/publications/TIP-2015-CombinedColorQuantization.pdf">Efficient, Edge-Aware, Combined Color Quantization and Dithering</a></b> with 16 colors<br />
 Higher quality for 32 or less colors but slower<br />
-<img src="https://i.stack.imgur.com/Srsz8.png" alt="Efficient, Edge-Aware, Combined Color Quantization and Dithering with 16 colors"></p>
+<img src="https://i.stack.imgur.com/Vk0dG.png" alt="Efficient, Edge-Aware, Combined Color Quantization and Dithering with 16 colors"></p>
 <p><b><a href="https://people.eecs.berkeley.edu/~dcoetzee/downloads/scolorq/">Spatial color quantization</a></b> with 16 colors<br />
 Higher quality for 32 or less colors but the slowest<br />
 <img src="https://i.stack.imgur.com/YB3hZ.png" alt="Spatial color quantization with 16 colors"></p>
