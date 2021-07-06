@@ -481,7 +481,7 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 		limtb[i + BLOCK_SIZE] = DITHER_MAX;
 	}
 	for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
-		limtb[i + BLOCK_SIZE] = i;
+		limtb[i + BLOCK_SIZE] = i % 4 == 3 ? 0 : i;
 
 	auto row0 = erowErr.get();
 	auto row1 = orowErr.get();
@@ -582,7 +582,7 @@ bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn 
 		limtb[i + BLOCK_SIZE] = DITHER_MAX;
 	}
 	for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
-		limtb[i + BLOCK_SIZE] = i;
+		limtb[i + BLOCK_SIZE] = i % 4 == 3 ? 0 : i;
 
 	auto row0 = erowErr.get();
 	auto row1 = orowErr.get();
