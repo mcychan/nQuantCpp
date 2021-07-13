@@ -1,7 +1,7 @@
 ﻿#pragma once
 /* Fast pairwise nearest neighbor based algorithm for multilevel thresholding
 Copyright (C) 2004-2016 Mark Tyler and Dmitry Groshev
-Copyright (c) 2018-2019 Miller Cy Chan
+Copyright (c) 2018-2021 Miller Cy Chan
 * error measure; time used is proportional to number of bins squared - WJ */
 
 #include "stdafx.h"
@@ -15,6 +15,7 @@ namespace PnnQuant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
+	double PR = .299, PG = .587, PB = .114;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 	unordered_map<ARGB, unsigned short > nearestMap;
 
@@ -204,15 +205,15 @@ namespace PnnQuant
 			if (curdist > mindist)
 				continue;
 
-			curdist += sqr(c2.GetR() - c.GetR());
+			curdist += PR * sqr(c2.GetR() - c.GetR());
 			if (curdist > mindist)
 				continue;
 
-			curdist += sqr(c2.GetG() - c.GetG());
+			curdist += PG * sqr(c2.GetG() - c.GetG());
 			if (curdist > mindist)
 				continue;
 
-			curdist += sqr(c2.GetB() - c.GetB());
+			curdist += PB * sqr(c2.GetB() - c.GetB());
 			if (curdist > mindist)
 				continue;
 
@@ -288,6 +289,9 @@ namespace PnnQuant
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
+
+		if (nMaxColors <= 32)
+			PR = PG = PB = 1;
 
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors, 1);
