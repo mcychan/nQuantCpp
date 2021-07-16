@@ -25,6 +25,10 @@ namespace Riemersma
             p[2] = c.GetB();
             p[3] = c.GetA();
         }
+        inline float& operator[](int index)
+        {
+            return p[index];
+        }
     };
 	
 	int x, y;
@@ -47,27 +51,27 @@ namespace Riemersma
 	        for(int c = 0; c < DITHER_MAX; ++c) {
 	        	auto& eb = errorq[c];
 	        	for(int j = 0; j < sizeof(eb.p) / sizeof(float); ++j)
-	        		error.p[j] += eb.p[j] * m_weights[c];
+	        		error[j] += eb[j] * m_weights[c];
 	        }
 
-            BYTE r_pix = (BYTE) min(BYTE_MAX, max(error.p[0], 0));
-            BYTE g_pix = (BYTE) min(BYTE_MAX, max(error.p[1], 0));
-            BYTE b_pix = (BYTE) min(BYTE_MAX, max(error.p[2], 0));
-            BYTE a_pix = (BYTE) min(BYTE_MAX, max(error.p[3], 0));
+            auto r_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[0], 0)));
+            auto g_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[1], 0)));
+            auto b_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[2], 0)));
+            auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
 	        
 	        Color c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);		        
             m_qPixels[x + y * m_width] = m_ditherFn(m_pPalette, m_pPalette->Count, c1.GetValue());
 
 	        errorq.erase(errorq.begin());
 	        Color c2 = m_pPalette->Entries[m_qPixels[x + y * m_width]];
-	        error.p[0] = r_pix - c2.GetR();
-	        error.p[1] = g_pix - c2.GetG();
-	        error.p[2] = b_pix - c2.GetB();
-	        error.p[3] = a_pix - c2.GetA();
+	        error[0] = r_pix - c2.GetR();
+	        error[1] = g_pix - c2.GetG();
+	        error[2] = b_pix - c2.GetB();
+	        error[3] = a_pix - c2.GetA();
 	        
 	        for(int j = 0; j < sizeof(error.p) / sizeof(float); ++j) {
-	        	if(abs(error.p[j]) > DITHER_MAX)
-	        		error.p[j] = error.p[j] < 0 ? DITHER_MAX : DITHER_MAX;
+	        	if(abs(error[j]) > DITHER_MAX)
+	        		error[j] = error[j] < 0 ? DITHER_MAX : DITHER_MAX;
 	        }
 	        errorq.emplace_back(error);
 	    }
@@ -92,11 +96,31 @@ namespace Riemersma
             	break;
         }
 	}
-	
-    void iter(const int level, Direction dir);
 
     void curve(const int level, Direction a, Direction b, Direction c, Direction d, Direction e, Direction f, Direction g)
     {
+        auto iter = [](const int level, Direction dir)
+        {
+            if (level <= 0)
+                return;
+
+            switch (dir)
+            {
+            case LEFT:
+                curve(level, UP, LEFT, LEFT, DOWN, RIGHT, DOWN, LEFT);
+                break;
+            case RIGHT:
+                curve(level, DOWN, RIGHT, RIGHT, UP, LEFT, UP, RIGHT);
+                break;
+            case UP:
+                curve(level, LEFT, UP, UP, RIGHT, DOWN, RIGHT, UP);
+                break;
+            case DOWN:
+                curve(level, RIGHT, DOWN, DOWN, LEFT, UP, LEFT, DOWN);
+                break;
+            }
+        };
+
 		iter(level-1, a);
 		navTo(e);
 		iter(level-1, b);
@@ -104,28 +128,7 @@ namespace Riemersma
         iter(level-1, c);
         navTo(g);
         iter(level-1, d);
-    }
-
-    void iter(const int level, Direction dir) {
-    	if(level <= 0)
-    		return;    	
-
-        switch(dir)
-        {
-            case LEFT:
-            	curve(level, UP,LEFT,LEFT,DOWN, RIGHT,DOWN,LEFT);
-            	break;
-            case RIGHT:
-            	curve(level, DOWN,RIGHT,RIGHT,UP, LEFT,UP,RIGHT);
-            	break;
-            case UP:
-            	curve(level, LEFT,UP,UP,RIGHT, DOWN,RIGHT,UP);
-            	break;
-            case DOWN:
-            	curve(level, RIGHT,DOWN,DOWN,LEFT, UP,LEFT,DOWN);
-            	break;
-        }
-    }
+    }    
 	
 	void HilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, unsigned short* qPixels)
     {
@@ -164,7 +167,7 @@ namespace Riemersma
             i >>= 1;
         }
 
-        iter(depth, UP);
+        curve(depth, UP, LEFT, LEFT, DOWN, RIGHT, DOWN, LEFT);
         ditherCurrentPixel();
     }
 }
