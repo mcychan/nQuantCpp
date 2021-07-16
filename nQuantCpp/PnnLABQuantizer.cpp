@@ -421,8 +421,10 @@ namespace PnnLABQuant
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 
-		if(dither < 0)
-			Riemersma::HilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nearestColorIndex, qPixels.get());
+		if (dither < 0) {
+			DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 64) ? nearestColorIndex : closestColorIndex;
+			Riemersma::HilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, qPixels.get());
+		}
 		else
 			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither > 0);
 

@@ -129,7 +129,7 @@ bool QuantizeImage(const string& algorithm, const wstring& sourceFile, wstring& 
 	}
 	else if (algorithm == "PNNLAB") {
 		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
-		bSucceeded = pnnLABQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
+		bSucceeded = pnnLABQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, -1);
 	}
 	else if (algorithm == "NEU") {
 		NeuralNet::NeuQuantizer neuQuantizer;
