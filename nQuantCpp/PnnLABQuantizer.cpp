@@ -416,8 +416,12 @@ namespace PnnLABQuant
 			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
 			return ProcessImagePixels(pDest, qPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
 		}
-		if (hasSemiTransparency)
+
+		bool noBias = (m_transparentPixelIndex >= 0 || hasSemiTransparency) || nMaxColors < 64;
+		if (noBias) {
 			PR = PG = PB = 1;
+			dither *= -1;
+		}
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 
