@@ -106,6 +106,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -158,6 +159,7 @@
     <ClInclude Include="DivQuantizer.h" />
     <ClInclude Include="Dl3Quantizer.h" />
     <ClInclude Include="EdgeAwareSQuantizer.h" />
+    <ClInclude Include="HilbertCurve.h" />
     <ClInclude Include="MedianCut.h" />
     <ClInclude Include="MoDEQuantizer.h" />
     <ClInclude Include="NeuQuantizer.h" />
@@ -175,6 +177,7 @@
     <ClCompile Include="DivQuantizer.cpp" />
     <ClCompile Include="Dl3Quantizer.cpp" />
     <ClCompile Include="EdgeAwareSQuantizer.cpp" />
+    <ClCompile Include="HilbertCurve.cpp" />
     <ClCompile Include="MedianCut.cpp" />
     <ClCompile Include="MoDEQuantizer.cpp" />
     <ClCompile Include="NeuQuantizer.cpp" />

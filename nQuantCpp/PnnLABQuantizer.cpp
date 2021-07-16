@@ -1,13 +1,14 @@
 ﻿#pragma once
 /* Fast pairwise nearest neighbor based algorithm for multilevel thresholding
 Copyright (C) 2004-2016 Mark Tyler and Dmitry Groshev
-Copyright (c) 2018-2019 Miller Cy Chan
+Copyright (c) 2018-2021 Miller Cy Chan
 * error measure; time used is proportional to number of bins squared - WJ */
 
 #include "stdafx.h"
 #include "PnnLABQuantizer.h"
 #include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
+#include "HilbertCurve.h"
 #include <ctime>
 #include <unordered_map>
 
@@ -384,7 +385,7 @@ namespace PnnLABQuant
 		return true;
 	}
 
-	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
+	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, int dither)
 	{
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
@@ -419,7 +420,11 @@ namespace PnnLABQuant
 			PR = PG = PB = 1;
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+
+		if(dither < 0)
+			Riemersma::HilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nearestColorIndex, qPixels.get());
+		else
+			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither > 0);
 
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
