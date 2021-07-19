@@ -37,8 +37,10 @@ namespace Riemersma
 	const ColorPalette* m_pPalette;
 	unsigned short* m_qPixels;
 	DitherFn m_ditherFn;
+    GetColorIndexFn m_getColorIndexFn;
 	vector<ErrorBox> errorq;
 	float* m_weights;
+    short* m_lookup;
     
 	static const BYTE DITHER_MAX = 16;
 	static const float BLOCK_SIZE = 256.0f; 
@@ -59,8 +61,15 @@ namespace Riemersma
             auto b_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[2], 0)));
             auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
 	        
-	        Color c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);		        
-            m_qPixels[x + y * m_width] = m_ditherFn(m_pPalette, m_pPalette->Count, c1.GetValue());
+	        Color c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+            if (m_pPalette->Count < 64) {
+                int offset = m_getColorIndexFn(c1);
+                if (!m_lookup[offset])
+                    m_lookup[offset] = m_ditherFn(m_pPalette, m_pPalette->Count, c1.GetValue()) + 1;
+                m_qPixels[x + y * m_width] = m_lookup[offset] - 1;
+            }
+            else
+                m_qPixels[x + y * m_width] = m_ditherFn(m_pPalette, m_pPalette->Count, c1.GetValue());
 
 	        errorq.erase(errorq.begin());
 	        Color c2 = m_pPalette->Entries[m_qPixels[x + y * m_width]];
@@ -130,7 +139,7 @@ namespace Riemersma
         iter(level-1, d);
     }    
 	
-	void HilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, unsigned short* qPixels)
+	void HilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels)
     {
 		m_width = width;
         m_height = height;
@@ -138,8 +147,11 @@ namespace Riemersma
         m_pPalette = pPalette;
         m_qPixels = qPixels;
         m_ditherFn = ditherFn;
+        m_getColorIndexFn = getColorIndexFn;
         auto pWeights = make_unique<float[]>(DITHER_MAX);
         m_weights = pWeights.get();
+        auto pLookup = make_unique<short[]>(65536);
+        m_lookup = pLookup.get();
     	
         /* Dithers all pixels of the image in sequence using
          * the Hilbert path, and distributes the error in
