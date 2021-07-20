@@ -80,7 +80,7 @@ namespace Riemersma
 	        
 	        for(int j = 0; j < sizeof(error.p) / sizeof(float); ++j) {
 	        	if(abs(error[j]) > DITHER_MAX)
-	        		error[j] = error[j] < 0 ? -DITHER_MAX : DITHER_MAX;
+	        		error[j] = error[j] < 0 ? -DITHER_MAX + 1 : DITHER_MAX - 1;
 	        }
 	        errorq.emplace_back(error);
 	    }
