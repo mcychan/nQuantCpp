@@ -106,38 +106,38 @@ namespace Riemersma
         }
 	}
 
-    void curve(const int level, Direction a, Direction b, Direction c, Direction d, Direction e, Direction f, Direction g)
+    void iter(const int level, Direction dir)
     {
-        auto iter = [](const int level, Direction dir)
-        {
-            if (level <= 0)
-                return;
+        if (level <= 0)
+            return;
 
-            switch (dir)
-            {
-            case LEFT:
-                curve(level, UP, LEFT, LEFT, DOWN, RIGHT, DOWN, LEFT);
-                break;
-            case RIGHT:
-                curve(level, DOWN, RIGHT, RIGHT, UP, LEFT, UP, RIGHT);
-                break;
-            case UP:
-                curve(level, LEFT, UP, UP, RIGHT, DOWN, RIGHT, UP);
-                break;
-            case DOWN:
-                curve(level, RIGHT, DOWN, DOWN, LEFT, UP, LEFT, DOWN);
-                break;
-            }
+        auto curve = [](const int level, Direction a, Direction b, Direction c, Direction d, Direction e, Direction f, Direction g)
+        {
+            iter(level - 1, a);
+            navTo(e);
+            iter(level - 1, b);
+            navTo(f);
+            iter(level - 1, c);
+            navTo(g);
+            iter(level - 1, d);
         };
 
-		iter(level-1, a);
-		navTo(e);
-		iter(level-1, b);
-		navTo(f);
-        iter(level-1, c);
-        navTo(g);
-        iter(level-1, d);
-    }    
+        switch (dir)
+        {
+        case LEFT:
+            curve(level, UP, LEFT, LEFT, DOWN, RIGHT, DOWN, LEFT);
+            break;
+        case RIGHT:
+            curve(level, DOWN, RIGHT, RIGHT, UP, LEFT, UP, RIGHT);
+            break;
+        case UP:
+            curve(level, LEFT, UP, UP, RIGHT, DOWN, RIGHT, UP);
+            break;
+        case DOWN:
+            curve(level, RIGHT, DOWN, DOWN, LEFT, UP, LEFT, DOWN);
+            break;
+        }
+    } 
 	
 	void HilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels)
     {
@@ -179,7 +179,7 @@ namespace Riemersma
             i >>= 1;
         }
 
-        curve(depth, UP, LEFT, LEFT, DOWN, RIGHT, DOWN, LEFT);
+        iter(depth, UP);
         ditherCurrentPixel();
     }
 }
