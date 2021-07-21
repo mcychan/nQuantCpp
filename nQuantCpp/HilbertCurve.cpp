@@ -79,8 +79,13 @@ namespace Riemersma
 	        error[3] = a_pix - c2.GetA();
 	        
 	        for(int j = 0; j < sizeof(error.p) / sizeof(float); ++j) {
-	        	if(abs(error[j]) > DITHER_MAX)
+                if (abs(error[j]) < DITHER_MAX)
+                    continue;
+
+                if (m_pPalette->Count < 64)
 	        		error[j] = error[j] < 0 ? -DITHER_MAX + 1 : DITHER_MAX - 1;
+                else
+                    error[j] -= error[j] < 0 ? -DITHER_MAX : DITHER_MAX;
 	        }
 	        errorq.emplace_back(error);
 	    }
