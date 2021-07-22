@@ -166,8 +166,7 @@ namespace Riemersma
         errorq.clear();
         const float weightRatio = (float)pow(BLOCK_SIZE + 1.0f, 1.0f / (DITHER_MAX - 1.0f));
         float weight = 1.0f, sumweight = 0.0f;
-        for (int c = 0; c < DITHER_MAX; ++c)
-        {
+        for (int c = 0; c < DITHER_MAX; ++c) {
             errorq.resize(DITHER_MAX);
             sumweight += (m_weights[DITHER_MAX - c - 1] = 1.0f / weight);
             weight *= weightRatio;
