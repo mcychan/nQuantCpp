@@ -1,7 +1,10 @@
 #pragma once
-/* The Hilbert curve is a space filling curve that visits every point in a square grid with a size of any other power of 2.
-Copyright (c) 2021 Miller Cy Chan
-* It was first described by David Hilbert in 1892. Applications of the Hilbert curve are in image processing: especially image compression and dithering. */
+/**
+ * A blue-noise-based dither does not diffuse error, and uses a tiling blue noise pattern, 
+ * with a fine-grained checker board pattern
+ * and a roughly-white-noise pattern obtained by distorting the blue noise, but only applies these noisy pattern
+ * when there's error matching a color from the image to a color in the palette. 
+ * Copyright (c) 2021 Miller Cy Chan */
 
 #include "stdafx.h"
 #include "BlueNoise.h"
