@@ -8,6 +8,7 @@ Copyright (c) 2018-2021 Miller Cy Chan
 #include "PnnLABQuantizer.h"
 #include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
+#include "BlueNoise.h"
 #include "HilbertCurve.h"
 #include <ctime>
 #include <unordered_map>
@@ -423,16 +424,17 @@ namespace PnnLABQuant
 		}
 
 		bool noBias = (m_transparentPixelIndex >= 0 || hasSemiTransparency) || nMaxColors < 64;
-		if (noBias) {
+		if (noBias)
 			PR = PG = PB = 1;
-			dither *= -1;
-		}
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 
 		if (dither < 0) {
 			DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 64) ? nearestColorIndex : closestColorIndex;
-			Riemersma::HilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
+			if(nMaxColors < 64)
+				BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
+			else
+				Riemersma::HilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
 		}
 		else
 			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither > 0);
