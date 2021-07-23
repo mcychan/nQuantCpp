@@ -10,19 +10,9 @@
 #include "BlueNoise.h"
 
 #include <memory>
-#include <vector>
 
 namespace BlueNoise
-{	
-	int x, y;
-	UINT m_width, m_height;
-	const ARGB* m_image;
-	const ColorPalette* m_pPalette;
-	unsigned short* m_qPixels;
-	DitherFn m_ditherFn;
-    GetColorIndexFn m_getColorIndexFn;
-    short* m_lookup;
-    
+{	    
 	static const char RAW_BLUE_NOISE[] = {
 		-63, 119, 75, 49, -74, 21, -32, 7, -6, -66, -19, 78, -101, 89, 24, -25, 122, -50, -6, 100, -125, -45, 105, 32, -83, 
 		114, -20, -88, -3, -35, 73, -93, 103, 59, 126, 79, 19, -115, -41, 6, 118, 69, 49, 96, -69, -36, 4, 41, -79, 55, 
@@ -192,35 +182,28 @@ namespace BlueNoise
 	
 	void dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels)
     {
-		m_width = width;
-        m_height = height;
-        m_image = pixels;
-        m_pPalette = pPalette;
-        m_qPixels = qPixels;
-        m_ditherFn = ditherFn;
-        m_getColorIndexFn = getColorIndexFn;
         auto pLookup = make_unique<short[]>(65536);
-        m_lookup = pLookup.get();
+        auto lookup = pLookup.get();
     	
 		const float strength = (float)_sqrt(2.89);
-		for (UINT y = 0; y < m_height; ++y) {
-			for (UINT x = 0; x < m_width; ++x) {
-				Color pixel(m_image[x + y * m_width]);
+		for (UINT y = 0; y < height; ++y) {
+			for (UINT x = 0; x < width; ++x) {
+				Color pixel(pixels[x + y * width]);
 				int r_pix = pixel.GetR();
 				int g_pix = pixel.GetG();
 				int b_pix = pixel.GetB();
 				int a_pix = pixel.GetA();
 
-				if (m_pPalette->Count < 64) {
-					int offset = m_getColorIndexFn(pixel);
-					if (!m_lookup[offset])
-						m_lookup[offset] = m_ditherFn(m_pPalette, m_pPalette->Count, pixel.GetValue()) + 1;
-					m_qPixels[x + y * m_width] = m_lookup[offset] - 1;
+				if (pPalette->Count < 64) {
+					int offset = getColorIndexFn(pixel);
+					if (!lookup[offset])
+						lookup[offset] = ditherFn(pPalette, pPalette->Count, pixel.GetValue()) + 1;
+					qPixels[x + y * width] = lookup[offset] - 1;
 				}
 				else
-					m_qPixels[x + y * m_width] = m_ditherFn(m_pPalette, m_pPalette->Count, pixel.GetValue());
+					qPixels[x + y * width] = ditherFn(pPalette, pPalette->Count, pixel.GetValue());
 
-				Color c1 = m_pPalette->Entries[m_qPixels[x + y * m_width]];
+				Color c1 = pPalette->Entries[qPixels[x + y * width]];
 				float adj = (RAW_BLUE_NOISE[(x & 63) | (y & 63) << 6] + 0.5f) / 127.5f;
 				adj += ((x + y & 1) - 0.5f) * strength * (0.5f + RAW_BLUE_NOISE[(x * 19 & 63) | (y * 23 & 63) << 6])
 					* -0x1.6p-10f;
@@ -230,14 +213,14 @@ namespace BlueNoise
 				a_pix = static_cast<BYTE>(min(BYTE_MAX, max(a_pix + (adj * (a_pix - c1.GetA())), 0)));
 
 				c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-				if (m_pPalette->Count < 64) {
-					int offset = m_getColorIndexFn(c1);
-					if (!m_lookup[offset])
-						m_lookup[offset] = m_ditherFn(m_pPalette, m_pPalette->Count, c1.GetValue()) + 1;
-					m_qPixels[x + y * m_width] = m_lookup[offset] - 1;
+				if (pPalette->Count < 64) {
+					int offset = getColorIndexFn(c1);
+					if (!lookup[offset])
+						lookup[offset] = ditherFn(pPalette, pPalette->Count, c1.GetValue()) + 1;
+					qPixels[x + y * width] = lookup[offset] - 1;
 				}
 				else
-					m_qPixels[x + y * m_width] = m_ditherFn(m_pPalette, m_pPalette->Count, c1.GetValue());
+					qPixels[x + y * width] = ditherFn(pPalette, pPalette->Count, c1.GetValue());
 			}
 		}
     }
