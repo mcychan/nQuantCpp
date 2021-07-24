@@ -194,15 +194,6 @@ namespace BlueNoise
 				int b_pix = pixel.GetB();
 				int a_pix = pixel.GetA();
 
-				if (pPalette->Count < 64) {
-					int offset = getColorIndexFn(pixel);
-					if (!lookup[offset])
-						lookup[offset] = ditherFn(pPalette, pPalette->Count, pixel.GetValue()) + 1;
-					qPixels[x + y * width] = lookup[offset] - 1;
-				}
-				else
-					qPixels[x + y * width] = ditherFn(pPalette, pPalette->Count, pixel.GetValue());
-
 				Color c1 = pPalette->Entries[qPixels[x + y * width]];
 				float adj = (RAW_BLUE_NOISE[(x & 63) | (y & 63) << 6] + 0.5f) / 127.5f;
 				adj += ((x + y & 1) - 0.5f) * strength * (0.5f + RAW_BLUE_NOISE[(x * 19 & 63) | (y * 23 & 63) << 6])
