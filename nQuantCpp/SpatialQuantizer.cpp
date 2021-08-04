@@ -26,6 +26,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SpatialQuantizer.h"
 #include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
+#include "BlueNoise.h"
 
 #include <deque>
 #include <algorithm>
@@ -42,6 +43,7 @@ namespace SpatialQuant
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
+	unordered_map<ARGB, unsigned short> nearestMap;
 
 	void getLab(const Color& c, CIELABConvertor::Lab& lab1)
 	{
@@ -870,6 +872,52 @@ namespace SpatialQuant
 		return true;
 	}
 
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	{
+		auto got = nearestMap.find(argb);
+		if (got != nearestMap.end())
+			return got->second;
+
+		unsigned short k = 0;
+		Color c(argb);
+		if (c.GetA() <= 0)
+			return k;
+
+		double mindist = SHORT_MAX;
+		CIELABConvertor::Lab lab1, lab2;
+		getLab(c, lab1);
+
+		for (UINT i = 0; i < nMaxColors; ++i) {
+			Color c2(pPalette->Entries[i]);
+			double curdist = sqr(c2.GetA() - c.GetA());
+			if (curdist > mindist)
+				continue;
+
+			getLab(c2, lab2);
+			curdist += sqr(lab2.L - lab1.L);
+			if (curdist > mindist)
+				continue;
+
+			curdist += sqr(lab2.A - lab1.A);
+			if (curdist > mindist)
+				continue;
+
+			curdist += sqr(lab2.B - lab1.B);			
+
+			if (curdist > mindist)
+				continue;
+			mindist = curdist;
+			k = i;
+		}
+		nearestMap[argb] = k;
+		return k;
+	}
+
+	inline int GetColorIndex(const Color& c)
+	{
+		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
+	}
+
 	bool SpatialQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
 		const UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
@@ -957,6 +1005,11 @@ namespace SpatialQuant
 				pPalette->Entries[1] = Color::Black;
 				pPalette->Entries[0] = Color::White;
 			}
+		}
+
+		if (!dither) {
+			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nearestColorIndex, GetColorIndex, qPixels.get(), 0.5f);
+			nearestMap.clear();
 		}
 
 		return ProcessImagePixels(pDest, pPalette, qPixels.get(), m_transparentPixelIndex >= 0);

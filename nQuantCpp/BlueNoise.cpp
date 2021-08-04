@@ -180,12 +180,12 @@ namespace BlueNoise
 		14, -9, -91, -55, 99, -111, -20, 31, 88, -3, 105, 53, -29, -90, -10, -70, 9, -57, 123, -99, 5			
 	};
 	
-	void dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels)
+	void dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, const float weight)
     {
-        auto pLookup = make_unique<short[]>(65536);
-        auto lookup = pLookup.get();
-    	
 		const float strength = 1 / 3.0f;
+        auto pLookup = make_unique<short[]>(65536);
+        auto lookup = pLookup.get();    	
+		
 		for (UINT y = 0; y < height; ++y) {
 			for (UINT x = 0; x < width; ++x) {
 				Color pixel(pixels[x + y * width]);
@@ -197,6 +197,7 @@ namespace BlueNoise
 				Color c1 = pPalette->Entries[qPixels[x + y * width]];
 				float adj = (RAW_BLUE_NOISE[(x & 63) | (y & 63) << 6] + 0.5f) / 127.5f;
 				adj += ((x + y & 1) - 0.5f) * strength / 8.0f;
+				adj *= weight;
 				r_pix = static_cast<BYTE>(min(BYTE_MAX, max(r_pix + (adj * (r_pix - c1.GetR())), 0)));
 				g_pix = static_cast<BYTE>(min(BYTE_MAX, max(g_pix + (adj * (g_pix - c1.GetG())), 0)));
 				b_pix = static_cast<BYTE>(min(BYTE_MAX, max(b_pix + (adj * (b_pix - c1.GetB())), 0)));

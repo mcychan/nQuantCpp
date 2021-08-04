@@ -23,7 +23,7 @@ namespace PnnLABQuant
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
 	unordered_map<ARGB, vector<double> > closestMap;
-	unordered_map<ARGB, unsigned short > nearestMap;
+	unordered_map<ARGB, unsigned short> nearestMap;
 
 	struct pnnbin {
 		double ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
