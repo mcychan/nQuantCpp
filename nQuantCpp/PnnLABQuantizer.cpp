@@ -145,7 +145,7 @@ namespace PnnLABQuant
 		}
 
 		double proportional = sqr(nMaxColors) / maxbins;
-		if (nMaxColors < 16 || ((m_transparentPixelIndex >= 0 || hasSemiTransparency) && nMaxColors < 32))
+		if ((m_transparentPixelIndex >= 0 || hasSemiTransparency) && nMaxColors < 32)
 			quan_rt = -1;
 		else if ((proportional < .018 || proportional > .5) && nMaxColors < 64)
 			quan_rt = 0;
@@ -169,7 +169,7 @@ namespace PnnLABQuant
 		else if (quan_rt > 0)
 			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());
 		else
-			ratio = min(1.0, pow(nMaxColors, 2.07) / maxbins);
+			ratio = min(1.0, proportional + nMaxColors * exp(5.474) / pixelMap.size());
 
 		if (quan_rt < 0) {
 			ratio += 0.5;
