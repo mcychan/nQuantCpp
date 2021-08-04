@@ -889,7 +889,7 @@ namespace SpatialQuant
 
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			double curdist = sqr(c2.GetA() - c.GetA());
+			double curdist = sqr(c2.GetA() - c.GetA()) / exp(1.5);
 			if (curdist > mindist)
 				continue;
 
@@ -968,8 +968,7 @@ namespace SpatialQuant
 		if (!spatial_color_quant(pixels, filter3_weights, qPixels.get(), bitmapWidth, palette)) {
 			pixelMap.clear();
 			return false;
-		}
-		pixelMap.clear();
+		}		
 
 		if (nMaxColors > 2) {
 			/* Fill palette */
@@ -1011,6 +1010,7 @@ namespace SpatialQuant
 			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nearestColorIndex, GetColorIndex, qPixels.get(), 0.5f);
 			nearestMap.clear();
 		}
+		pixelMap.clear();
 
 		return ProcessImagePixels(pDest, pPalette, qPixels.get(), m_transparentPixelIndex >= 0);
 	}

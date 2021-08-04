@@ -601,7 +601,7 @@ namespace EdgeAwareSQuant
 
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			double curdist = sqr(c2.GetA() - c.GetA());
+			double curdist = sqr(c2.GetA() - c.GetA()) / exp(1.5);
 			if (curdist > mindist)
 				continue;
 
@@ -678,8 +678,7 @@ namespace EdgeAwareSQuant
 		Mat<Mat<float> > weightMaps(bitmapHeight, bitmapWidth);
 		filter_bila(pixels, weightMaps);
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		spatial_color_quant_ea_icm_saliency(pixels, weightMaps, saliencyMap, qPixels.get(), palette);
-		pixelMap.clear();
+		spatial_color_quant_ea_icm_saliency(pixels, weightMaps, saliencyMap, qPixels.get(), palette);		
 
 		if (nMaxColors > 2) {
 			/* Fill palette */
@@ -722,6 +721,7 @@ namespace EdgeAwareSQuant
 			nearestMap.clear();
 		}
 
+		pixelMap.clear();
 		return ProcessImagePixels(pDest, pPalette, qPixels.get(), m_transparentPixelIndex >= 0);
 	}
 
