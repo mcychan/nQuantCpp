@@ -23,6 +23,7 @@
 #include "stdafx.h"
 #include "WuQuantizer.h"
 #include "bitmapUtilities.h"
+#include "BlueNoise.h"
 #include <unordered_map>
 
 namespace nQuant
@@ -758,6 +759,11 @@ namespace nQuant
 		}
 	}
 
+	inline int GetColorIndex(const Color& c)
+	{
+		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
+	}
+
 	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, unsigned short* qPixels, const UINT width, const UINT height, const bool dither, BYTE alphaThreshold)
 	{
 		if (dither) {
@@ -855,6 +861,7 @@ namespace nQuant
 		for (int i = 0; i < (width * height); ++i)
 			qPixels[i] = closestColorIndex(pPalette, pPalette->Count, pixels[i]);
 
+		BlueNoise::dither(width, height, pixels, pPalette, closestColorIndex, GetColorIndex, qPixels);
 		return true;
 	}
 	

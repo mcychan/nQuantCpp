@@ -7,6 +7,7 @@ Copyright (c) 2018-2021 Miller Cy Chan
 #include "stdafx.h"
 #include "PnnQuantizer.h"
 #include "bitmapUtilities.h"
+#include "BlueNoise.h"
 #include <unordered_map>
 
 namespace PnnQuant
@@ -263,6 +264,11 @@ namespace PnnQuant
 		return k;
 	}
 
+	inline int GetColorIndex(const Color& c)
+	{
+		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
+	}
+
 	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{		
 		if (dither) 
@@ -275,6 +281,7 @@ namespace PnnQuant
 				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
 
+		BlueNoise::dither(width, height, pixels, pPalette, ditherFn, GetColorIndex, qPixels);
 		return true;
 	}	
 

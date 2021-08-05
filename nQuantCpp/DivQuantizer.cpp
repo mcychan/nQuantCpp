@@ -19,6 +19,7 @@
 #include "DivQuantizer.h"
 #include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
+#include "BlueNoise.h"
 #include <algorithm>
 #include <unordered_map>
 #include <type_traits>
@@ -934,7 +935,7 @@ namespace DivQuant
 
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			double curdist = sqr(c2.GetA() - c.GetA());
+			double curdist = sqr(c2.GetA() - c.GetA()) / exp(1.5);
 			if (curdist > mindist)
 				continue;
 
@@ -986,6 +987,11 @@ namespace DivQuant
 		return k;
 	}
 
+	inline int GetColorIndex(const Color& c)
+	{
+		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
+	}
+
 	bool quantize_image(const ARGB* pixels, ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
 		if (dither)
@@ -996,6 +1002,8 @@ namespace DivQuant
 			for (UINT i = 0; i < width; ++i)
 				qPixels[pixelIndex++] = nearestColorIndex(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
+
+		BlueNoise::dither(width, height, pixels, pPalette, nearestColorIndex, GetColorIndex, qPixels);
 		return true;
 	}
 
