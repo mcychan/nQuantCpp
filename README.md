@@ -42,7 +42,7 @@ The top 3 color quantization algorithms for 32 colors or less are:
 <li>Spatial color quantization algorithm with CIELAB color space</li>
 </ol>
 
-If you are using the command line. Assuming you are in the same directory as nQuantCpp.exe, you would enter: nQuantCpp yourImage.jpg /m 16
+If you are using the command line. Assuming you are in the same directory as nQuantCpp.exe, you would enter: nQuantCpp yourImage.jpg /m 16 <br/>
 To avoid dot gain, /d n can set the dithering to false. However, false contours will be resulted for gradient color zones.
 nQuantCpp will quantize yourImage.jpg and create yourImage-PNNLABquant16.png in the same directory.
 
