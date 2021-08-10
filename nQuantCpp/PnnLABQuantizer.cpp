@@ -372,6 +372,11 @@ namespace PnnLABQuant
 		return k;
 	}
 
+	inline int GetColorIndex(const Color& c)
+	{
+		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
+	}
+
 	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
 		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 64) ? nearestColorIndex : closestColorIndex;
@@ -383,15 +388,14 @@ namespace PnnLABQuant
 			for (int i = 0; i < width; ++i)
 				qPixels[pixelIndex++] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
+
+		const double delta = sqr(nMaxColors) / pixelMap.size();
+		float weight = delta > 0.2 ? 1.0f : (float)(36.921 * delta + 0.906);
+		BlueNoise::dither(width, height, pixels, pPalette, ditherFn, GetColorIndex, qPixels, weight);
 		return true;
-	}
+	}	
 
-	inline int GetColorIndex(const Color& c)
-	{
-		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
-	}
-
-	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, int dither)
+	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
@@ -430,12 +434,9 @@ namespace PnnLABQuant
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 64) ? nearestColorIndex : closestColorIndex;
 		if (nMaxColors < 64)
-			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither > 0);
+			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		else
 			Riemersma::HilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
-
-		if (dither < 1)			
-			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
 
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
