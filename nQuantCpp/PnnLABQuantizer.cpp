@@ -388,10 +388,7 @@ namespace PnnLABQuant
 			for (int i = 0; i < width; ++i)
 				qPixels[pixelIndex++] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
 		}
-
-		const double delta = sqr(nMaxColors) / pixelMap.size();
-		float weight = delta > 0.2 ? 1.0f : (float)(36.921 * delta + 0.906);
-		BlueNoise::dither(width, height, pixels, pPalette, ditherFn, GetColorIndex, qPixels, weight);
+		
 		return true;
 	}	
 
@@ -437,6 +434,12 @@ namespace PnnLABQuant
 			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		else
 			Riemersma::HilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
+
+		if (!dither) {
+			const double delta = sqr(nMaxColors) / pixelMap.size();
+			float weight = delta > 0.2 ? 1.0f : (float)(36.921 * delta + 0.906);
+			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), weight);
+		}
 
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
