@@ -717,7 +717,7 @@ namespace EdgeAwareSQuant
 		}
 
 		if (!dither) {
-			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nearestColorIndex, GetColorIndex, qPixels.get(), 0.8f);
+			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nearestColorIndex, GetColorIndex, qPixels.get(), 0.5f);
 			nearestMap.clear();
 		}
 
