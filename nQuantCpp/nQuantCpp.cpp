@@ -76,17 +76,22 @@ bool ProcessArgs(int argc, string& algo, UINT& nMaxColors, bool& dither, wstring
 		auto currentCmd = currentArg[0];
 		if (currentArg.length() > 1 && 
 			(currentCmd == '-' || currentCmd == '–' || currentCmd == '/')) {
+			if (index >= argc - 1) {
+				PrintUsage();
+				return false;
+			}
+
 			if (currentArg[1] == 'A') {
 				string strAlgo = argv[index + 1];
 				transform(strAlgo.begin(), strAlgo.end(), strAlgo.begin(), ::toupper);
-				if (index >= argc - 1 || !isAlgo(strAlgo)) {
+				if (!isAlgo(strAlgo)) {
 					PrintUsage();
 					return false;
 				}
 				algo = strAlgo;
 			}
 			else if (currentArg[1] == 'M') {
-				if (index >= argc - 1 || !isdigit(argv[index + 1])) {
+				if (!isdigit(argv[index + 1])) {
 					PrintUsage();
 					return false;
 				}
@@ -99,17 +104,13 @@ bool ProcessArgs(int argc, string& algo, UINT& nMaxColors, bool& dither, wstring
 			else if (currentArg[1] == 'D') {
 				string strDither = argv[index + 1];
 				transform(strDither.begin(), strDither.end(), strDither.begin(), ::toupper);
-				if (index >= argc - 1 || !(strDither == "Y" || strDither == "N")) {
+				if (!(strDither == "Y" || strDither == "N")) {
 					PrintUsage();
 					return false;
 				}
 				dither = strDither == "Y";
 			}
 			else if (currentArg[1] == 'O') {
-				if (index >= argc - 1) {
-					PrintUsage();
-					return false;
-				}
 				wstring tmpPath(argv[index + 1], argv[index + 1] + strlen(argv[index + 1]));
 				targetPath = tmpPath;
 			}
