@@ -437,7 +437,7 @@ namespace PnnLABQuant
 
 		if (!dither) {
 			const double delta = sqr(nMaxColors) / pixelMap.size();
-			float weight = delta > 0.2 ? 1.0f : (float)(36.921 * delta + 0.906);
+			float weight = delta > 0.023 ? 1.0f : (float)(36.921 * delta + 0.906);
 			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), weight);
 		}
 
