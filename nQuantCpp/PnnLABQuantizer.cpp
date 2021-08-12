@@ -167,7 +167,7 @@ namespace PnnLABQuant
 				ratio = min(1.0, proportional - nMaxColors * exp(4.172) / pixelMap.size());
 		}
 		else if (quan_rt > 0)
-			ratio = min(1.0, pow(nMaxColors, 1.05) / pixelMap.size());
+			ratio = 1.0;
 		else
 			ratio = min(1.0, proportional + nMaxColors * exp(5.474) / pixelMap.size());
 
