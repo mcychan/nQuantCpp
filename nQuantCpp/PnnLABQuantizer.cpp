@@ -15,7 +15,7 @@ Copyright (c) 2018-2021 Miller Cy Chan
 
 namespace PnnLABQuant
 {
-	double PR = .299, PG = .587, PB = .114;
+	double PR = .2126, PG = .7152, PB = .0722;
 	BYTE alphaThreshold = 0;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
