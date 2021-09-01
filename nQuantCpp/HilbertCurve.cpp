@@ -73,10 +73,10 @@ namespace Riemersma
 
 	        errorq.erase(errorq.begin());
 	        Color c2 = m_pPalette->Entries[m_qPixels[x + y * m_width]];
-	        error[0] = r_pix - c2.GetR();
-	        error[1] = g_pix - c2.GetG();
-	        error[2] = b_pix - c2.GetB();
-	        error[3] = a_pix - c2.GetA();
+	        error[0] = r_pix > BYTE_MAX ? BYTE_MAX : r_pix - c2.GetR();
+	        error[1] = g_pix > BYTE_MAX ? BYTE_MAX : g_pix - c2.GetG();
+	        error[2] = b_pix > BYTE_MAX ? BYTE_MAX : b_pix - c2.GetB();
+	        error[3] = a_pix > BYTE_MAX ? BYTE_MAX : a_pix - c2.GetA();
 	        
 	        for(int j = 0; j < sizeof(error.p) / sizeof(float); ++j) {
                 if (abs(error[j]) < DITHER_MAX)
