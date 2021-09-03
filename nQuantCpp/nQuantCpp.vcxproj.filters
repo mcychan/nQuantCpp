@@ -69,6 +69,9 @@
     <ClInclude Include="BlueNoise.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
+    <ClInclude Include="GilbertCurve.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -117,6 +120,9 @@
       <Filter>原始程式檔</Filter>
     </ClCompile>
     <ClCompile Include="BlueNoise.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="GilbertCurve.cpp">
       <Filter>原始程式檔</Filter>
     </ClCompile>
   </ItemGroup>

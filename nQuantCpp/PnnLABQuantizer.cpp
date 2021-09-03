@@ -9,7 +9,7 @@ Copyright (c) 2018-2021 Miller Cy Chan
 #include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
 #include "BlueNoise.h"
-#include "HilbertCurve.h"
+#include "GilbertCurve.h"
 #include <ctime>
 #include <unordered_map>
 
@@ -434,7 +434,7 @@ namespace PnnLABQuant
 		if (nMaxColors < 64 || hasSemiTransparency)
 			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		else
-			Riemersma::HilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
+			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
 
 		if (!dither) {
 			const double delta = sqr(nMaxColors) / pixelMap.size();

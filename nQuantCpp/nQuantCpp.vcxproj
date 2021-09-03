@@ -160,6 +160,7 @@
     <ClInclude Include="DivQuantizer.h" />
     <ClInclude Include="Dl3Quantizer.h" />
     <ClInclude Include="EdgeAwareSQuantizer.h" />
+    <ClInclude Include="GilbertCurve.h" />
     <ClInclude Include="HilbertCurve.h" />
     <ClInclude Include="MedianCut.h" />
     <ClInclude Include="MoDEQuantizer.h" />
@@ -179,6 +180,7 @@
     <ClCompile Include="DivQuantizer.cpp" />
     <ClCompile Include="Dl3Quantizer.cpp" />
     <ClCompile Include="EdgeAwareSQuantizer.cpp" />
+    <ClCompile Include="GilbertCurve.cpp" />
     <ClCompile Include="HilbertCurve.cpp" />
     <ClCompile Include="MedianCut.cpp" />
     <ClCompile Include="MoDEQuantizer.cpp" />
