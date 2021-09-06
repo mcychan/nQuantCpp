@@ -85,7 +85,7 @@ namespace Peano
 			if (abs(error[j]) < DITHER_MAX)
 				continue;
 
-			error[j] = 0;
+			error[j] /= 3.0f;
 		}
 		errorq.emplace_back(error);
 	}
@@ -99,7 +99,7 @@ namespace Peano
     	int dby = sign(by);
 
     	if (h == 1) {
-    		for (int i = 0; i < w; i++){
+    		for (int i = 0; i < w; ++i){
     			ditherPixel(x, y);
     			x += dax;
     			y += day;
@@ -108,7 +108,7 @@ namespace Peano
     	}
 
     	if (w == 1) {
-    		for (int i = 0; i < h; i++){
+    		for (int i = 0; i < h; ++i){
     			ditherPixel(x, y);
     			x += dbx;
     			y += dby;
@@ -141,7 +141,7 @@ namespace Peano
 		
 		generate2d(x, y, bx2, by2, ax2, ay2);
 		generate2d(x + bx2, y + by2, ax, ay, bx - bx2, by - by2);
-		generate2d(x + (ax-dax) + (bx2 - dbx), y + (ay - day) + (by2 - dby), -bx2, -by2, -(ax - ax2), -(ay - ay2));    		
+		generate2d(x + (ax - dax) + (bx2 - dbx), y + (ay - day) + (by2 - dby), -bx2, -by2, -(ax - ax2), -(ay - ay2));    		
     }
 	
 	void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels)
