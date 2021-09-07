@@ -40,7 +40,7 @@ namespace Peano
     short* m_lookup;
     
 	static const BYTE DITHER_MAX = 9;
-	static const float BLOCK_SIZE = 243.0f; 
+	static const float BLOCK_SIZE = 343.0f; 
     
     static int sign(int x) {
     	if(x < 0)
