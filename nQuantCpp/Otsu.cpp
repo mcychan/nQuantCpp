@@ -22,8 +22,7 @@ namespace OtsuThreshold
 	static float Px(int init, int end, int* hist)
 	{
 		int sum = 0;
-		int i;
-		for (i = init; i <= end; ++i)
+		for (int i = init; i <= end; ++i)
 			sum += hist[i];
 
 		return (float) sum;
@@ -207,12 +206,16 @@ namespace OtsuThreshold
 		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
 	}
 
-	bool Otsu::ConvertGrayScaleToBinary(Bitmap* pSrcImg, Bitmap* pDest)
-	{
-		auto pSourceImg = unique_ptr<Bitmap>(ConvertToGrayScale(pSrcImg));
+	bool Otsu::ConvertGrayScaleToBinary(Bitmap* pSrcImg, Bitmap* pDest, bool isGrayscale)
+	{		
+		auto bitmapWidth = pSrcImg->GetWidth();
+		auto bitmapHeight = pSrcImg->GetHeight();
 
-		auto bitmapWidth = pSourceImg->GetWidth();
-		auto bitmapHeight = pSourceImg->GetHeight();
+		unique_ptr<Bitmap> pSourceImg;
+		if(isGrayscale)
+			pSourceImg = unique_ptr<Bitmap>(pSrcImg->Clone(Rect(0, 0, bitmapWidth, bitmapHeight), pSrcImg->GetPixelFormat()));
+		else
+			pSourceImg = unique_ptr<Bitmap>(ConvertToGrayScale(pSrcImg));		
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		if (!GrabPixels(pSourceImg.get(), pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor))
