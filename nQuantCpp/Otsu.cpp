@@ -33,8 +33,7 @@ namespace OtsuThreshold
 	static float Mx(int init, int end, int* hist)
 	{
 		int sum = 0;
-		int i;
-		for (i = init; i <= end; ++i)
+		for (int i = init; i <= end; ++i)
 			sum += i * hist[i];
 
 		return (float) sum;
@@ -45,9 +44,8 @@ namespace OtsuThreshold
 	{
 		float maxVec = 0;
 		short idx= 0;
-		short i;
 
-		for (i = 1; i < n - 1; ++i) {
+		for (short i = 1; i < n - 1; ++i) {
 			if (vec[i] > maxVec) {
 				maxVec = vec[i];
 				idx = i;
@@ -77,14 +75,14 @@ namespace OtsuThreshold
 		getHistogram(pixels, hist);
 
 		// loop through all possible t values and maximize between class variance
-		for (int k = 1; k != BYTE_MAX; k++) {
+		for (int k = 1; k != BYTE_MAX; ++k) {
 			float p1 = Px(0, k, hist);
 			float p2 = Px(k + 1, BYTE_MAX, hist);
 			float p12 = p1 * p2;
 			if (p12 == 0) 
 				p12 = 1;
 			float diff = (Mx(0, k, hist) * p2) - (Mx(k + 1, BYTE_MAX, hist) * p1);
-			vet[k] = (float)diff * diff / p12;
+			vet[k] = diff * diff / p12;
 		}
 
 		return findMax(vet, 256);
@@ -178,10 +176,8 @@ namespace OtsuThreshold
 		{
 			for (int j = 0; j < iWidth; ++j)
 			{
-				auto grey = min(ptr[0], ptr[1]);
-				grey = min(ptr[1], ptr[2]);
-				if (min1 > grey)
-					min1 = grey;
+				if (min1 > ptr[1])
+					min1 = ptr[1];
 
 				if (max1 < ptr[1])
 					max1 = ptr[1];
@@ -196,9 +192,7 @@ namespace OtsuThreshold
 		{
 			for (int j = 0; j < iWidth; ++j)
 			{
-				auto grey = min(ptr[0], ptr[1]);
-				grey = min(ptr[1], ptr[2]);
-				ptr[0] = ptr[1] = ptr[2] = (BYTE)((grey - min1) * (BYTE_MAX / (max1 - min1)));
+				ptr[0] = ptr[1] = ptr[2] = (BYTE)((ptr[1] - min1) * (BYTE_MAX / (max1 - min1)));
 				ptr += DJ;
 			}
 			ptr += remain;
