@@ -16,8 +16,8 @@ namespace fs = std::filesystem;
 #include "EdgeAwareSQuantizer.h"
 #include "SpatialQuantizer.h"
 #include "DivQuantizer.h"
-#include "MoDEQuantizer.h"
 #include "MedianCut.h"
+#include "Otsu.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -32,7 +32,7 @@ ostream& tcout = cout;
 GdiplusStartupInput  m_gdiplusStartupInput;
 ULONG_PTR m_gdiplusToken;
 
-string algs[] = { "PNN", "PNNLAB", "NEU", "WU", "EAS", "SPA", "DIV", "MODE", "MMC" };
+string algs[] = { "PNN", "PNNLAB", "NEU", "WU", "EAS", "SPA", "DIV", "MMC", "OTSU" };
 
 void PrintUsage()
 {
@@ -161,14 +161,15 @@ bool QuantizeImage(const string& algorithm, const wstring& sourceFile, wstring& 
 	else if (algorithm == "DIV") {
 		DivQuant::DivQuantizer divQuantizer;
 		bSucceeded = divQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
-	}
-	else if (algorithm == "MODE") {
-		MoDEQuant::MoDEQuantizer moDEQuantizer;
-		bSucceeded = moDEQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
-	}
+	}	
 	else if (algorithm == "MMC") {
 		MedianCutQuant::MedianCut mmcQuantizer;
 		bSucceeded = mmcQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
+	}
+	else if (algorithm == "OTSU") {
+		nMaxColors = 2;
+		OtsuThreshold::Otsu otsu;
+		bSucceeded = otsu.ConvertGrayScaleToBinary(pSource, pDest.get());
 	}
 
 	if (!bSucceeded)

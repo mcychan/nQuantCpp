@@ -166,6 +166,7 @@
     <ClInclude Include="MoDEQuantizer.h" />
     <ClInclude Include="NeuQuantizer.h" />
     <ClInclude Include="nQuantCpp.h" />
+    <ClInclude Include="Otsu.h" />
     <ClInclude Include="PnnLABQuantizer.h" />
     <ClInclude Include="PnnQuantizer.h" />
     <ClInclude Include="Resource.h" />
@@ -186,6 +187,7 @@
     <ClCompile Include="MoDEQuantizer.cpp" />
     <ClCompile Include="NeuQuantizer.cpp" />
     <ClCompile Include="nQuantCpp.cpp" />
+    <ClCompile Include="Otsu.cpp" />
     <ClCompile Include="PnnLABQuantizer.cpp" />
     <ClCompile Include="PnnQuantizer.cpp" />
     <ClCompile Include="SpatialQuantizer.cpp" />
