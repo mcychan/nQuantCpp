@@ -81,12 +81,14 @@ namespace Peano
 		error[2] = b_pix - c2.GetB();
 		error[3] = a_pix - c2.GetA();
 		
-		for(int j = 0; j < sizeof(error.p) / sizeof(float); ++j) {
-			if (abs(error[j]) < DITHER_MAX)
-				continue;
+        if (m_pPalette->Count > 16) {
+            for (int j = 0; j < sizeof(error.p) / sizeof(float); ++j) {
+                if (abs(error[j]) < DITHER_MAX)
+                    continue;
 
-			error[j] /= 3.0f;
-		}
+                error[j] /= 3.0f;
+            }
+        }
 		errorq.emplace_back(error);
 	}
     
