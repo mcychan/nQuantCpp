@@ -707,12 +707,12 @@ namespace EdgeAwareSQuant
 		}
 		else {
 			if (m_transparentPixelIndex >= 0) {
-				pPalette->Entries[1] = m_transparentColor;
-				pPalette->Entries[0] = Color::Black;
+				pPalette->Entries[0] = m_transparentColor;
+				pPalette->Entries[1] = Color::Black;
 			}
 			else {
-				pPalette->Entries[1] = Color::White;
-				pPalette->Entries[0] = Color::Black;
+				pPalette->Entries[1] = Color::Black;
+				pPalette->Entries[0] = Color::White;
 			}
 		}
 
