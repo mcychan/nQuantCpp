@@ -29,6 +29,7 @@ namespace Peano
         }
     };
 	
+    float m_divisor = 1.0f;
 	UINT m_width, m_height;
 	const ARGB* m_image;
 	const ColorPalette* m_pPalette;
@@ -81,12 +82,12 @@ namespace Peano
 		error[2] = b_pix - c2.GetB();
 		error[3] = a_pix - c2.GetA();
 		
-        if (m_pPalette->Count > 16) {
+        if (m_divisor < 3 || m_pPalette->Count > 16) {
             for (int j = 0; j < sizeof(error.p) / sizeof(float); ++j) {
                 if (abs(error[j]) < DITHER_MAX)
                     continue;
 
-                error[j] /= 3.0f;
+                error[j] /= m_divisor;
             }
         }
 		errorq.emplace_back(error);
@@ -146,8 +147,9 @@ namespace Peano
 		generate2d(x + (ax - dax) + (bx2 - dbx), y + (ay - day) + (by2 - dby), -bx2, -by2, -(ax - ax2), -(ay - ay2));    		
     }
 	
-	void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels)
+	void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, float divisor)
     {
+        m_divisor = divisor;
 		m_width = width;
         m_height = height;
         m_image = pixels;
