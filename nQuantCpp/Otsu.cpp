@@ -101,7 +101,7 @@ namespace OtsuThreshold
 			Color c(pixels[i]);
 			if (c.GetR() + c.GetG() + c.GetB() > maxThresh * 3)
 				pixels[i] = Color::MakeARGB(c.GetA(), BYTE_MAX, BYTE_MAX, BYTE_MAX);
-			else if (c.GetR() + c.GetG() + c.GetB() < minThresh * 3)
+			else if (m_transparentPixelIndex >= 0 || c.GetR() + c.GetG() + c.GetB() < minThresh * 3)
 				pixels[i] = Color::MakeARGB(c.GetA(), 0, 0, 0);
 		}
 		
