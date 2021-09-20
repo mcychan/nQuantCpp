@@ -278,12 +278,11 @@ namespace PnnLABQuant
 
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			double curdist = sqr(c2.GetA() - c.GetA()) / exp(1.5);
+			double curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) / exp(1.5) : 0;
 			if (curdist > mindist)
 				continue;
-
-			getLab(c2, lab2);
-			if (nMaxColors > 32) {
+			
+			if (nMaxColors > 32 || nMaxColors <= 4 || hasSemiTransparency) {
 				curdist += PR * sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
@@ -297,10 +296,12 @@ namespace PnnLABQuant
 					if (curdist > mindist)
 						continue;
 
+					getLab(c2, lab2);
 					curdist += sqr(lab2.B - lab1.B) / 2.0;
 				}
 			}
 			else {
+				getLab(c2, lab2);
 				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
@@ -431,10 +432,8 @@ namespace PnnLABQuant
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 64) ? nearestColorIndex : closestColorIndex;
-		if ((nMaxColors < 64 || hasSemiTransparency) && nMaxColors > 2)
+		if (nMaxColors < 64 || hasSemiTransparency)
 			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
-		else if(nMaxColors == 2)
-			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), 1.5f);
 		else
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
 
