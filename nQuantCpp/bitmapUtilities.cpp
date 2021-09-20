@@ -480,8 +480,11 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 		limtb[i] = -DITHER_MAX;
 		limtb[i + BLOCK_SIZE] = DITHER_MAX;
 	}
-	for (int i = -DITHER_MAX; i <= DITHER_MAX; i++)
-		limtb[i + BLOCK_SIZE] = i % 4 == 3 ? 0 : i;
+	for (int i = -DITHER_MAX; i <= DITHER_MAX; ++i) {
+		limtb[i + BLOCK_SIZE] = i;
+		if (nMaxColors > 16 && i % 4 == 3)
+			limtb[i + BLOCK_SIZE] = 0;
+	}
 
 	auto row0 = erowErr.get();
 	auto row1 = orowErr.get();
