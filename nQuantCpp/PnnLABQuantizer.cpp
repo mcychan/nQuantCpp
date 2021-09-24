@@ -399,7 +399,6 @@ namespace PnnLABQuant
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
 
-		int pixelIndex = 0;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
 
@@ -418,13 +417,7 @@ namespace PnnLABQuant
 				pPalette->Entries[0] = Color::Black;
 				pPalette->Entries[1] = Color::White;
 			}
-		}
-
-		if (nMaxColors > 256) {
-			auto qPixels = make_unique<ARGB[]>(pixels.size());
-			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
-			return ProcessImagePixels(pDest, qPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
-		}
+		}		
 
 		bool noBias = (m_transparentPixelIndex >= 0 || hasSemiTransparency) || nMaxColors < 64;
 		if (noBias)
@@ -436,8 +429,17 @@ namespace PnnLABQuant
 			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		else if(nMaxColors <= 32)
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), nMaxColors > 2 ? 1.8f : 1.5f);
-		else
+		else {
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
+			if (nMaxColors > 256) {
+				auto qHPixels = make_unique<ARGB[]>(pixels.size());
+				for (int i = 0; i < pixels.size(); ++i) {
+					Color c(pPalette->Entries[qPixels[i]]);
+					qHPixels[i] = hasSemiTransparency ? c.GetValue() : GetARGBIndex(c, false, m_transparentPixelIndex >= 0);
+				}
+				return ProcessImagePixels(pDest, qHPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
+			}
+		}
 
 		if (!dither) {
 			const double delta = sqr(nMaxColors) / pixelMap.size();
