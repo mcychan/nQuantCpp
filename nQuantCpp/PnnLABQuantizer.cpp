@@ -437,6 +437,10 @@ namespace PnnLABQuant
 					Color c(pPalette->Entries[qPixels[i]]);
 					qHPixels[i] = hasSemiTransparency ? c.GetValue() : GetARGBIndex(c, false, m_transparentPixelIndex >= 0);
 				}
+
+				pixelMap.clear();
+				closestMap.clear();
+				nearestMap.clear();
 				return ProcessImagePixels(pDest, qHPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
 			}
 		}
