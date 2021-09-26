@@ -39,7 +39,7 @@ namespace PnnQuant
 		auto wb = bin1.bc;
 		for (i = bin1.fw; i; i = bins[i].fw) {
 			double nerr = PR * sqr(bins[i].rc - wr) + PG * sqr(bins[i].gc - wg) + PB * sqr(bins[i].bc - wb);
-			if (m_transparentPixelIndex >= 0 || hasSemiTransparency)
+			if (hasSemiTransparency)
 				nerr += sqr(bins[i].ac - wa);
 			double n2 = bins[i].cnt;
 			nerr *= (n1 * n2) / (n1 + n2);
@@ -297,7 +297,7 @@ namespace PnnQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		if (nMaxColors <= 32)
+		if (hasSemiTransparency || nMaxColors <= 32)
 			PR = PG = PB = 1;
 
 		if (nMaxColors > 2)
