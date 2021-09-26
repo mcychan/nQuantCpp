@@ -38,7 +38,7 @@ namespace PnnQuant
 		auto wg = bin1.gc;
 		auto wb = bin1.bc;
 		for (i = bin1.fw; i; i = bins[i].fw) {
-			double nerr = sqr(bins[i].rc - wr) + sqr(bins[i].gc - wg) + sqr(bins[i].bc - wb);
+			double nerr = PR * sqr(bins[i].rc - wr) + PG * sqr(bins[i].gc - wg) + PB * sqr(bins[i].bc - wb);
 			if (m_transparentPixelIndex >= 0 || hasSemiTransparency)
 				nerr += sqr(bins[i].ac - wa);
 			double n2 = bins[i].cnt;
