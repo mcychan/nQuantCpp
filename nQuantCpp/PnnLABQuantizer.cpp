@@ -59,7 +59,7 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab2;
 			lab2.alpha = bins[i].ac, lab2.L = bins[i].Lc, lab2.A = bins[i].Ac, lab2.B = bins[i].Bc;
-			double alphaDiff = (m_transparentPixelIndex >= 0 || hasSemiTransparency) ? abs(lab2.alpha - lab1.alpha) : 0;
+			double alphaDiff = (hasSemiTransparency) ? abs(lab2.alpha - lab1.alpha) : 0;
 			double nerr = nerr2 * sqr(alphaDiff) / exp(1.5);
 			if (nerr >= err)
 				continue;
@@ -166,8 +166,6 @@ namespace PnnLABQuant
 			else
 				ratio = min(1.0, proportional - nMaxColors * exp(4.172) / pixelMap.size());
 		}
-		else if (quan_rt > 0)
-			ratio = 1.0;
 		else
 			ratio = min(1.0, proportional + nMaxColors * exp(5.474) / pixelMap.size());
 
