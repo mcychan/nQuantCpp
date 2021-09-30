@@ -105,7 +105,7 @@ namespace PnnLABQuant
 		bin1.nn = nn;
 	}
 
-	int PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors, short quan_rt)
+	void PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT& nMaxColors, short quan_rt)
 	{
 		vector<pnnbin> bins(USHRT_MAX + 1);
 
@@ -171,7 +171,7 @@ namespace PnnLABQuant
 		if (quan_rt < 0) {
 			ratio += 0.5;
 			ratio = min(1.0, ratio);
-		}		
+		}	
 				
 		/* Initialize nearest neighbors and build heap of them */
 		auto heap = make_unique<int[]>(bins.size() + 1);
@@ -226,7 +226,7 @@ namespace PnnLABQuant
 			auto& nb = bins[tb.nn];
 			double n1 = tb.cnt;
 			double n2 = nb.cnt;
-			double d = 1.0 / (n1 + n2);
+			auto d = 1.0 / (n1 + n2);
 			tb.ac = d * (n1 * tb.ac + n2 * nb.ac);
 			tb.Lc = d * (n1 * tb.Lc + n2 * nb.Lc);
 			tb.Ac = d * (n1 * tb.Ac + n2 * nb.Ac);
@@ -254,7 +254,10 @@ namespace PnnLABQuant
 				break;
 		}
 
-		return 0;
+		if (k < nMaxColors) {
+			pPalette->Entries[k++] = Color::MakeARGB(BYTE_MAX, 0, 0, 0);
+			pPalette->Count = nMaxColors = k;
+		}
 	}
 
 	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
@@ -298,7 +301,7 @@ namespace PnnLABQuant
 			}
 			else {
 				getLab(c2, lab2);
-				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
+				auto deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
@@ -336,10 +339,11 @@ namespace PnnLABQuant
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;
 
-			CIELABConvertor::Lab lab1, lab2;
+			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
+				CIELABConvertor::Lab lab2;
 				getLab(c2, lab2);				
 				closest[4] = (unsigned short) (PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB()) + sqr(lab2.B - lab1.B) / 2.0);
 

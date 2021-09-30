@@ -28,7 +28,7 @@ namespace PnnQuant
 
 	void find_nn(pnnbin* bins, int idx)
 	{
-		int i, nn = 0;
+		int nn = 0;
 		double err = 1e100;
 
 		auto& bin1 = bins[idx];
@@ -37,7 +37,7 @@ namespace PnnQuant
 		auto wr = bin1.rc;
 		auto wg = bin1.gc;
 		auto wb = bin1.bc;
-		for (i = bin1.fw; i; i = bins[i].fw) {
+		for (int i = bin1.fw; i; i = bins[i].fw) {
 			double nerr = PR * sqr(bins[i].rc - wr) + PG * sqr(bins[i].gc - wg) + PB * sqr(bins[i].bc - wb);
 			if (hasSemiTransparency)
 				nerr += sqr(bins[i].ac - wa);
@@ -52,7 +52,7 @@ namespace PnnQuant
 		bin1.nn = nn;
 	}
 
-	int pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors, short quan_rt)
+	void pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT& nMaxColors, short quan_rt)
 	{
 		vector<pnnbin> bins(USHRT_MAX + 1);
 
@@ -185,7 +185,8 @@ namespace PnnQuant
 				break;
 		}
 
-		return 0;
+		if (k < nMaxColors)
+			pPalette->Count = nMaxColors = k;
 	}
 
 	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
