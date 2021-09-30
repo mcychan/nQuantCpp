@@ -54,7 +54,7 @@ namespace PnnQuant
 
 	int pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT nMaxColors, short quan_rt)
 	{
-		vector<pnnbin> bins(65536);
+		vector<pnnbin> bins(USHRT_MAX + 1);
 
 		/* Build histogram */
 		for (const auto& pixel : pixels) {
@@ -135,7 +135,7 @@ namespace PnnQuant
 											   /* Is stored error up to date? */
 				if ((tb.tm >= tb.mtm) && (bins[tb.nn].mtm <= tb.tm))
 					break;
-				if (tb.mtm == 0xFFFF) /* Deleted node */
+				if (tb.mtm == USHRT_MAX) /* Deleted node */
 					b1 = heap[1] = heap[heap[0]--];
 				else /* Too old error value */
 				{
@@ -170,7 +170,7 @@ namespace PnnQuant
 			/* Unchain deleted bin */
 			bins[nb.bk].fw = nb.fw;
 			bins[nb.fw].bk = nb.bk;
-			nb.mtm = 0xFFFF;
+			nb.mtm = USHRT_MAX;
 		}
 
 		/* Fill palette */
@@ -232,7 +232,7 @@ namespace PnnQuant
 		vector<unsigned short> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
-			closest[2] = closest[3] = SHORT_MAX;
+			closest[2] = closest[3] = USHRT_MAX;
 
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
@@ -249,7 +249,7 @@ namespace PnnQuant
 				}
 			}
 
-			if (closest[3] == SHORT_MAX)
+			if (closest[3] == USHRT_MAX)
 				closest[2] = 0;
 		}
 		else
@@ -287,8 +287,8 @@ namespace PnnQuant
 
 	bool PnnQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
-		const UINT bitmapWidth = pSource->GetWidth();
-		const UINT bitmapHeight = pSource->GetHeight();
+		const auto bitmapWidth = pSource->GetWidth();
+		const auto bitmapHeight = pSource->GetHeight();
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);	

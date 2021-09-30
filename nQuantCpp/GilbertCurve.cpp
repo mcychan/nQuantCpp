@@ -27,6 +27,10 @@ namespace Peano
         {
             return p[index];
         }
+        inline BYTE length() const
+        {
+            return 4;
+        }
     };
 	
     float m_divisor = 1.0f;
@@ -56,7 +60,7 @@ namespace Peano
 		ErrorBox error(pixel);	    	
 		for(int c = 0; c < DITHER_MAX; ++c) {
 			auto& eb = errorq[c];
-			for(int j = 0; j < sizeof(eb.p) / sizeof(float); ++j)
+			for(int j = 0; j < eb.length(); ++j)
 				error[j] += eb[j] * m_weights[c];
 		}
 
@@ -65,25 +69,25 @@ namespace Peano
 		auto b_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[2], 0)));
 		auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
 		
-		Color c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+		Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		if (m_pPalette->Count < 64) {
-			int offset = m_getColorIndexFn(c1);
+			int offset = m_getColorIndexFn(c2);
 			if (!m_lookup[offset])
-				m_lookup[offset] = m_ditherFn(m_pPalette, m_pPalette->Count, c1.GetValue()) + 1;
+				m_lookup[offset] = m_ditherFn(m_pPalette, m_pPalette->Count, c2.GetValue()) + 1;
 			m_qPixels[bidx] = m_lookup[offset] - 1;
 		}
 		else
-			m_qPixels[bidx] = m_ditherFn(m_pPalette, m_pPalette->Count, c1.GetValue());
+			m_qPixels[bidx] = m_ditherFn(m_pPalette, m_pPalette->Count, c2.GetValue());
 
 		errorq.erase(errorq.begin());
-		Color c2 = m_pPalette->Entries[m_qPixels[bidx]];
+		c2 = m_pPalette->Entries[m_qPixels[bidx]];
 		error[0] = r_pix - c2.GetR();
 		error[1] = g_pix - c2.GetG();
 		error[2] = b_pix - c2.GetB();
 		error[3] = a_pix - c2.GetA();
 		
         if (m_divisor < 3 || m_pPalette->Count > 16) {
-            for (int j = 0; j < sizeof(error.p) / sizeof(float); ++j) {
+            for (int j = 0; j < error.length(); ++j) {
                 if (abs(error[j]) < DITHER_MAX)
                     continue;
 
@@ -167,10 +171,10 @@ namespace Peano
          * a sequence of 9 pixels.
          */
         errorq.clear();
-        const float weightRatio = (float)pow(BLOCK_SIZE + 1.0f, 1.0f / (DITHER_MAX - 1.0f));
-        float weight = 1.0f, sumweight = 0.0f;
-        for (int c = 0; c < DITHER_MAX; ++c) {
-            errorq.resize(DITHER_MAX);
+        errorq.resize(DITHER_MAX);
+        const auto weightRatio = (float)pow(BLOCK_SIZE + 1.0f, 1.0f / (DITHER_MAX - 1.0f));
+        auto weight = 1.0f, sumweight = 0.0f;
+        for (int c = 0; c < DITHER_MAX; ++c) {            
             sumweight += (m_weights[DITHER_MAX - c - 1] = 1.0f / weight);
             weight *= weightRatio;
         }
