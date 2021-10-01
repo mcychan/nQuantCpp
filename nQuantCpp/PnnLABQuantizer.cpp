@@ -254,9 +254,9 @@ namespace PnnLABQuant
 				break;
 		}
 
-		if (k < nMaxColors) {
+		if (k < nMaxColors - 1) {
 			pPalette->Entries[k++] = Color::MakeARGB(BYTE_MAX, 0, 0, 0);
-			pPalette->Count = nMaxColors = k;
+			pPalette->Count = nMaxColors = k + 1;
 		}
 	}
 

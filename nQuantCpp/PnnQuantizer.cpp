@@ -185,8 +185,8 @@ namespace PnnQuant
 				break;
 		}
 
-		if (k < nMaxColors)
-			pPalette->Count = nMaxColors = k;
+		if (k < nMaxColors - 1)
+			pPalette->Count = nMaxColors = k + 1;
 	}
 
 	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
