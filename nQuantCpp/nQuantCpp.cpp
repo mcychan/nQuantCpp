@@ -3,7 +3,9 @@
 
 #include "stdafx.h"
 #include <algorithm>
+#include <io.h>
 #include <iostream>
+#include <fcntl.h>
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -32,7 +34,7 @@ ostream& tcout = cout;
 GdiplusStartupInput  m_gdiplusStartupInput;
 ULONG_PTR m_gdiplusToken;
 
-string algs[] = { "PNN", "PNNLAB", "NEU", "WU", "EAS", "SPA", "DIV", "MMC", "OTSU" };
+wstring algs[] = { L"PNN", L"PNNLAB", L"NEU", L"WU", L"EAS", L"SPA", L"DIV", L"MMC", L"OTSU" };
 
 void PrintUsage()
 {
@@ -43,15 +45,15 @@ void PrintUsage()
 	cout << "  /a : Algorithm used - Choose one of them, otherwise give you the defaults from [";
 	int i = 0;	
 	for(; i<sizeof(algs)/sizeof(string) - 1; ++i)
-		cout << algs[i] << ", ";
-	cout << algs[i] << "] ." << endl;
+		tcout << algs[i] << ", ";
+	tcout << algs[i] << "] ." << endl;
     cout << "  /m : Max Colors (pixel-depth) - Maximum number of colors for the output format to support. The default is 256 (8-bit)." << endl;
 	cout << "  /d : Dithering or not? y or n." << endl;
     cout << "  /o : Output image file dir. The default is <source image path directory>" << endl;
 }
 
-bool isdigit(const char* string) {
-	const int string_len = strlen(string);
+bool isdigit(const TCHAR* string) {
+	const int string_len = wcslen(string);
 	for (int i = 0; i < string_len; ++i) {
 		if (!isdigit(string[i]))
 			return false;
@@ -59,7 +61,7 @@ bool isdigit(const char* string) {
 	return true;
 }
 
-bool isAlgo(const string& alg) {
+bool isAlgo(const wstring& alg) {
 	for (const auto& algo : algs) {
 		if (alg == algo)
 			return true;
@@ -67,22 +69,22 @@ bool isAlgo(const string& alg) {
 	return false;
 }
 
-bool ProcessArgs(int argc, string& algo, UINT& nMaxColors, bool& dither, wstring& targetPath, char** argv)
+bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstring& targetPath, TCHAR** argv)
 {
 	for (int index = 1; index < argc; ++index) {
-		string currentArg(argv[index]);
+		wstring currentArg(argv[index]);
 		transform(currentArg.begin(), currentArg.end(), currentArg.begin(), ::toupper);
 
 		auto currentCmd = currentArg[0];
 		if (currentArg.length() > 1 && 
-			(currentCmd == '-' || currentCmd == '–' || currentCmd == '/')) {
+			(currentCmd == L'-' || currentCmd == L'–' || currentCmd == L'/')) {
 			if (index >= argc - 1) {
 				PrintUsage();
 				return false;
 			}
 
-			if (currentArg[1] == 'A') {
-				string strAlgo = argv[index + 1];
+			if (currentArg[1] == L'A') {
+				wstring strAlgo = argv[index + 1];
 				transform(strAlgo.begin(), strAlgo.end(), strAlgo.begin(), ::toupper);
 				if (!isAlgo(strAlgo)) {
 					PrintUsage();
@@ -90,28 +92,28 @@ bool ProcessArgs(int argc, string& algo, UINT& nMaxColors, bool& dither, wstring
 				}
 				algo = strAlgo;
 			}
-			else if (currentArg[1] == 'M') {
+			else if (currentArg[1] == L'M') {
 				if (!isdigit(argv[index + 1])) {
 					PrintUsage();
 					return false;
 				}
-				nMaxColors = atoi(argv[index + 1]);
+				nMaxColors = _wtoi(argv[index + 1]);
 				if (nMaxColors < 2)
 					nMaxColors = 2;
 				else if (nMaxColors > 65536)
 					nMaxColors = 65536;
 			}
-			else if (currentArg[1] == 'D') {
-				string strDither = argv[index + 1];
+			else if (currentArg[1] == L'D') {
+				wstring strDither = argv[index + 1];
 				transform(strDither.begin(), strDither.end(), strDither.begin(), ::toupper);
-				if (!(strDither == "Y" || strDither == "N")) {
+				if (!(strDither == L"Y" || strDither == L"N")) {
 					PrintUsage();
 					return false;
 				}
-				dither = strDither == "Y";
+				dither = strDither == L"Y";
 			}
-			else if (currentArg[1] == 'O') {
-				wstring tmpPath(argv[index + 1], argv[index + 1] + strlen(argv[index + 1]));
+			else if (currentArg[1] == L'O') {
+				wstring tmpPath(argv[index + 1], argv[index + 1] + wcslen(argv[index + 1]));
 				targetPath = tmpPath;
 			}
 			else {
@@ -128,45 +130,45 @@ inline bool fileExists(const wstring& path)
 	return fs::exists(fs::path(path));
 }
 
-bool QuantizeImage(const string& algorithm, const wstring& sourceFile, wstring& targetDir, Bitmap* pSource, UINT nMaxColors, bool dither)
+bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring& targetDir, Bitmap* pSource, UINT nMaxColors, bool dither)
 {
 	// Create 8 bpp indexed bitmap of the same size
 	auto pDest = make_unique<Bitmap>(pSource->GetWidth(), pSource->GetHeight(), (nMaxColors > 256) ? PixelFormat16bppARGB1555 : (nMaxColors > 16) ? PixelFormat8bppIndexed : (nMaxColors > 2) ? PixelFormat4bppIndexed : PixelFormat1bppIndexed);
 
 	bool bSucceeded = false;
-	if (algorithm == "PNN") {
+	if (algorithm == L"PNN") {
 		PnnQuant::PnnQuantizer pnnQuantizer;
 		bSucceeded = pnnQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
-	else if (algorithm == "PNNLAB") {
+	else if (algorithm == L"PNNLAB") {
 		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
 		bSucceeded = pnnLABQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
-	else if (algorithm == "NEU") {
+	else if (algorithm == L"NEU") {
 		NeuralNet::NeuQuantizer neuQuantizer;
 		bSucceeded = neuQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
-	else if (algorithm == "WU") {
+	else if (algorithm == L"WU") {
 		nQuant::WuQuantizer wuQuantizer;
 		bSucceeded = wuQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
-	else if (algorithm == "EAS") {
+	else if (algorithm == L"EAS") {
 		EdgeAwareSQuant::EdgeAwareSQuantizer easQuantizer;
 		bSucceeded = easQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
-	else if (algorithm == "SPA") {
+	else if (algorithm == L"SPA") {
 		SpatialQuant::SpatialQuantizer spaQuantizer;
 		bSucceeded = spaQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
-	else if (algorithm == "DIV") {
+	else if (algorithm == L"DIV") {
 		DivQuant::DivQuantizer divQuantizer;
 		bSucceeded = divQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}	
-	else if (algorithm == "MMC") {
+	else if (algorithm == L"MMC") {
 		MedianCutQuant::MedianCut mmcQuantizer;
 		bSucceeded = mmcQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
-	else if (algorithm == "OTSU") {
+	else if (algorithm == L"OTSU") {
 		nMaxColors = 2;
 		OtsuThreshold::Otsu otsu;
 		bSucceeded = otsu.ConvertGrayScaleToBinary(pSource, pDest.get());
@@ -193,7 +195,8 @@ bool QuantizeImage(const string& algorithm, const wstring& sourceFile, wstring& 
 
 	// image/png  : {557cf406-1a04-11d3-9a73-0000f81ef32e}
 	const CLSID pngEncoderClsId = { 0x557cf406, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };
-	Status status = pDest->Save(destPath.c_str(), &pngEncoderClsId);
+
+	auto status = pDest->Save(destPath.c_str(), &pngEncoderClsId);	
 	if (status == Status::Ok)
 		tcout << "Converted image: " << destPath << endl;
 	else
@@ -202,8 +205,9 @@ bool QuantizeImage(const string& algorithm, const wstring& sourceFile, wstring& 
 	return status == Status::Ok;
 }
 
-int main(int argc, char** argv)
+int wmain(int argc, wchar_t** argv)
 {
+	_setmode(_fileno(stdout), _O_U16TEXT);
 	if (argc <= 1) {
 #ifndef _DEBUG
 		PrintUsage();
@@ -215,7 +219,7 @@ int main(int argc, char** argv)
 	
 	bool dither = true;
 	UINT nMaxColors = 256;
-	string algo = "";
+	wstring algo = L"";
 	wstring targetDir = L"";
 #ifdef _DEBUG
 	wstring sourcePath = szDir + L"/../ImgV64.gif";
@@ -224,7 +228,7 @@ int main(int argc, char** argv)
 	if (!ProcessArgs(argc, algo, nMaxColors, dither, targetDir, argv))
 		return 0;
 
-	wstring sourcePath(argv[1], argv[1] + strlen(argv[1]));
+	wstring sourcePath(argv[1], argv[1] + wcslen(argv[1]));
 	if (!fileExists(sourcePath) && sourcePath.find_first_of(L"\\/") != wstring::npos)
 		sourcePath = szDir + L"/" + sourcePath;
 #endif	
@@ -242,19 +246,18 @@ int main(int argc, char** argv)
 				targetDir = fs::path(sourcePath).parent_path().wstring();
 
 			auto sourceFile = (sourcePath[sourcePath.length() - 1] != L'/' && sourcePath[sourcePath.length() - 1] != L'\\') ? sourcePath : sourcePath.substr(0, sourcePath.find_last_of(L"\\/"));
-			if (algo == "") {
-				//QuantizeImage(_T("MMC"), sourceFile, targetDir, pSource.get(), nMaxColors, dither);
-				QuantizeImage("DIV", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
+			if (algo == L"") {
+				//QuantizeImage(L"MMC", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
+				QuantizeImage(L"DIV", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
 				if (nMaxColors > 32) {
-					QuantizeImage("PNN", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
-					QuantizeImage("WU", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
-					//QuantizeImage("MODE", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
-					QuantizeImage("NEU", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
+					QuantizeImage(L"PNN", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
+					QuantizeImage(L"WU", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
+					QuantizeImage(L"NEU", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
 				}
 				else {
-					QuantizeImage("PNNLAB", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
-					QuantizeImage("EAS", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
-					QuantizeImage("SPA", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
+					QuantizeImage(L"PNNLAB", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
+					QuantizeImage(L"EAS", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
+					QuantizeImage(L"SPA", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
 				}
 			}
 			else
