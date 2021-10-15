@@ -240,7 +240,7 @@ int wmain(int argc, wchar_t** argv)
 
 	if(GdiplusStartup(&m_gdiplusToken, &m_gdiplusStartupInput, NULL) == Ok) {
 		auto pSource = unique_ptr<Bitmap>(Bitmap::FromFile(sourcePath.c_str()));
-		Status status = pSource->GetLastStatus();
+		auto status = pSource->GetLastStatus();
 		if (status == Ok) {
 			if (!fileExists(targetDir))
 				targetDir = fs::path(sourcePath).parent_path().wstring();

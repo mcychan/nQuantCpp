@@ -27,7 +27,7 @@ namespace PnnLABQuant
 
 	struct pnnbin {
 		double ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
-		int cnt = 0;
+		double cnt = 0;
 		int nn = 0, fw = 0, bk = 0, tm = 0, mtm = 0;
 	};
 
@@ -123,14 +123,14 @@ namespace PnnLABQuant
 			bins[index].Lc += lab1.L;
 			bins[index].Ac += lab1.A;
 			bins[index].Bc += lab1.B;
-			bins[index].cnt++;
+			bins[index].cnt += 1.0;
 		}
 
 		/* Cluster nonempty bins at one end of array */
 		int maxbins = 0;
 
 		for (int i = 0; i < bins.size(); ++i) {
-			if (!bins[i].cnt)
+			if (bins[i].cnt <= 0.0)
 				continue;
 
 			auto d = 1.0 / (double) bins[i].cnt;
@@ -148,14 +148,21 @@ namespace PnnLABQuant
 		else if ((proportional < .018 || proportional > .5) && nMaxColors < 64)
 			quan_rt = 0;
 
-		if (quan_rt > 0)
-			bins[0].cnt = (int)_sqrt(bins[0].cnt);
-		for (int i = 0; i < maxbins - 1; ++i) {
+		int i = 0;
+		for (; i < maxbins - 1; ++i) {
 			bins[i].fw = i + 1;
 			bins[i + 1].bk = i;
 
-			if (quan_rt > 0)
-				bins[i + 1].cnt = (int)_sqrt(bins[i + 1].cnt);
+			if (quan_rt > 0) {
+				bins[i].cnt = _sqrt(bins[i].cnt);
+				if (nMaxColors < 64)
+					bins[i].cnt = (int)bins[i].cnt;
+			}
+		}
+		if (quan_rt > 0) {
+			bins[i].cnt = _sqrt(bins[i].cnt);
+			if (nMaxColors < 64)
+				bins[i].cnt = (int)bins[i].cnt;
 		}
 		
 		int h, l, l2;
