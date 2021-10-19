@@ -346,13 +346,9 @@ namespace PnnLABQuant
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;
 
-			CIELABConvertor::Lab lab1;
-			getLab(c, lab1);
 			for (; k < nMaxColors; ++k) {
-				Color c2(pPalette->Entries[k]);
-				CIELABConvertor::Lab lab2;
-				getLab(c2, lab2);				
-				UINT err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB()) + sqr(lab2.B - lab1.B) / 2.0;
+				Color c2(pPalette->Entries[k]);		
+				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
 				closest[4] = err > USHRT_MAX ? USHRT_MAX : (unsigned short) err;
 
 				if (closest[4] < closest[2]) {
@@ -426,6 +422,9 @@ namespace PnnLABQuant
 		bool noBias = m_transparentPixelIndex >= 0 || nMaxColors < 64;
 		if (noBias)
 			PR = PG = PB = 1;
+		else if (bitmapWidth < 512 || bitmapHeight < 512) {
+			PR = 0.299; PG = 0.587; PB = 0.114;
+		}
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		DitherFn ditherFn = noBias ? nearestColorIndex : closestColorIndex;
