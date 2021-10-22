@@ -7,6 +7,7 @@ Copyright (c) 2018-2021 Miller Cy Chan
 #include "stdafx.h"
 #include "PnnQuantizer.h"
 #include "bitmapUtilities.h"
+#include "GilbertCurve.h"
 #include "BlueNoise.h"
 #include <unordered_map>
 
@@ -16,7 +17,7 @@ namespace PnnQuant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	double PR = .299, PG = .587, PB = .114;
+	double PR = .2126, PG = .7152, PB = .0722;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 	unordered_map<ARGB, unsigned short > nearestMap;
 
@@ -300,6 +301,9 @@ namespace PnnQuant
 
 		if (hasSemiTransparency || nMaxColors <= 32)
 			PR = PG = PB = 1;
+		else if (bitmapWidth < 512 || bitmapHeight < 512) {
+			PR = 0.299; PG = 0.587; PB = 0.114;
+		}
 
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors, 1);
@@ -321,7 +325,13 @@ namespace PnnQuant
 		}
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+		DitherFn ditherFn = dither ? nearestColorIndex : closestColorIndex;
+		if ((nMaxColors < 64 && nMaxColors > 32) || hasSemiTransparency)
+			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+		else if (nMaxColors <= 32)
+			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), nMaxColors > 2 ? 1.8f : 1.5f);
+		else
+			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
 
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
