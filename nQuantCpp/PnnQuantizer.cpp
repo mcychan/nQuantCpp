@@ -22,15 +22,15 @@ namespace PnnQuant
 	unordered_map<ARGB, unsigned short > nearestMap;
 
 	struct pnnbin {
-		double ac = 0, rc = 0, gc = 0, bc = 0, err = 0;
-		int cnt = 0;
+		float ac = 0, rc = 0, gc = 0, bc = 0, err = 0;
+		float cnt = 0;
 		int nn = 0, fw = 0, bk = 0, tm = 0, mtm = 0;
 	};
 
 	void find_nn(pnnbin* bins, int idx)
 	{
 		int nn = 0;
-		double err = 1e100;
+		float err = 1e100;
 
 		auto& bin1 = bins[idx];
 		auto n1 = bin1.cnt;
@@ -39,10 +39,10 @@ namespace PnnQuant
 		auto wg = bin1.gc;
 		auto wb = bin1.bc;
 		for (int i = bin1.fw; i; i = bins[i].fw) {
-			double nerr = PR * sqr(bins[i].rc - wr) + PG * sqr(bins[i].gc - wg) + PB * sqr(bins[i].bc - wb);
+			auto nerr = PR * sqr(bins[i].rc - wr) + PG * sqr(bins[i].gc - wg) + PB * sqr(bins[i].bc - wb);
 			if (hasSemiTransparency)
 				nerr += sqr(bins[i].ac - wa);
-			double n2 = bins[i].cnt;
+			auto n2 = bins[i].cnt;
 			nerr *= (n1 * n2) / (n1 + n2);
 			if (nerr >= err)
 				continue;
@@ -76,11 +76,11 @@ namespace PnnQuant
 		int maxbins = 0;
 
 		for (int i = 0; i < bins.size(); ++i) {
-			if (!bins[i].cnt)
+			if (bins[i].cnt <= 0)
 				continue;
 
 			auto& tb = bins[i];
-			double d = 1.0 / (double) tb.cnt;
+			double d = 1.0 / tb.cnt;
 			tb.ac *= d;
 			tb.rc *= d;
 			tb.gc *= d;
@@ -94,20 +94,21 @@ namespace PnnQuant
 		if (sqr(nMaxColors) / maxbins < .03)
 			quan_rt = 0;
 
-		if (quan_rt > 0)
-			bins[0].cnt = _sqrt(bins[0].cnt);
-		else if (quan_rt < 0)
-			bins[0].cnt = cbrt(bins[0].cnt);
 
-		for (int i = 0; i < maxbins - 1; ++i) {
-			bins[i].fw = i + 1;
-			bins[i + 1].bk = i;
+		int j = 0;
+		for (; j < maxbins - 1; ++j) {
+			bins[j].fw = j + 1;
+			bins[j + 1].bk = j;
 
 			if (quan_rt > 0)
-				bins[i + 1].cnt = _sqrt(bins[i + 1].cnt);
+				bins[j].cnt = (float) _sqrt(bins[j].cnt);
 			else if (quan_rt < 0)
-				bins[i + 1].cnt = cbrt(bins[i + 1].cnt);
-		}		
+				bins[j].cnt = (int) cbrt(bins[j].cnt);
+		}
+		if (quan_rt > 0)
+			bins[j].cnt = (float) _sqrt(bins[j].cnt);
+		else if (quan_rt < 0)
+			bins[j].cnt = (int) cbrt(bins[j].cnt);
 
 		auto heap = make_unique<int[]>(bins.size() + 1);
 		int h, l, l2;
@@ -158,9 +159,9 @@ namespace PnnQuant
 			/* Do a merge */
 			auto& tb = bins[b1];
 			auto& nb = bins[tb.nn];
-			double n1 = tb.cnt;
-			double n2 = nb.cnt;
-			double d = 1.0 / (n1 + n2);
+			auto n1 = tb.cnt;
+			auto n2 = nb.cnt;
+			auto d = 1.0f / (n1 + n2);
 			tb.ac = d * rint(n1 * tb.ac + n2 * nb.ac);
 			tb.rc = d * rint(n1 * tb.rc + n2 * nb.rc);
 			tb.gc = d * rint(n1 * tb.gc + n2 * nb.gc);
