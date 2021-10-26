@@ -69,7 +69,7 @@ namespace PnnQuant
 			tb.rc += c.GetR();
 			tb.gc += c.GetG();
 			tb.bc += c.GetB();
-			tb.cnt++;
+			tb.cnt += 1.0;
 		}
 
 		/* Cluster nonempty bins at one end of array */
