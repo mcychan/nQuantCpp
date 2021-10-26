@@ -26,8 +26,8 @@ namespace PnnLABQuant
 	unordered_map<ARGB, unsigned short> nearestMap;
 
 	struct pnnbin {
-		double ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
-		double cnt = 0;
+		float ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
+		float cnt = 0;
 		int nn = 0, fw = 0, bk = 0, tm = 0, mtm = 0;
 	};
 
@@ -52,14 +52,14 @@ namespace PnnLABQuant
 		CIELABConvertor::Lab lab1;
 		lab1.alpha = bin1.ac, lab1.L = bin1.Lc, lab1.A = bin1.Ac, lab1.B = bin1.Bc;
 		for (int i = bin1.fw; i; i = bins[i].fw) {
-			double n2 = bins[i].cnt;
+			auto n2 = bins[i].cnt;
 			auto nerr2 = (n1 * n2) / (n1 + n2);
 			if (nerr2 >= err)
 				continue;
 
 			CIELABConvertor::Lab lab2;
 			lab2.alpha = bins[i].ac, lab2.L = bins[i].Lc, lab2.A = bins[i].Ac, lab2.B = bins[i].Bc;
-			double alphaDiff = hasSemiTransparency ? abs(lab2.alpha - lab1.alpha) : 0;
+			auto alphaDiff = hasSemiTransparency ? abs(lab2.alpha - lab1.alpha) : 0;
 			auto nerr = nerr2 * sqr(alphaDiff) / exp(1.5);
 			if (nerr >= err)
 				continue;
@@ -133,7 +133,7 @@ namespace PnnLABQuant
 			if (bins[i].cnt <= 0.0)
 				continue;
 
-			auto d = 1.0 / (double) bins[i].cnt;
+			auto d = 1.0f / bins[i].cnt;
 			bins[i].ac *= d;
 			bins[i].Lc *= d;
 			bins[i].Ac *= d;
@@ -148,21 +148,21 @@ namespace PnnLABQuant
 		else if ((proportional < .018 || proportional > .5) && nMaxColors < 64)
 			quan_rt = 0;
 
-		int i = 0;
-		for (; i < maxbins - 1; ++i) {
-			bins[i].fw = i + 1;
-			bins[i + 1].bk = i;
+		int j = 0;
+		for (; j < maxbins - 1; ++j) {
+			bins[j].fw = j + 1;
+			bins[j + 1].bk = j;
 
 			if (quan_rt > 0) {
-				bins[i].cnt = _sqrt(bins[i].cnt);
+				bins[j].cnt = (float) _sqrt(bins[j].cnt);
 				if (nMaxColors < 64)
-					bins[i].cnt = (int)bins[i].cnt;
+					bins[j].cnt = (int) bins[j].cnt;
 			}
 		}
 		if (quan_rt > 0) {
-			bins[i].cnt = _sqrt(bins[i].cnt);
+			bins[j].cnt = (float) _sqrt(bins[j].cnt);
 			if (nMaxColors < 64)
-				bins[i].cnt = (int)bins[i].cnt;
+				bins[j].cnt = (int) bins[j].cnt;
 		}
 		
 		int h, l, l2;
@@ -231,8 +231,8 @@ namespace PnnLABQuant
 			/* Do a merge */
 			auto& tb = bins[b1];
 			auto& nb = bins[tb.nn];
-			double n1 = tb.cnt;
-			double n2 = nb.cnt;
+			auto n1 = tb.cnt;
+			auto n2 = nb.cnt;
 			auto d = 1.0 / (n1 + n2);
 			tb.ac = d * (n1 * tb.ac + n2 * nb.ac);
 			tb.Lc = d * (n1 * tb.Lc + n2 * nb.Lc);
