@@ -100,13 +100,19 @@ namespace PnnQuant
 			bins[j].fw = j + 1;
 			bins[j + 1].bk = j;
 
-			if (quan_rt > 0)
-				bins[j].cnt = (float) _sqrt(bins[j].cnt);
+			if (quan_rt > 0) {
+				bins[j].cnt = (float)_sqrt(bins[j].cnt);
+				if (nMaxColors < 64)
+					bins[j].cnt = (int)bins[j].cnt;
+			}
 			else if (quan_rt < 0)
 				bins[j].cnt = (int) cbrt(bins[j].cnt);
 		}
-		if (quan_rt > 0)
-			bins[j].cnt = (float) _sqrt(bins[j].cnt);
+		if (quan_rt > 0) {
+			bins[j].cnt = (float)_sqrt(bins[j].cnt);
+			if (nMaxColors < 64)
+				bins[j].cnt = (int)bins[j].cnt;
+		}
 		else if (quan_rt < 0)
 			bins[j].cnt = (int) cbrt(bins[j].cnt);
 
