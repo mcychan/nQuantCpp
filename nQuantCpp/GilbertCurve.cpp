@@ -7,7 +7,7 @@ Copyright (c) 2021 Miller Cy Chan
 #include "GilbertCurve.h"
 
 #include <memory>
-#include <vector>
+#include <deque>
 
 namespace Peano
 {	
@@ -40,9 +40,8 @@ namespace Peano
 	unsigned short* m_qPixels;
 	DitherFn m_ditherFn;
     GetColorIndexFn m_getColorIndexFn;
-	vector<ErrorBox> errorq;
+    deque<ErrorBox> errorq;
 	float* m_weights;
-    short* m_lookup;
     
 	static const BYTE DITHER_MAX = 9;
 	static const float BLOCK_SIZE = 343.0f; 
@@ -57,11 +56,12 @@ namespace Peano
 	{
 	    int bidx = x + y * m_width;
 		Color pixel(m_image[bidx]);
-		ErrorBox error(pixel);	    	
-		for(int c = 0; c < DITHER_MAX; ++c) {
-			auto& eb = errorq[c];
+		ErrorBox error(pixel);
+        int i = 0;
+        for (auto& eb : errorq) {
 			for(int j = 0; j < eb.length(); ++j)
-				error[j] += eb[j] * m_weights[c];
+				error[j] += eb[j] * m_weights[i];
+            ++i;
 		}
 
 		auto r_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[0], 0)));
@@ -70,16 +70,9 @@ namespace Peano
 		auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
 		
 		Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-		if (m_pPalette->Count < 64) {
-			int offset = m_getColorIndexFn(c2);
-			if (!m_lookup[offset])
-				m_lookup[offset] = m_ditherFn(m_pPalette, m_pPalette->Count, c2.GetValue()) + 1;
-			m_qPixels[bidx] = m_lookup[offset] - 1;
-		}
-		else
-			m_qPixels[bidx] = m_ditherFn(m_pPalette, m_pPalette->Count, c2.GetValue());
+		m_qPixels[bidx] = m_ditherFn(m_pPalette, m_pPalette->Count, c2.GetValue());
 
-		errorq.erase(errorq.begin());
+		errorq.pop_front();
 		c2 = m_pPalette->Entries[m_qPixels[bidx]];
 		error[0] = r_pix - c2.GetR();
 		error[1] = g_pix - c2.GetG();
@@ -163,8 +156,6 @@ namespace Peano
         m_getColorIndexFn = getColorIndexFn;
         auto pWeights = make_unique<float[]>(DITHER_MAX);
         m_weights = pWeights.get();
-        auto pLookup = make_unique<short[]>(65536);
-        m_lookup = pLookup.get();
     	
         /* Dithers all pixels of the image in sequence using
          * the Gilbert path, and distributes the error in

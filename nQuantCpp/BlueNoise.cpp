@@ -182,9 +182,7 @@ namespace BlueNoise
 	
 	void dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, const float weight)
     {
-		const float strength = 1 / 3.0f;
-        auto pLookup = make_unique<short[]>(65536);
-        auto lookup = pLookup.get();    	
+		const float strength = 1 / 3.0f;  	
 		
 		for (UINT y = 0; y < height; ++y) {
 			for (UINT x = 0; x < width; ++x) {
@@ -204,14 +202,7 @@ namespace BlueNoise
 				a_pix = static_cast<BYTE>(min(BYTE_MAX, max(a_pix + (adj * (a_pix - c1.GetA())), 0)));
 
 				c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-				if (pPalette->Count < 64) {
-					int offset = getColorIndexFn(c1);
-					if (!lookup[offset])
-						lookup[offset] = ditherFn(pPalette, pPalette->Count, c1.GetValue()) + 1;
-					qPixels[x + y * width] = lookup[offset] - 1;
-				}
-				else
-					qPixels[x + y * width] = ditherFn(pPalette, pPalette->Count, c1.GetValue());
+				qPixels[x + y * width] = ditherFn(pPalette, pPalette->Count, c1.GetValue());
 			}
 		}
     }
