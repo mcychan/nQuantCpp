@@ -343,7 +343,7 @@ namespace PnnLABQuant
 	{
 		UINT k = 0;
 		Color c(argb);
-		vector<unsigned short> closest(5);
+		vector<unsigned short> closest(4);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;
@@ -351,33 +351,34 @@ namespace PnnLABQuant
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);		
 				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
-				closest[4] = err > USHRT_MAX ? USHRT_MAX : (unsigned short) err;
+				if(err > USHRT_MAX)
+					err = USHRT_MAX;
 
-				if (closest[4] < closest[2]) {
+				if (err < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];
 					closest[0] = k;
-					closest[2] = closest[4];
+					if (err > pPalette->Count)
+						closest[0] = nearestColorIndex(pPalette, nMaxColors, argb);
+					closest[2] = err;
 				}
-				else if (closest[4] < closest[3]) {
+				else if (err < closest[3]) {
 					closest[1] = k;
-					closest[3] = closest[4];
+					closest[3] = err;
 				}
 			}
 
 			if (closest[3] == USHRT_MAX)
 				closest[2] = 0;
+
+			closestMap[argb] = closest;
 		}
 		else
 			closest = got->second;
 
 		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3])
-			k = closest[0];
-		else
-			k = closest[1];
-
-		closestMap[argb] = closest;
-		return k;
+			return closest[0];
+		return closest[1];
 	}
 
 	inline int GetColorIndex(const Color& c)
