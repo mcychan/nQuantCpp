@@ -286,7 +286,7 @@ namespace PnnLABQuant
 
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			double curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) / exp(1.5) : 0;
+			double curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) : 0;
 			if (curdist > mindist)
 				continue;
 			
