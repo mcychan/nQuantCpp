@@ -252,8 +252,6 @@ namespace PnnQuant
 					closest[1] = closest[0];
 					closest[3] = closest[2];
 					closest[0] = k;
-					if (err > pPalette->Count)
-						closest[0] = nearestColorIndex(pPalette, nMaxColors, argb);
 					closest[2] = err;
 				}
 				else if (err < closest[3]) {
@@ -263,15 +261,21 @@ namespace PnnQuant
 			}
 
 			if (closest[3] == USHRT_MAX)
-				closest[2] = 0;
+				closest[1] = closest[0];
 
 			closestMap[argb] = closest;
 		}
 		else
 			closest = got->second;
 
-		if (closest[2] == 0 || (rand() % (closest[3] + closest[2])) <= closest[3])
+		if (closest[2] == 0 || (rand() % (closest[3] + closest[2])) <= closest[3]) {
+			if (closest[2] > pPalette->Count)
+				return nearestColorIndex(pPalette, nMaxColors, argb);
 			return closest[0];
+		}
+
+		if (closest[3] > pPalette->Count)
+			return nearestColorIndex(pPalette, nMaxColors, argb);
 		return closest[1];
 	}
 
