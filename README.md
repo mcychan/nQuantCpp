@@ -17,12 +17,12 @@ Let's climb up the mountain: Ready, Go!!!
 <hr />
 <p>Original photo of Aetna's Hartford headquarters<br /><img src="https://mcychan.github.io/PnnQuant.js/demo/img/SE5x9.jpg" /></p>
 <p>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<br /><img src="https://i.stack.imgur.com/0sDDn.png" /></p>
-<p>Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://i.stack.imgur.com/SB6NJ.png" /></p><hr>
+<p>Reduced to 256 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://repository-images.githubusercontent.com/154477414/29446768-6892-49bc-b949-774c1b3f38de" /></p><hr>
 
 <p>Original image of Hong Kong Cuisines<br /><img src="https://mcychan.github.io/PnnQuant.js/demo/img/old-HK.jpg" /></p>
 <b><a href="http://www.cs.joensuu.fi/sipu/pub/Threshold-JEI.pdf">Fast pairwise nearest neighbor based algorithm</a></b> with CIELAB color space in 16 colors<br>
 High quality and fast<br />
-<img src="https://repository-images.githubusercontent.com/121180544/8931f1bb-8adc-4d96-8663-2b71848ec873" alt="Fast pairwise nearest neighbor based algorithm with CIELAB color space with CIELAB color space in 16 colors"></p>
+<img src="https://repository-images.githubusercontent.com/121180544/77908405-ea24-453d-8af9-e255db587c65" alt="Fast pairwise nearest neighbor based algorithm with CIELAB color space with CIELAB color space in 16 colors"></p>
 <p><b><a href="http://cg.cs.tsinghua.edu.cn/people/~huanghz/publications/TIP-2015-CombinedColorQuantization.pdf">Efficient, Edge-Aware, Combined Color Quantization and Dithering </a></b> with CIELAB color space in 16 colors<br />
 Higher quality for 32 or less colors but slower<br />
 <img src="https://i.stack.imgur.com/Vk0dG.png" alt="Efficient, Edge-Aware, Combined Color Quantization and Dithering with CIELAB color space in 16 colors"></p>
