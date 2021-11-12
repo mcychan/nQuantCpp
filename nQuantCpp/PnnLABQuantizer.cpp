@@ -374,13 +374,16 @@ namespace PnnLABQuant
 		else
 			closest = got->second;
 
+		auto MAX_ERR = pPalette->Count;
+		if (MAX_ERR < 32)
+			MAX_ERR = BYTE_MAX * 4;
 		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3]) {
-			if (closest[2] > pPalette->Count)
+			if (closest[2] > MAX_ERR)
 				return nearestColorIndex(pPalette, nMaxColors, argb);
 			return closest[0];
 		}
 
-		if (closest[3] > pPalette->Count)
+		if (closest[3] > MAX_ERR)
 			return nearestColorIndex(pPalette, nMaxColors, argb);
 		return closest[1];
 	}
@@ -434,7 +437,7 @@ namespace PnnLABQuant
 		}
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		DitherFn ditherFn = noBias ? nearestColorIndex : closestColorIndex;
+		DitherFn ditherFn = hasSemiTransparency ? nearestColorIndex : closestColorIndex;
 		if (hasSemiTransparency)
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), 1.75f);
 		else if (nMaxColors < 64 && nMaxColors > 32)
