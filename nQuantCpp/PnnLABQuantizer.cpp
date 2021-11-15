@@ -168,12 +168,12 @@ namespace PnnLABQuant
 		int h, l, l2;
 		if (quan_rt != 0 && nMaxColors < 64) {
 			if(proportional > .018 && proportional < .022)
-				ratio = min(1.0, proportional + nMaxColors * exp(2.317) / maxbins);
+				ratio = min(1.0, proportional + nMaxColors * exp(3.872) / maxbins);
 			else
-				ratio = min(1.0, proportional - nMaxColors * exp(1.907) / maxbins);
+				ratio = min(1.0, proportional - nMaxColors * exp(1.997) / maxbins);
 		}
 		else
-			ratio = min(1.0, proportional + nMaxColors * exp(2.317) / maxbins);
+			ratio = min(1.0, proportional + nMaxColors * exp(3.872) / maxbins);
 
 		if (quan_rt < 0) {
 			ratio += 0.5;
@@ -196,7 +196,7 @@ namespace PnnLABQuant
 		}
 
 		if (quan_rt > 0 && nMaxColors < 64 && (proportional < .023 || proportional > .05))
-			ratio = min(1.0, proportional - nMaxColors * exp(2.317) / maxbins);
+			ratio = min(1.0, proportional - nMaxColors * exp(2.347) / maxbins);
 
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
