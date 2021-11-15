@@ -168,12 +168,12 @@ namespace PnnLABQuant
 		int h, l, l2;
 		if (quan_rt != 0 && nMaxColors < 64) {
 			if(proportional > .018 && proportional < .022)
-				ratio = min(1.0, proportional + nMaxColors * exp(5.474) / pixelMap.size());
+				ratio = min(1.0, proportional + nMaxColors * exp(2.317) / maxbins);
 			else
-				ratio = min(1.0, proportional - nMaxColors * exp(4.172) / pixelMap.size());
+				ratio = min(1.0, proportional - nMaxColors * exp(1.907) / maxbins);
 		}
 		else
-			ratio = min(1.0, proportional + nMaxColors * exp(5.474) / pixelMap.size());
+			ratio = min(1.0, proportional + nMaxColors * exp(2.317) / maxbins);
 
 		if (quan_rt < 0) {
 			ratio += 0.5;
@@ -195,8 +195,8 @@ namespace PnnLABQuant
 			heap[l] = i;
 		}
 
-		if (quan_rt > 0 && nMaxColors < 64 && proportional > .018)
-			ratio = min(1.0, proportional - nMaxColors * exp(4.12) / pixelMap.size());
+		if (quan_rt > 0 && nMaxColors < 64 && (proportional < .023 || proportional > .05))
+			ratio = min(1.0, proportional - nMaxColors * exp(2.317) / maxbins);
 
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
@@ -375,8 +375,6 @@ namespace PnnLABQuant
 			closest = got->second;
 
 		auto MAX_ERR = pPalette->Count;
-		if (MAX_ERR < 32)
-			MAX_ERR = BYTE_MAX * 4;
 		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3]) {
 			if (closest[2] > MAX_ERR)
 				return nearestColorIndex(pPalette, nMaxColors, argb);
