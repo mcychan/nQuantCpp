@@ -172,8 +172,10 @@ namespace PnnLABQuant
 			else
 				ratio = min(1.0, proportional - nMaxColors * exp(1.997) / maxbins);
 		}
-		else
-			ratio = min(1.0, proportional + nMaxColors * exp(3.872) / maxbins);
+		else {
+			ratio = (proportional / nMaxColors) < .04 ? .8 : 1.0;
+			ratio = min(ratio, proportional + nMaxColors * exp(3.872) / maxbins);
+		}
 
 		if (quan_rt < 0) {
 			ratio += 0.5;
@@ -351,7 +353,6 @@ namespace PnnLABQuant
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);		
 				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
-
 				if (err < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];
