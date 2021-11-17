@@ -351,8 +351,6 @@ namespace PnnLABQuant
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);		
 				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
-				if(err > USHRT_MAX)
-					err = USHRT_MAX;
 
 				if (err < closest[2]) {
 					closest[1] = closest[0];
