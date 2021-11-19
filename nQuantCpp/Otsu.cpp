@@ -213,12 +213,12 @@ namespace OtsuThreshold
 
 		unique_ptr<Bitmap> pSourceImg;
 		if(isGrayscale)
-			pSourceImg = unique_ptr<Bitmap>(pSrcImg->Clone(Rect(0, 0, bitmapWidth, bitmapHeight), pSrcImg->GetPixelFormat()));
+			pSourceImg = unique_ptr<Bitmap>(pSrcImg);
 		else
 			pSourceImg = unique_ptr<Bitmap>(ConvertToGrayScale(pSrcImg));		
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		if (!GrabPixels(pSourceImg.get(), pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor))
+		if (!GrabPixels(isGrayscale ? pSourceImg.release() : pSourceImg.get(), pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor))
 			return false;
 
 		auto otsuThreshold = getOtsuThreshold(pixels);
@@ -229,7 +229,7 @@ namespace OtsuThreshold
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = 2;
 		if (m_transparentPixelIndex >= 0) {
-			pPalette->Entries[0] = m_transparentColor;
+			pPalette->Entries[0] = m_transparentColor = Color::MakeARGB(0, 51, 102, 102);
 			pPalette->Entries[1] = Color::Black;
 		}
 		else {
