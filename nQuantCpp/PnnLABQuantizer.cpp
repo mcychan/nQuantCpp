@@ -167,8 +167,10 @@ namespace PnnLABQuant
 		
 		int h, l, l2;
 		if (quan_rt != 0 && nMaxColors < 64) {
-			if(proportional > .018 && proportional < .022)
+			if (proportional > .018 && proportional < .022)
 				ratio = min(1.0, proportional + nMaxColors * exp(3.872) / maxbins);
+			else if (proportional > .1)
+				ratio = min(1.0, proportional - nMaxColors * exp(3.23) / maxbins);
 			else
 				ratio = min(1.0, proportional - nMaxColors * exp(1.997) / maxbins);
 		}
