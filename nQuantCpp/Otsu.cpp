@@ -58,11 +58,12 @@ namespace OtsuThreshold
 	{
 		for (auto pixel : pixels) {
 			Color c(pixel);
+			if (c.GetA() <= alphaThreshold)
+				continue;
+
 			hist[c.GetR()]++;
 			hist[c.GetG()]++;
 			hist[c.GetB()]++;
-			if (hasSemiTransparency)
-				hist[c.GetA()]++;
 		}
 	}
 		
