@@ -87,13 +87,10 @@ namespace OtsuThreshold
 		return findMax(vet, 256);
 	}
 	
-	bool threshold(vector<ARGB>& pixels, short thresh, float weight = 1.0f)
+	bool threshold(vector<ARGB>& pixels, short thresh)
 	{
 		if (thresh >= 200)
-		{
-			weight = .75f;
 			thresh = 200;
-		}
 
 		for (int i = 0; i < pixels.size(); ++i) {
 			Color c(pixels[i]);
