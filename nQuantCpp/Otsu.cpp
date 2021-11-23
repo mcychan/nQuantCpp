@@ -171,6 +171,11 @@ namespace OtsuThreshold
 		{
 			for (int j = 0; j < iWidth; ++j)
 			{
+				if (DJ > 3 && ptr[3] <= alphaThreshold) {
+					ptr += DJ;
+					continue;
+				}
+
 				if (min1 > ptr[1])
 					min1 = ptr[1];
 
