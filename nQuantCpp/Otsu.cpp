@@ -19,7 +19,7 @@ namespace OtsuThreshold
 	unordered_map<ARGB, unsigned short > nearestMap;
 
 	// function is used to compute the q values in the equation
-	static float Px(int init, int end, int* hist)
+	static float px(int init, int end, int* hist)
 	{
 		int sum = 0;
 		for (int i = init; i <= end; ++i)
@@ -29,7 +29,7 @@ namespace OtsuThreshold
 	}
 
 	// function is used to compute the mean values in the equation (mu)
-	static float Mx(int init, int end, int* hist)
+	static float mx(int init, int end, int* hist)
 	{
 		int sum = 0;
 		for (int i = init; i <= end; ++i)
@@ -76,31 +76,37 @@ namespace OtsuThreshold
 
 		// loop through all possible t values and maximize between class variance
 		for (int k = 1; k != BYTE_MAX; ++k) {
-			float p1 = Px(0, k, hist);
-			float p2 = Px(k + 1, BYTE_MAX, hist);
+			float p1 = px(0, k, hist);
+			float p2 = px(k + 1, BYTE_MAX, hist);
 			float p12 = p1 * p2;
 			if (p12 == 0) 
 				p12 = 1;
-			float diff = (Mx(0, k, hist) * p2) - (Mx(k + 1, BYTE_MAX, hist) * p1);
+			float diff = (mx(0, k, hist) * p2) - (mx(k + 1, BYTE_MAX, hist) * p1);
 			vet[k] = diff * diff / p12;
 		}
 
 		return findMax(vet, 256);
 	}
 	
-	bool threshold(vector<ARGB>& pixels, short thresh)
+	bool threshold(vector<ARGB>& pixels, short thresh, float weight = 1.0f)
 	{
+		auto maxThresh = (BYTE)thresh;
 		if (thresh >= 200)
+		{
+			weight = .78f;
+			maxThresh = (BYTE)(thresh * weight);
 			thresh = 200;
+		}
 
+		auto minThresh = (BYTE)(thresh * weight);		
 		for (int i = 0; i < pixels.size(); ++i) {
 			Color c(pixels[i]);
-			if (c.GetR() < thresh || c.GetG() < thresh || c.GetB() < thresh)
-				pixels[i] = Color::MakeARGB(c.GetA(), 0, 0, 0);
-			else
+			if (c.GetR() + c.GetG() + c.GetB() > maxThresh * 3)
 				pixels[i] = Color::MakeARGB(c.GetA(), BYTE_MAX, BYTE_MAX, BYTE_MAX);
+			else if (m_transparentPixelIndex >= 0 || c.GetR() + c.GetG() + c.GetB() < minThresh * 3)
+				pixels[i] = Color::MakeARGB(c.GetA(), 0, 0, 0);
 		}
-		
+
 		return true;
 	}
 
