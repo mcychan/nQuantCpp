@@ -240,6 +240,9 @@ namespace PnnQuant
 	{
 		UINT k = 0;
 		Color c(argb);
+		if (c.GetA() <= alphaThreshold)
+			return k;
+
 		vector<unsigned short> closest(4);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {

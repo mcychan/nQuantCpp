@@ -345,6 +345,9 @@ namespace PnnLABQuant
 	{
 		UINT k = 0;
 		Color c(argb);
+		if (c.GetA() <= alphaThreshold)
+			return k;
+
 		vector<unsigned short> closest(4);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
@@ -435,7 +438,7 @@ namespace PnnLABQuant
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		DitherFn ditherFn = hasSemiTransparency ? nearestColorIndex : closestColorIndex;
-		if (hasSemiTransparency)
+		if (hasSemiTransparency && nMaxColors <= 256)
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), 1.75f);
 		else if (nMaxColors < 64 && nMaxColors > 32)
 			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
