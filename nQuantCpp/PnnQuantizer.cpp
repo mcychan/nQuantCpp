@@ -271,13 +271,14 @@ namespace PnnQuant
 		else
 			closest = got->second;
 
+		auto MAX_ERR = pPalette->Count;
 		if (closest[2] == 0 || (rand() % (closest[3] + closest[2])) <= closest[3]) {
-			if (closest[2] > pPalette->Count)
+			if (closest[2] > MAX_ERR)
 				return nearestColorIndex(pPalette, nMaxColors, argb);
 			return closest[0];
 		}
 
-		if (closest[3] > pPalette->Count)
+		if (closest[3] > MAX_ERR)
 			return nearestColorIndex(pPalette, nMaxColors, argb);
 		return closest[1];
 	}

@@ -20,6 +20,7 @@ namespace fs = std::filesystem;
 #include "DivQuantizer.h"
 #include "MedianCut.h"
 #include "Otsu.h"
+#include <unordered_map>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -35,21 +36,22 @@ GdiplusStartupInput  m_gdiplusStartupInput;
 ULONG_PTR m_gdiplusToken;
 
 wstring algs[] = { L"PNN", L"PNNLAB", L"NEU", L"WU", L"EAS", L"SPA", L"DIV", L"MMC", L"OTSU" };
+unordered_map<LPCTSTR, CLSID> extensionMap;
 
 void PrintUsage()
 {
-    cout << endl;
-    cout << "usage: nQuantCpp <input image path> [options]" << endl;
-    cout << endl;
-    cout << "Valid options:" << endl;
-	cout << "  /a : Algorithm used - Choose one of them, otherwise give you the defaults from [";
+    tcout << endl;
+    tcout << "usage: nQuantCpp <input image path> [options]" << endl;
+    tcout << endl;
+    tcout << "Valid options:" << endl;
+	tcout << "  /a : Algorithm used - Choose one of them, otherwise give you the defaults from [";
 	int i = 0;	
 	for(; i<sizeof(algs)/sizeof(string) - 1; ++i)
 		tcout << algs[i] << ", ";
 	tcout << algs[i] << "] ." << endl;
-    cout << "  /m : Max Colors (pixel-depth) - Maximum number of colors for the output format to support. The default is 256 (8-bit)." << endl;
-	cout << "  /d : Dithering or not? y or n." << endl;
-    cout << "  /o : Output image file dir. The default is <source image path directory>" << endl;
+    tcout << "  /m : Max Colors (pixel-depth) - Maximum number of colors for the output format to support. The default is 256 (8-bit)." << endl;
+	tcout << "  /d : Dithering or not? y or n." << endl;
+    tcout << "  /o : Output image file dir. The default is <source image path directory>" << endl;
 }
 
 bool isdigit(const TCHAR* string) {
@@ -184,19 +186,23 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 	targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();	
 	auto destPath = targetDir + L"/" + fileName + L"-";
 	wstring algo(algorithm.begin(), algorithm.end());
-	destPath += algo + L"quant";
-	destPath += std::to_wstring(nMaxColors) + L".png";
+	destPath += algo + L"quant";	
 	
 	// image/bmp  : {557cf400-1a04-11d3-9a73-0000f81ef32e}
 	const CLSID bmpEncoderClsId = { 0x557cf400, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };
+	extensionMap.emplace(L".bmp", bmpEncoderClsId);
 
 	// image/gif  : {557cf402-1a04-11d3-9a73-0000f81ef32e}
 	const CLSID gifEncoderClsId = { 0x557cf402, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };
+	extensionMap.emplace(L".gif", gifEncoderClsId);
 
 	// image/png  : {557cf406-1a04-11d3-9a73-0000f81ef32e}
 	const CLSID pngEncoderClsId = { 0x557cf406, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };
+	extensionMap.emplace(L".png", pngEncoderClsId);
 
-	auto status = pDest->Save(destPath.c_str(), &pngEncoderClsId);	
+	auto targetExtension = nMaxColors > 256 ? L".bmp" : L".png";
+	destPath += std::to_wstring(nMaxColors) + targetExtension;
+	auto status = pDest->Save(destPath.c_str(), &extensionMap[targetExtension]);
 	if (status == Status::Ok)
 		tcout << "Converted image: " << destPath << endl;
 	else
@@ -234,7 +240,7 @@ int wmain(int argc, wchar_t** argv)
 #endif	
 	
 	if(!fileExists(sourcePath)) {
-		cout << "The source file you specified does not exist." << endl;
+		tcout << "The source file you specified does not exist." << endl;
 		return 0;
 	}		
 
