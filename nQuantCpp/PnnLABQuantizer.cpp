@@ -174,6 +174,8 @@ namespace PnnLABQuant
 			else
 				ratio = min(1.0, proportional - nMaxColors * exp(1.997) / maxbins);
 		}
+		else if (nMaxColors > 256)
+			ratio = min(1.0, 1 - 1.0 / proportional);
 		else
 			ratio = min(1.0, 0.14 * exp(4.681 * proportional));
 
