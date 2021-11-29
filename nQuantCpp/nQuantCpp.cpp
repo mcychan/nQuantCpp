@@ -200,7 +200,7 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 	const CLSID pngEncoderClsId = { 0x557cf406, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };
 	extensionMap.emplace(L".png", pngEncoderClsId);
 
-	auto targetExtension = nMaxColors > 256 ? L".bmp" : L".png";
+	auto targetExtension = (pDest->GetPixelFormat() < PixelFormat16bppARGB1555 && nMaxColors > 256) ? L".bmp" : L".png";
 	destPath += std::to_wstring(nMaxColors) + targetExtension;
 	auto status = pDest->Save(destPath.c_str(), &extensionMap[targetExtension]);
 	if (status == Status::Ok)
