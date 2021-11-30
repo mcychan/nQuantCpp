@@ -177,7 +177,7 @@ namespace PnnLABQuant
 		else if (nMaxColors > 256)
 			ratio = min(hasSemiTransparency ? 0.0 : 1.0, 1 - 1.0 / proportional);
 		else
-			ratio = min(1.0, 0.14 * exp(4.681 * proportional));
+			ratio = min(hasSemiTransparency ? 0.0 : 1.0, 0.14 * exp(4.681 * proportional));
 
 		if (quan_rt < 0) {
 			ratio += 0.5;
