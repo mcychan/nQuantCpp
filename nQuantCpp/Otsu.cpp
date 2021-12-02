@@ -147,6 +147,39 @@ namespace OtsuThreshold
 		return k;
 	}
 
+	inline int GetColorIndex(const Color& c)
+	{
+		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
+	}
+
+	void convertToGrayScale(vector<ARGB>& pixels)
+	{
+		float min1 = BYTE_MAX;
+		float max1 = .0f;
+
+		for (int i = 0; i < pixels.size(); ++i)
+		{
+			int alfa = (pixels[i] >> 24) & 0xff;
+			int green = (pixels[i] >> 8) & 0xff;
+			if (alfa <= alphaThreshold)
+				continue;
+
+			if (min1 > green)
+				min1 = green;
+
+			if (max1 < green)
+				max1 = green;
+		}
+
+		for (int i = 0; i < pixels.size(); ++i)
+		{
+			int alfa = (pixels[i] >> 24) & 0xff;
+			int green = (pixels[i] >> 8) & 0xff;
+			auto grey = (int)((green - min1) * (BYTE_MAX / (max1 - min1)));
+			pixels[i] = Color::MakeARGB(alfa, grey, grey, grey);
+		}
+	}
+
 	Bitmap* Otsu::ConvertToGrayScale(Bitmap* pSrcImg)
 	{
 		auto iWidth = pSrcImg->GetWidth();
@@ -206,27 +239,19 @@ namespace OtsuThreshold
 
 		pSourceImg->UnlockBits(&data);
 		return pSourceImg;
-	}
-
-	inline int GetColorIndex(const Color& c)
-	{
-		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
-	}
+	}	
 
 	bool Otsu::ConvertGrayScaleToBinary(Bitmap* pSrcImg, Bitmap* pDest, bool isGrayscale)
 	{		
 		auto bitmapWidth = pSrcImg->GetWidth();
 		auto bitmapHeight = pSrcImg->GetHeight();
 
-		unique_ptr<Bitmap> pSourceImg;
-		if(isGrayscale)
-			pSourceImg = unique_ptr<Bitmap>(pSrcImg);
-		else
-			pSourceImg = unique_ptr<Bitmap>(ConvertToGrayScale(pSrcImg));		
-
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		if (!GrabPixels(isGrayscale ? pSourceImg.release() : pSourceImg.get(), pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor))
+		if (!GrabPixels(pSrcImg, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor))
 			return false;
+
+		if (!isGrayscale)
+			convertToGrayScale(pixels);
 
 		auto otsuThreshold = getOtsuThreshold(pixels);
 		if (!threshold(pixels, otsuThreshold))
