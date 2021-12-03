@@ -88,7 +88,7 @@ namespace OtsuThreshold
 		return findMax(vet, 256);
 	}
 	
-	bool threshold(vector<ARGB>& pixels, short thresh, float weight = 1.0f)
+	void threshold(vector<ARGB>& pixels, short thresh, float weight = 1.0f)
 	{
 		auto maxThresh = (BYTE)thresh;
 		if (thresh >= 200)
@@ -106,8 +106,6 @@ namespace OtsuThreshold
 			else if (m_transparentPixelIndex >= 0 || c.GetR() + c.GetG() + c.GetB() < minThresh * 3)
 				pixels[i] = Color::MakeARGB(c.GetA(), 0, 0, 0);
 		}
-
-		return true;
 	}
 
 	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
@@ -157,13 +155,13 @@ namespace OtsuThreshold
 		float min1 = BYTE_MAX;
 		float max1 = .0f;
 
-		for (int i = 0; i < pixels.size(); ++i)
+		for (const auto& pixel : pixels)
 		{
-			int alfa = (pixels[i] >> 24) & 0xff;
-			int green = (pixels[i] >> 8) & 0xff;
+			int alfa = (pixel >> 24) & 0xff;
 			if (alfa <= alphaThreshold)
 				continue;
 
+			int green = (pixel >> 8) & 0xff;
 			if (min1 > green)
 				min1 = green;
 
@@ -174,6 +172,9 @@ namespace OtsuThreshold
 		for (int i = 0; i < pixels.size(); ++i)
 		{
 			int alfa = (pixels[i] >> 24) & 0xff;
+			if (alfa <= alphaThreshold)
+				continue;
+
 			int green = (pixels[i] >> 8) & 0xff;
 			auto grey = (int)((green - min1) * (BYTE_MAX / (max1 - min1)));
 			pixels[i] = Color::MakeARGB(alfa, grey, grey, grey);
@@ -254,8 +255,7 @@ namespace OtsuThreshold
 			convertToGrayScale(pixels);
 
 		auto otsuThreshold = getOtsuThreshold(pixels);
-		if (!threshold(pixels, otsuThreshold))
-			return false;
+		threshold(pixels, otsuThreshold);
 
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + 2 * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
