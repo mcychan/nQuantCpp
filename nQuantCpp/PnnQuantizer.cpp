@@ -91,9 +91,10 @@ namespace PnnQuant
 
 		if (nMaxColors < 16)
 			quan_rt = -1;
-		if (sqr(nMaxColors) / maxbins < .03)
-			quan_rt = 0;
 
+		auto weight = nMaxColors * 1.0 / maxbins;
+		if (weight > .003 && weight < .005)
+			quan_rt = 0;
 
 		int j = 0;
 		for (; j < maxbins - 1; ++j) {
