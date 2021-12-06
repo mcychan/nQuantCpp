@@ -145,8 +145,10 @@ namespace PnnLABQuant
 		auto proportional = sqr(nMaxColors) / maxbins;
 		if ((m_transparentPixelIndex >= 0 || hasSemiTransparency) && nMaxColors < 32)
 			quan_rt = -1;
-		else if ((proportional < .018 || proportional > .5) && nMaxColors < 64)
-			quan_rt = 0;
+		
+		auto weight = nMaxColors * 1.0 / maxbins;
+		if (weight > .0015 && weight < .002)
+			quan_rt = 2;
 
 		int j = 0;
 		for (; j < maxbins - 1; ++j) {
@@ -154,15 +156,21 @@ namespace PnnLABQuant
 			bins[j + 1].bk = j;
 
 			if (quan_rt > 0) {
-				bins[j].cnt = (float) _sqrt(bins[j].cnt);
-				if (nMaxColors < 64)
-					bins[j].cnt = (int) bins[j].cnt;
+				if (quan_rt > 1)
+					bins[j].cnt = (int) pow(bins[j].cnt, 0.75);
+				else if (nMaxColors < 64)
+					bins[j].cnt = (int) _sqrt(bins[j].cnt);
+				else
+					bins[j].cnt = (float) _sqrt(bins[j].cnt);
 			}
 		}
 		if (quan_rt > 0) {
-			bins[j].cnt = (float) _sqrt(bins[j].cnt);
-			if (nMaxColors < 64)
-				bins[j].cnt = (int) bins[j].cnt;
+			if (quan_rt > 1)
+				bins[j].cnt = (int) pow(bins[j].cnt, 0.75);
+			else if (nMaxColors < 64)
+				bins[j].cnt = (int) _sqrt(bins[j].cnt);
+			else
+				bins[j].cnt = (float) _sqrt(bins[j].cnt);
 		}
 		
 		int h, l, l2;
