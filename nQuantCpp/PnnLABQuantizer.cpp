@@ -109,7 +109,7 @@ namespace PnnLABQuant
 	QuanFn getQuanFn(const UINT& nMaxColors, const short quan_rt) {
 		if (quan_rt > 0) {
 			if (quan_rt > 1)
-				return[](const float& cnt) { return (float)((int) pow(cnt, 0.75)); };
+				return[](const float& cnt) { return (float)(int) pow(cnt, 0.75); };
 			if (nMaxColors < 64)
 				return[](const float& cnt) { return (float)(int) _sqrt(cnt); };
 			return[](const float& cnt) { return (float) _sqrt(cnt); };
