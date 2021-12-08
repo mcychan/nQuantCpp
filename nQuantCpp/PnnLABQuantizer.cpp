@@ -271,15 +271,12 @@ namespace PnnLABQuant
 				pPalette->Entries[0] = m_transparentColor;
 			}
 
-			if (extbins < 0) {
-				if (bins[++i].cnt <= 0.0)					
-					break;
-				continue;
-			}
-
 			if (!(i = bins[i].fw))
 				break;
 		}
+
+		if (k < nMaxColors - 1)
+			pPalette->Count = nMaxColors = k + 1;
 	}
 
 	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
