@@ -271,13 +271,14 @@ namespace PnnLABQuant
 				pPalette->Entries[0] = m_transparentColor;
 			}
 
+			if (extbins < 0) {
+				if (bins[++i].cnt <= 0.0)					
+					break;
+				continue;
+			}
+
 			if (!(i = bins[i].fw))
 				break;
-		}
-
-		if (k < nMaxColors - 1) {
-			pPalette->Entries[k++] = Color::MakeARGB(BYTE_MAX, 0, 0, 0);
-			pPalette->Count = nMaxColors = k + 1;
 		}
 	}
 
