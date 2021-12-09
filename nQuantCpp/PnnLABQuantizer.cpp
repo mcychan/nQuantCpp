@@ -187,10 +187,8 @@ namespace PnnLABQuant
 		else
 			ratio = min(hasSemiTransparency ? 0.0 : 1.0, 0.14 * exp(4.681 * proportional));
 
-		if (quan_rt < 0) {
-			ratio += 0.5;
-			ratio = min(1.0, ratio);
-		}	
+		if (quan_rt < 0)
+			ratio = min(1.0, nMaxColors * exp(1.997) / maxbins);
 				
 		/* Initialize nearest neighbors and build heap of them */
 		auto heap = make_unique<int[]>(bins.size() + 1);
