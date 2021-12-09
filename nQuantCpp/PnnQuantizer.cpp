@@ -319,7 +319,7 @@ namespace PnnQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		if (hasSemiTransparency || nMaxColors <= 32)
+		if (hasSemiTransparency || nMaxColors <= 32 || nMaxColors > 256)
 			PR = PG = PB = 1;
 		else if (bitmapWidth < 512 || bitmapHeight < 512) {
 			PR = 0.299; PG = 0.587; PB = 0.114;
