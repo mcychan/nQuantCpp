@@ -329,7 +329,7 @@ namespace PnnQuant
 			pnnquan(pixels, pPalette, nMaxColors, 1);
 		else {
 			if (m_transparentPixelIndex >= 0) {
-				pPalette->Entries[0] = m_transparentColor;
+				pPalette->Entries[0] = Color::Transparent;
 				pPalette->Entries[1] = Color::Black;
 			}
 			else {
