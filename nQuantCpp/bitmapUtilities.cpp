@@ -871,14 +871,14 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 			argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
 		}		
 
-		if (pixelAlpha < 200) {
+		if (pixelAlpha < 0xF0) {
 			if (pixelAlpha == 0) {
 				transparentColor = argb;
 				transparentPixelIndex = pixelIndex;
 				if (transparentColor < BYTE_MAX && transparentIndex < 0)
 					argb = transparentColor = Color::MakeARGB(0, 51, 102, 102);
 			}
-			else
+			else if(pixelAlpha > 0xF)
 				hasSemiTransparency = true;
 		}
 		pixels[pixelIndex++] = argb;
