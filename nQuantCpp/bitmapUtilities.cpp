@@ -884,7 +884,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 			if (pixelAlpha < 0xE0) {
 				if (pixelAlpha == 0) {
 					transparentPixelIndex = pixelIndex;
-					if (nMaxColors > 2 && transparentIndex > -1)
+					if (nMaxColors > 2)
 						transparentColor = argb;
 					else
 						argb = transparentColor;
