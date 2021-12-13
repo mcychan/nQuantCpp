@@ -455,7 +455,7 @@ namespace NeuralNet
 				continue;
 
 			getLab(c2, lab2);
-			if (nMaxColors > 32) {
+			if (nMaxColors > 32 || nMaxColors <= 4 || hasSemiTransparency) {
 				curdist += PR * sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
