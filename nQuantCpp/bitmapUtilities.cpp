@@ -820,7 +820,7 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsig
 	return pDest->GetLastStatus() == Ok;
 }
 
-bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency, int& transparentPixelIndex, ARGB& transparentColor)
+bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency, int& transparentPixelIndex, ARGB& transparentColor, const BYTE alphaThreshold, const UINT nMaxColors)
 {
 	const auto bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
 	const auto bitmapWidth = pSource->GetWidth();
@@ -837,7 +837,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 		pSource->GetPalette(pPalette, paletteSize);
 
 	auto nSize = pSource->GetPropertyItemSize(PropertyTagIndexTransparent);
-	if (nSize > 0) {
+	if (nMaxColors > 2 && nSize > 0) {
 		auto pPropertyItem = make_unique<PropertyItem[]>(nSize);
 		pSource->GetPropertyItem(PropertyTagIndexTransparent, nSize, pPropertyItem.get());
 		if (pPropertyItem.get()->length > 0) {
@@ -852,36 +852,50 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	if (status != Ok)
 		return false;
 
-	// Declare an array to hold the bytes of the bitmap.
-	int bytesLength = abs(data.Stride) * bitmapHeight;
-	auto rgbValues = make_unique<BYTE[]>(bytesLength);
-
-	// Copy the RGB values into the array.
-	memcpy(rgbValues.get(), data.Scan0, bytesLength);
-
 	int pixelIndex = 0;
-	for (int i = 0; i < bytesLength; i += 4) {
-		auto pixelBlue = rgbValues[i];
-		auto pixelGreen = rgbValues[i + 1];
-		auto pixelRed = rgbValues[i + 2];
-		auto pixelAlpha = rgbValues[i + 3];
-		auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
-		if (transparentIndex > -1 && Color(transparentColor).ToCOLORREF() == Color(argb).ToCOLORREF()) {
-			pixelAlpha = 0;
-			argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
-		}		
+	auto pRowSource = (LPBYTE)data.Scan0;
+	UINT strideSource;
 
-		if (pixelAlpha < 0xE0) {
-			if (pixelAlpha == 0) {
-				transparentColor = argb;
-				transparentPixelIndex = pixelIndex;
-				if (transparentColor < BYTE_MAX && transparentIndex < 0)
-					argb = transparentColor = Color::MakeARGB(0, 51, 102, 102);
+	if (data.Stride > 0) strideSource = data.Stride;
+	else
+	{
+		// Compensate for possible negative stride
+		// (not needed for first loop, but we have to do it
+		// for second loop anyway)
+		pRowSource += bitmapHeight * data.Stride;
+		strideSource = -data.Stride;
+	}
+
+	// First loop: gather color information
+	for (UINT y = 0; y < bitmapHeight; ++y) {	// For each row...
+		auto pPixelSource = pRowSource;
+
+		for (UINT x = 0; x < bitmapWidth; ++x) {	// ...for each pixel...
+			auto pixelBlue = *pPixelSource++;
+			auto pixelGreen = *pPixelSource++;
+			auto pixelRed = *pPixelSource++;
+			auto pixelAlpha = *pPixelSource++;
+			auto argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
+			if (transparentIndex > -1 && Color(transparentColor).ToCOLORREF() == Color(argb).ToCOLORREF()) {
+				pixelAlpha = 0;
+				argb = Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue);
 			}
-			else if(pixelAlpha > 0xF)
-				hasSemiTransparency = true;
+
+			if (pixelAlpha < 0xE0) {
+				if (pixelAlpha == 0) {
+					transparentPixelIndex = pixelIndex;
+					if (nMaxColors > 2 && transparentIndex > -1)
+						transparentColor = argb;
+					else
+						argb = transparentColor;
+				}
+				else if (pixelAlpha > alphaThreshold)
+					hasSemiTransparency = true;
+			}
+			pixels[pixelIndex++] = argb;
 		}
-		pixels[pixelIndex++] = argb;
+
+		pRowSource += strideSource;
 	}
 
 	return pSource->UnlockBits(&data) == Ok;
@@ -943,10 +957,10 @@ bool HasTransparency(Bitmap* pSource)
 		auto pPixelSource = pRowSource;
 
 		for (UINT x = 0; x < bitmapWidth; ++x) {	// ...for each pixel...
-			BYTE pixelBlue = *pPixelSource++;
-			BYTE pixelGreen = *pPixelSource++;
-			BYTE pixelRed = *pPixelSource++;
-			BYTE pixelAlpha = *pPixelSource++;
+			auto pixelBlue = *pPixelSource++;
+			auto pixelGreen = *pPixelSource++;
+			auto pixelRed = *pPixelSource++;
+			auto pixelAlpha = *pPixelSource++;
 
 			if (pixelAlpha < BYTE_MAX) {
 				pSource->UnlockBits(&data);

@@ -927,7 +927,7 @@ namespace SpatialQuant
 		hasSemiTransparency = false;
 		m_transparentPixelIndex = -1;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, 0xF, nMaxColors);
 
 		const int length = hasSemiTransparency ? 4 : 3;
 		double dithering_level = 1.0;

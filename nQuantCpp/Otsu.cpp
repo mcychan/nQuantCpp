@@ -12,7 +12,7 @@
 
 namespace OtsuThreshold
 {
-	BYTE alphaThreshold = 0;
+	BYTE alphaThreshold = 0xF;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
@@ -248,7 +248,7 @@ namespace OtsuThreshold
 		auto bitmapHeight = pSrcImg->GetHeight();
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		if (!GrabPixels(pSrcImg, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor))
+		if (!GrabPixels(pSrcImg, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, alphaThreshold))
 			return false;
 
 		if (!isGrayscale)
@@ -261,7 +261,7 @@ namespace OtsuThreshold
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = 2;
 		if (m_transparentPixelIndex >= 0) {
-			pPalette->Entries[0] = m_transparentColor = Color::MakeARGB(0, 51, 102, 102);
+			pPalette->Entries[0] = m_transparentColor;
 			pPalette->Entries[1] = Color::Black;
 		}
 		else {

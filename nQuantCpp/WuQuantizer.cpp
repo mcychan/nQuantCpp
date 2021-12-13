@@ -902,7 +902,7 @@ namespace nQuant
 		}
 		else {
 			vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-			GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
+			GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, 0xF, nMaxColors);
 			if (m_transparentPixelIndex >= 0) {
 				pPalette->Entries[0] = m_transparentColor;
 				pPalette->Entries[1] = Color::Black;

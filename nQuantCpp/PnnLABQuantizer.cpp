@@ -16,7 +16,7 @@ Copyright (c) 2018-2021 Miller Cy Chan
 namespace PnnLABQuant
 {
 	double PR = .2126, PG = .7152, PB = .0722;
-	BYTE alphaThreshold = 0;
+	BYTE alphaThreshold = 0xF;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	double ratio = 1.0;
@@ -288,7 +288,7 @@ namespace PnnLABQuant
 		if (c.GetA() <= alphaThreshold)
 			return k;
 
-		double mindist = USHRT_MAX;
+		double mindist = INT_MAX;
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 
@@ -416,7 +416,7 @@ namespace PnnLABQuant
 		const auto bitmapHeight = pSource->GetHeight();
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, alphaThreshold, nMaxColors);
 
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();

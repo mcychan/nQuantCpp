@@ -638,7 +638,7 @@ namespace EdgeAwareSQuant
 
 		m_transparentPixelIndex = -1;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, 0xF, nMaxColors);
 
 		UINT pixelIndex = 0;
 		// see equation (7) in the paper

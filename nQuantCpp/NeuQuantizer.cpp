@@ -526,26 +526,38 @@ namespace NeuralNet
 		const UINT bitmapHeight = pSource->GetHeight();
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor);
+		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, 0xF, nMaxColors);
 
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		netsize = nMaxColors;		// number of colours used
-		maxnetpos = netsize - 1;
-		initrad = netsize < 8 ? 1 : (netsize >> 3);
-		initradius = initrad * 1.0;
+		if (nMaxColors > 2) {
+			netsize = nMaxColors;		// number of colours used
+			maxnetpos = netsize - 1;
+			initrad = netsize < 8 ? 1 : (netsize >> 3);
+			initradius = initrad * 1.0;
 
-		SetUpArrays();
-		Learn(dither ? 5 : 1, pixels);
-		Inxbuild(pPalette);
+			SetUpArrays();
+			Learn(dither ? 5 : 1, pixels);
+			Inxbuild(pPalette);
 
-		if (nMaxColors > 256) {
-			auto qPixels = make_unique<ARGB[]>(pixels.size());
-			dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
-			Clear();
-			return ProcessImagePixels(pDest, qPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
+			if (nMaxColors > 256) {
+				auto qPixels = make_unique<ARGB[]>(pixels.size());
+				dithering_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
+				Clear();
+				return ProcessImagePixels(pDest, qPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
+			}
+		}
+		else {
+			if (m_transparentPixelIndex >= 0) {
+				pPalette->Entries[0] = m_transparentColor;
+				pPalette->Entries[1] = Color::Black;
+			}
+			else {
+				pPalette->Entries[0] = Color::Black;
+				pPalette->Entries[1] = Color::White;
+			}
 		}
 
 		if (hasSemiTransparency || nMaxColors <= 32)
