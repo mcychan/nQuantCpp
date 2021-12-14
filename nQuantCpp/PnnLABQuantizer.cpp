@@ -183,12 +183,12 @@ namespace PnnLABQuant
 				ratio = min(1.0, proportional - weight * exp(1.997));
 		}
 		else if (nMaxColors > 256)
-			ratio = min(hasSemiTransparency ? 0.0 : 1.0, 1 - 1.0 / proportional);
+			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : 1.0, 1 - 1.0 / proportional);
 		else
-			ratio = min(hasSemiTransparency ? 0.0 : 1.0, 0.14 * exp(4.681 * proportional));
+			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : 1.0, 0.14 * exp(4.681 * proportional));
 
 		if (quan_rt < 0)
-			ratio = min(1.0, weight * exp(1.997));
+			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : 1.0, weight * exp(1.997));
 				
 		/* Initialize nearest neighbors and build heap of them */
 		auto heap = make_unique<int[]>(bins.size() + 1);
