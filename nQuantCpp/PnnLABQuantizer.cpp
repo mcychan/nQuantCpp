@@ -59,8 +59,8 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab2;
 			lab2.alpha = bins[i].ac, lab2.L = bins[i].Lc, lab2.A = bins[i].Ac, lab2.B = bins[i].Bc;
-			auto alphaDiff = hasSemiTransparency ? abs(lab2.alpha - lab1.alpha) : 0;
-			auto nerr = nerr2 * sqr(alphaDiff) / exp(1.5);
+			auto alphaDiff = hasSemiTransparency ? (lab2.alpha - lab1.alpha) / exp(1.5) : 0;
+			auto nerr = nerr2 * sqr(alphaDiff);
 			if (nerr >= err)
 				continue;
 
@@ -294,30 +294,19 @@ namespace PnnLABQuant
 
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			double curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) : 0;
+			auto curdist = hasSemiTransparency ? abs(c2.GetA() - c.GetA()) / exp(0.75) : 0;
 			if (curdist > mindist)
 				continue;
 			
+			getLab(c2, lab2);
 			if (nMaxColors > 32 || nMaxColors <= 4 || hasSemiTransparency) {
-				curdist += PR * sqr(c2.GetR() - c.GetR());
+				curdist += abs(lab2.L - lab1.L);
 				if (curdist > mindist)
 					continue;
 
-				curdist += PG * sqr(c2.GetG() - c.GetG());
-				if (curdist > mindist)
-					continue;
-
-				curdist += PB * sqr(c2.GetB() - c.GetB());
-				if (PB < 1) {
-					if (curdist > mindist)
-						continue;
-
-					getLab(c2, lab2);
-					curdist += sqr(lab2.B - lab1.B) / 2.0;
-				}
+				curdist += _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B));
 			}
-			else {
-				getLab(c2, lab2);
+			else {				
 				auto deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
