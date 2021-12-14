@@ -176,11 +176,11 @@ namespace PnnLABQuant
 		int h, l, l2;
 		if (quan_rt != 0 && nMaxColors < 64) {
 			if (proportional > .018 && proportional < .022)
-				ratio = min(1.0, proportional + nMaxColors * exp(3.872) / maxbins);
+				ratio = min(1.0, proportional + weight * exp(3.872));
 			else if (proportional > .1)
-				ratio = min(1.0, proportional - nMaxColors * exp(3.23) / maxbins);
+				ratio = min(1.0, 1.0 - weight);
 			else
-				ratio = min(1.0, proportional - nMaxColors * exp(1.997) / maxbins);
+				ratio = min(1.0, proportional - weight * exp(1.997));
 		}
 		else if (nMaxColors > 256)
 			ratio = min(hasSemiTransparency ? 0.0 : 1.0, 1 - 1.0 / proportional);
@@ -188,7 +188,7 @@ namespace PnnLABQuant
 			ratio = min(hasSemiTransparency ? 0.0 : 1.0, 0.14 * exp(4.681 * proportional));
 
 		if (quan_rt < 0)
-			ratio = min(1.0, nMaxColors * exp(1.997) / maxbins);
+			ratio = min(1.0, weight * exp(1.997));
 				
 		/* Initialize nearest neighbors and build heap of them */
 		auto heap = make_unique<int[]>(bins.size() + 1);
@@ -205,8 +205,8 @@ namespace PnnLABQuant
 			heap[l] = i;
 		}
 
-		if (quan_rt > 0 && nMaxColors < 64 && (proportional < .023 || proportional > .05))
-			ratio = min(1.0, proportional - nMaxColors * exp(2.347) / maxbins);
+		if (quan_rt > 0 && nMaxColors < 64 && (proportional < .023 || proportional > .05) && proportional < .1)
+			ratio = min(1.0, proportional - weight * exp(2.347));
 
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
