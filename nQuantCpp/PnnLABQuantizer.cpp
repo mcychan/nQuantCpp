@@ -299,7 +299,12 @@ namespace PnnLABQuant
 				continue;
 			
 			getLab(c2, lab2);
-			if (nMaxColors > 32 || nMaxColors <= 4 || hasSemiTransparency) {
+			if (nMaxColors <= 4) {
+				curdist = sqr(c2.GetR() - c.GetR()) + sqr(c2.GetG() - c.GetG()) + sqr(c2.GetB() - c.GetB());
+				if (hasSemiTransparency)
+					curdist += sqr(c2.GetA() - c.GetA());
+			}
+			else if (nMaxColors > 32 || hasSemiTransparency) {
 				curdist += abs(lab2.L - lab1.L);
 				if (curdist > mindist)
 					continue;
