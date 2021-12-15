@@ -42,7 +42,7 @@ namespace PnnLABQuant
 			lab1 = got->second;
 	}
 
-	void find_nn(pnnbin* bins, int idx)
+	void find_nn(pnnbin* bins, int idx, bool texicab)
 	{
 		int nn = 0;
 		double err = 1e100;
@@ -64,15 +64,24 @@ namespace PnnLABQuant
 			if (nerr >= err)
 				continue;
 
-			nerr += (1 - ratio) * nerr2 * sqr(lab2.L - lab1.L);
-			if (nerr >= err)
-				continue;
+			if (hasSemiTransparency || !texicab) {
+				nerr += (1 - ratio) * nerr2 * sqr(lab2.L - lab1.L);
+				if (nerr >= err)
+					continue;
 
-			nerr += (1 - ratio) * nerr2 * sqr(lab2.A - lab1.A);
-			if (nerr >= err)
-				continue;
+				nerr += (1 - ratio) * nerr2 * sqr(lab2.A - lab1.A);
+				if (nerr >= err)
+					continue;
 
-			nerr += (1 - ratio) * nerr2 * sqr(lab2.B - lab1.B);
+				nerr += (1 - ratio) * nerr2 * sqr(lab2.B - lab1.B);
+			}
+			else {
+				nerr += (1 - ratio) * nerr2 * abs(lab2.L - lab1.L);
+				if (nerr >= err)
+					continue;
+
+				nerr += (1 - ratio) * nerr2 * _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B));
+			}
 
 			if (nerr >= err)
 				continue;
@@ -173,6 +182,7 @@ namespace PnnLABQuant
 		}
 		bins[j].cnt = quanFn(bins[j].cnt);
 		
+		const bool texicab = proportional > .025;
 		int h, l, l2;
 		if (quan_rt != 0 && nMaxColors < 64) {
 			if (proportional > .018 && proportional < .022)
@@ -193,7 +203,7 @@ namespace PnnLABQuant
 		/* Initialize nearest neighbors and build heap of them */
 		auto heap = make_unique<int[]>(bins.size() + 1);
 		for (int i = 0; i < maxbins; ++i) {
-			find_nn(bins.data(), i);
+			find_nn(bins.data(), i, texicab);
 			/* Push slot on heap */
 			auto err = bins[i].err;
 			for (l = ++heap[0]; l > 1; l = l2) {
@@ -223,7 +233,7 @@ namespace PnnLABQuant
 					b1 = heap[1] = heap[heap[0]--];
 				else /* Too old error value */
 				{
-					find_nn(bins.data(), b1);
+					find_nn(bins.data(), b1, texicab&& proportional < 1);
 					tb.tm = i;
 				}
 				/* Push slot down */
