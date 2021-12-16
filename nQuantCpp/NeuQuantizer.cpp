@@ -455,33 +455,51 @@ namespace NeuralNet
 				continue;
 
 			getLab(c2, lab2);
-			if (nMaxColors > 32 || nMaxColors <= 4 || hasSemiTransparency) {
-				curdist += PR * sqr(c2.GetR() - c.GetR());
+			if (nMaxColors <= 4) {
+				curdist += sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
 
-				curdist += PG * sqr(c2.GetG() - c.GetG());
+				curdist += sqr(c2.GetG() - c.GetG());
 				if (curdist > mindist)
 					continue;
 
-				curdist += PB * sqr(c2.GetB() - c.GetB());
-				if (PB < 1) {
+				curdist += sqr(c2.GetB() - c.GetB());
+				if (hasSemiTransparency) {
 					if (curdist > mindist)
 						continue;
-
-					curdist += sqr(lab2.B - lab1.B) / 2.0;
+					curdist += sqr(c2.GetA() - c.GetA());
 				}
 			}
+			else if (nMaxColors > 32 || hasSemiTransparency) {
+				if (hasSemiTransparency)
+					curdist /= exp(0.75);
+
+				curdist += abs(lab2.L - lab1.L);
+				if (curdist > mindist)
+					continue;
+
+				curdist += _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B));
+			}
 			else {
-				curdist += sqr(lab2.L - lab1.L);
+				auto deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
+				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
 
-				curdist += sqr(lab2.A - lab1.A);
+				double a1Prime, a2Prime, CPrime1, CPrime2;
+				auto deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
+				curdist += sqr(deltaC_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
 
-				curdist += sqr(lab2.B - lab1.B);				
+				double barCPrime, barhPrime;
+				auto deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
+				curdist += sqr(deltaH_prime_div_k_L_S_L);
+				if (curdist > mindist)
+					continue;
+
+				curdist += CIELABConvertor::R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
 			}
 			
 			if (curdist > mindist)

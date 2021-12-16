@@ -418,8 +418,8 @@ namespace EdgeAwareSQuant
 					lab2.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[l2][3]) : BYTE_MAX;
 					lab2.L = palette[l2][0], lab2.A = palette[l2][1], lab2.B = palette[l2][2];
 
-					auto curDist = sqr(lab2.L - lab1.L) + sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B);
-					curDist += sqr(lab2.alpha - lab1.alpha) / exp(1.5);
+					auto curDist = abs(lab2.L - lab1.L) + _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B));
+					curDist += sqr(lab2.alpha - lab1.alpha) / exp(0.75);
 
 					centroidDist[l1][l2] = pair<float, int>(curDist, l2);
 					centroidDist[l2][l1] = pair<float, int>(curDist, l1);
@@ -601,20 +601,18 @@ namespace EdgeAwareSQuant
 
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			double curdist = sqr(c2.GetA() - c.GetA()) / exp(1.5);
+			auto curdist = sqr(c2.GetA() - c.GetA()) / exp(0.75);
 			if (curdist > mindist)
 				continue;
 
 			getLab(c2, lab2);
-			curdist += sqr(lab2.L - lab1.L);
+			curdist += abs(lab2.L - lab1.L);
 			if (curdist > mindist)
 				continue;
 
-			curdist += sqr(lab2.A - lab1.A);
+			curdist += _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B));
 			if (curdist > mindist)
 				continue;
-
-			curdist += sqr(lab2.B - lab1.B);
 
 			if (curdist > mindist)
 				continue;

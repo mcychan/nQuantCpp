@@ -935,42 +935,51 @@ namespace DivQuant
 
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			double curdist = sqr(c2.GetA() - c.GetA()) / exp(1.5);
+			double curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
 
 			getLab(c2, lab2);
-			if (nMaxColors > 32 || nMaxColors <= 4 || hasSemiTransparency) {
-				curdist += PR * sqr(c2.GetR() - c.GetR());
+			if (nMaxColors <= 4 || hasSemiTransparency) {
+				curdist += sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
 
-				curdist += PG * sqr(c2.GetG() - c.GetG());
+				curdist += sqr(c2.GetG() - c.GetG());
 				if (curdist > mindist)
 					continue;
 
-				curdist += PB * sqr(c2.GetB() - c.GetB());
-				if (PB < 1) {
+				curdist += sqr(c2.GetB() - c.GetB());
+				if (hasSemiTransparency) {
 					if (curdist > mindist)
 						continue;
-
-					curdist += sqr(lab2.B - lab1.B) / 2.0;
+					curdist += sqr(c2.GetA() - c.GetA());
 				}
 			}
+			else if (nMaxColors > 32 || hasSemiTransparency) {
+				if (hasSemiTransparency)
+					curdist /= exp(0.75);
+
+				curdist += abs(lab2.L - lab1.L);
+				if (curdist > mindist)
+					continue;
+
+				curdist += _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B));
+			}
 			else {
-				double deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
+				auto deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
 
 				double a1Prime, a2Prime, CPrime1, CPrime2;
-				double deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
+				auto deltaC_prime_div_k_L_S_L = CIELABConvertor::C_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2);
 				curdist += sqr(deltaC_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;
 
 				double barCPrime, barhPrime;
-				double deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
+				auto deltaH_prime_div_k_L_S_L = CIELABConvertor::H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
 				curdist += sqr(deltaH_prime_div_k_L_S_L);
 				if (curdist > mindist)
 					continue;

@@ -883,29 +883,25 @@ namespace SpatialQuant
 		if (c.GetA() <= 0)
 			return k;
 
-		double mindist = SHORT_MAX;
+		double mindist = INT_MAX;
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			double curdist = sqr(c2.GetA() - c.GetA()) / exp(1.5);
+			auto curdist = sqr(c2.GetA() - c.GetA()) / exp(0.75);
 			if (curdist > mindist)
 				continue;
 
 			getLab(c2, lab2);
-			curdist += sqr(lab2.L - lab1.L);
+			curdist += abs(lab2.L - lab1.L);
 			if (curdist > mindist)
 				continue;
 
-			curdist += sqr(lab2.A - lab1.A);
+			curdist += _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B));
 			if (curdist > mindist)
 				continue;
 
-			curdist += sqr(lab2.B - lab1.B);			
-
-			if (curdist > mindist)
-				continue;
 			mindist = curdist;
 			k = i;
 		}
