@@ -614,8 +614,6 @@ namespace EdgeAwareSQuant
 			if (curdist > mindist)
 				continue;
 
-			if (curdist > mindist)
-				continue;
 			mindist = curdist;
 			k = i;
 		}

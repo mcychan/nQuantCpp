@@ -189,6 +189,8 @@ namespace PnnLABQuant
 				ratio = min(1.0, proportional + weight * exp(3.872));
 			else if (proportional > .1)
 				ratio = min(1.0, 1.0 - weight);
+			else if (proportional > .03)
+				ratio = min(1.0, weight * exp(2.28));
 			else
 				ratio = min(1.0, proportional - weight * exp(1.997));
 		}
