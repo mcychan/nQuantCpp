@@ -419,7 +419,8 @@ namespace EdgeAwareSQuant
 					lab2.L = palette[l2][0], lab2.A = palette[l2][1], lab2.B = palette[l2][2];
 
 					auto curDist = abs(lab2.L - lab1.L) + _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B));
-					curDist += sqr(lab2.alpha - lab1.alpha) / exp(0.75);
+					if (hasSemiTransparency)
+						curDist += sqr(lab2.alpha - lab1.alpha) / exp(0.75);
 
 					centroidDist[l1][l2] = pair<float, int>(curDist, l2);
 					centroidDist[l2][l1] = pair<float, int>(curDist, l1);
@@ -565,9 +566,9 @@ namespace EdgeAwareSQuant
 						CIELABConvertor::Lab lab1, lab2;
 						getLab(pixelXY, lab1);
 						getLab(pixelXXYY, lab2);
-						float colorD = sqr(lab2.L - lab1.L) + sqr(lab2.A - lab1.A) + sqr(lab2.B - lab2.B);
+						float colorD = abs(lab2.L - lab1.L) + _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab2.B));
 						if (hasSemiTransparency)
-							colorD += sqr(pixelXY.GetA() - pixelXXYY.GetA()) / exp(1.5);
+							colorD += sqr(pixelXY.GetA() - pixelXXYY.GetA()) / exp(0.75);
 						auto tmpW = exp(-spaceD / spacerDivisor - colorD / colorDivisor);
 
 						weightSum += tmpW;
