@@ -418,9 +418,9 @@ namespace EdgeAwareSQuant
 					lab2.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[l2][3]) : BYTE_MAX;
 					lab2.L = palette[l2][0], lab2.A = palette[l2][1], lab2.B = palette[l2][2];
 
-					auto curDist = abs(lab2.L - lab1.L) + _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B));
+					auto curDist = sqr(lab2.L - lab1.L) + sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B);
 					if (hasSemiTransparency)
-						curDist += sqr(lab2.alpha - lab1.alpha) / exp(0.75);
+						curDist += sqr(lab2.alpha - lab1.alpha) / exp(1.5);
 
 					centroidDist[l1][l2] = pair<float, int>(curDist, l2);
 					centroidDist[l2][l1] = pair<float, int>(curDist, l1);
