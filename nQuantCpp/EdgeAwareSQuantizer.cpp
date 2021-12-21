@@ -25,7 +25,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "stdafx.h"
 #include "EdgeAwareSQuantizer.h"
-#include "MedianCut.h"
+#include "DivQuantizer.h"
 #include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
 #include "BlueNoise.h"
@@ -659,8 +659,8 @@ namespace EdgeAwareSQuant
 		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
 			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
 
-		MedianCutQuant::MedianCut mmcQuantizer;
-		mmcQuantizer.quantizeImg(pixels, bitmapWidth, saliencyMap, pPalette, nMaxColors);
+		DivQuant::DivQuantizer divQuantizer;
+		divQuantizer.quant_varpart_fast(pixels.data(), pixels.size(), pPalette);
 
 		const float divisor = hasSemiTransparency ? 255.0f : 1.0f;
 		vector<vector_fixed<float, 4> > palette(nMaxColors);
