@@ -167,7 +167,7 @@ namespace PnnLABQuant
 		if ((m_transparentPixelIndex >= 0 || hasSemiTransparency) && nMaxColors < 32)
 			quan_rt = -1;
 		
-		auto weight = nMaxColors * 1.0 / maxbins;
+		auto weight = min(0.9, nMaxColors * 1.0 / maxbins);
 		if (weight > .0015 && weight < .002)
 			quan_rt = 2;
 
@@ -199,7 +199,7 @@ namespace PnnLABQuant
 		else if (nMaxColors > 256)
 			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : 1.0, 1 - 1.0 / proportional);
 		else
-			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : 1.0, 0.14 * exp(4.681 * proportional));
+			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : .99, max(.98, 1 - weight * .7));
 
 		if (quan_rt < 0)
 			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : 1.0, weight * exp(1.997));
