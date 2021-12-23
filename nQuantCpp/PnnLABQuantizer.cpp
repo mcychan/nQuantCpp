@@ -182,7 +182,10 @@ namespace PnnLABQuant
 		}
 		bins[j].cnt = quanFn(bins[j].cnt);
 		
-		const bool texicab = proportional > .025;
+		const bool texicab = proportional > .025;		
+		if(weight < .025)
+			PR = PG = PB = 1;
+
 		int h, l, l2;
 		if (quan_rt != 0 && nMaxColors < 64) {
 			if (proportional > .018 && proportional < .022)
@@ -380,7 +383,7 @@ namespace PnnLABQuant
 
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);		
-				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
+				auto err = sqr(c2.GetR() - c.GetR()) + sqr(c2.GetG() - c.GetG()) + sqr(c2.GetB() - c.GetB());
 				if (err < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];
