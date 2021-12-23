@@ -118,10 +118,10 @@ namespace PnnLABQuant
 	QuanFn getQuanFn(const UINT& nMaxColors, const short quan_rt) {
 		if (quan_rt > 0) {
 			if (quan_rt > 1)
-				return[](const float& cnt) { return (float)(int) pow(cnt, 0.75); };
+				return[](const float& cnt) { return (float)(int)pow(cnt, 0.75); };
 			if (nMaxColors < 64)
-				return[](const float& cnt) { return (float)(int) _sqrt(cnt); };
-			return[](const float& cnt) { return (float) _sqrt(cnt); };
+				return[](const float& cnt) { return (float)(int)_sqrt(cnt); };
+			return[](const float& cnt) { return (float)_sqrt(cnt); };
 		}
 		return[](const float& cnt) { return cnt; };
 	}
@@ -166,7 +166,7 @@ namespace PnnLABQuant
 		auto proportional = sqr(nMaxColors) / maxbins;
 		if ((m_transparentPixelIndex >= 0 || hasSemiTransparency) && nMaxColors < 32)
 			quan_rt = -1;
-		
+
 		auto weight = min(0.9, nMaxColors * 1.0 / maxbins);
 		if (weight > .0015 && weight < .002)
 			quan_rt = 2;
@@ -178,15 +178,14 @@ namespace PnnLABQuant
 			bins[j].fw = j + 1;
 			bins[j + 1].bk = j;
 
-			bins[j].cnt = quanFn(bins[j].cnt);			
+			bins[j].cnt = quanFn(bins[j].cnt);
 		}
 		bins[j].cnt = quanFn(bins[j].cnt);
-		
-		const bool texicab = proportional > .025;		
-		if(weight < .025)
-			PR = PG = PB = 1;
 
-		int h, l, l2;
+		const bool texicab = proportional > .025;
+		if (weight < .025)
+			PR = PG = PB = 1;
+		
 		if (quan_rt != 0 && nMaxColors < 64) {
 			if (proportional > .018 && proportional < .022)
 				ratio = min(1.0, proportional + weight * exp(3.872));
@@ -206,7 +205,8 @@ namespace PnnLABQuant
 
 		if (quan_rt < 0)
 			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : 1.0, weight * exp(1.997));
-				
+
+		int h, l, l2;
 		/* Initialize nearest neighbors and build heap of them */
 		auto heap = make_unique<int[]>(bins.size() + 1);
 		for (int i = 0; i < maxbins; ++i) {
@@ -240,7 +240,7 @@ namespace PnnLABQuant
 					b1 = heap[1] = heap[heap[0]--];
 				else /* Too old error value */
 				{
-					find_nn(bins.data(), b1, texicab&& proportional < 1);
+					find_nn(bins.data(), b1, texicab && proportional < 1);
 					tb.tm = i;
 				}
 				/* Push slot down */
@@ -314,7 +314,7 @@ namespace PnnLABQuant
 			auto curdist = hasSemiTransparency ? abs(c2.GetA() - c.GetA()) / exp(0.75) : 0;
 			if (curdist > mindist)
 				continue;
-			
+
 			getLab(c2, lab2);
 			if (nMaxColors <= 4) {
 				curdist += sqr(c2.GetR() - c.GetR());
@@ -339,7 +339,7 @@ namespace PnnLABQuant
 
 				curdist += _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B));
 			}
-			else {				
+			else {
 				auto deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
@@ -382,8 +382,8 @@ namespace PnnLABQuant
 			closest[2] = closest[3] = USHRT_MAX;
 
 			for (; k < nMaxColors; ++k) {
-				Color c2(pPalette->Entries[k]);		
-				auto err = sqr(c2.GetR() - c.GetR()) + sqr(c2.GetG() - c.GetG()) + sqr(c2.GetB() - c.GetB());
+				Color c2(pPalette->Entries[k]);
+				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
 				if (err < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];
@@ -428,9 +428,9 @@ namespace PnnLABQuant
 			return dither_image(pixels, pPalette, ditherFn, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
 
 		for (int pixelIndex = 0; pixelIndex < (width * height); ++pixelIndex)
-			qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);		
+			qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
 		return true;
-	}	
+	}
 
 	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
@@ -455,7 +455,7 @@ namespace PnnLABQuant
 				pPalette->Entries[0] = Color::Black;
 				pPalette->Entries[1] = Color::White;
 			}
-		}		
+		}
 
 		bool noBias = m_transparentPixelIndex >= 0 || nMaxColors < 64;
 		if (noBias)
@@ -470,7 +470,7 @@ namespace PnnLABQuant
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), 1.75f);
 		else if (nMaxColors < 64 && nMaxColors > 32)
 			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
-		else if(nMaxColors <= 32)
+		else if (nMaxColors <= 32)
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), 1.5f);
 		else {
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
