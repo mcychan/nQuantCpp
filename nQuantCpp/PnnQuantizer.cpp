@@ -347,8 +347,6 @@ namespace PnnQuant
 		DitherFn ditherFn = dither ? nearestColorIndex : closestColorIndex;
 		if (hasSemiTransparency && nMaxColors <= 256)
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), 1.75f);
-		else if (nMaxColors < 64 && nMaxColors > 32)
-			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		else if (nMaxColors <= 32)
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), nMaxColors > 2 ? 1.8f : 1.5f);
 		else {

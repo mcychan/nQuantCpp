@@ -204,7 +204,7 @@ namespace PnnLABQuant
 		else if (nMaxColors > 256)
 			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : 1.0, 1 - 1.0 / proportional);
 		else
-			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : .99, max(.98, 1 - weight * .7));
+			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : 1.0, max(.98, 1 - weight * .7));
 
 		if (quan_rt < 0)
 			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : 1.0, weight * exp(1.997));
@@ -471,8 +471,6 @@ namespace PnnLABQuant
 		DitherFn ditherFn = hasSemiTransparency ? nearestColorIndex : closestColorIndex;
 		if (hasSemiTransparency && nMaxColors <= 256)
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), 1.75f);
-		else if (nMaxColors < 64 && nMaxColors > 32)
-			quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 		else if (nMaxColors <= 32)
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), 1.5f);
 		else {
