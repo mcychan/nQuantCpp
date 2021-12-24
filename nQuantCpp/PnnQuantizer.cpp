@@ -107,6 +107,11 @@ namespace PnnQuant
 		auto weight = nMaxColors * 1.0 / maxbins;
 		if (weight > .003 && weight < .005)
 			quan_rt = 0;
+		if (weight < .025) {
+			auto delta = 3 * (.025 + weight);
+			PG -= delta;
+			PB += delta;
+		}
 
 		auto quanFn = getQuanFn(nMaxColors, quan_rt);
 
@@ -319,7 +324,7 @@ namespace PnnQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		if (hasSemiTransparency || nMaxColors <= 32 || nMaxColors > 256)
+		if (hasSemiTransparency || nMaxColors <= 32)
 			PR = PG = PB = 1;
 		else if (bitmapWidth < 512 || bitmapHeight < 512) {
 			PR = 0.299; PG = 0.587; PB = 0.114;

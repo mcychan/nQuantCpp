@@ -170,6 +170,11 @@ namespace PnnLABQuant
 		auto weight = min(0.9, nMaxColors * 1.0 / maxbins);
 		if (weight > .0015 && weight < .002)
 			quan_rt = 2;
+		if (weight < .025) {
+			auto delta = 3 * (.025 + weight);
+			PG -= delta;
+			PB += delta;
+		}
 
 		auto quanFn = getQuanFn(nMaxColors, quan_rt);
 
@@ -182,9 +187,7 @@ namespace PnnLABQuant
 		}
 		bins[j].cnt = quanFn(bins[j].cnt);
 
-		const bool texicab = proportional > .025;
-		if (weight < .025)
-			PR = PG = PB = 1;
+		const bool texicab = proportional > .025;		
 		
 		if (quan_rt != 0 && nMaxColors < 64) {
 			if (proportional > .018 && proportional < .022)
