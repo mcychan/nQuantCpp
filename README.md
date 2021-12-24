@@ -25,7 +25,7 @@ High quality and fast<br />
 <img src="https://repository-images.githubusercontent.com/121180544/77908405-ea24-453d-8af9-e255db587c65" alt="Fast pairwise nearest neighbor based algorithm with CIELAB color space with CIELAB color space in 16 colors"></p>
 <p><b><a href="http://cg.cs.tsinghua.edu.cn/people/~huanghz/publications/TIP-2015-CombinedColorQuantization.pdf">Efficient, Edge-Aware, Combined Color Quantization and Dithering </a></b> with CIELAB color space in 16 colors<br />
 Higher quality for 32 or less colors but slower<br />
-<img src="https://i.stack.imgur.com/Vk0dG.png" alt="Efficient, Edge-Aware, Combined Color Quantization and Dithering with CIELAB color space in 16 colors"></p>
+<img src="https://user-images.githubusercontent.com/26831069/147355642-d72a9e2b-a47a-463a-bfb5-98d1a1def84a.png" alt="Efficient, Edge-Aware, Combined Color Quantization and Dithering with CIELAB color space in 16 colors"></p>
 <p><b><a href="https://people.eecs.berkeley.edu/~dcoetzee/downloads/scolorq/">Spatial color quantization</a></b> with CIELAB color space in 16 colors<br />
 Higher quality for 32 or less colors but the slowest<br />
 <img src="https://i.stack.imgur.com/YB3hZ.png" alt="Spatial color quantization with CIELAB color space in 16 colors"></p>
