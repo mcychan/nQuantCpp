@@ -510,11 +510,11 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 			if (noBias && a_pix > 0xF0) {
 				int offset = GetARGBIndex(c1, hasSemiTransparency, transparentPixelIndex >= 0);
 				if (!lookup[offset])
-					lookup[offset] = ditherFn(pPalette, nMaxColors, argb) + 1;
+					lookup[offset] = ditherFn(pPalette, argb, i + j) + 1;
 				qPixels[pixelIndex] = lookup[offset] - 1;
 			}
 			else
-				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, argb);
+				qPixels[pixelIndex] = ditherFn(pPalette, argb, i + j);
 
 			Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 
@@ -612,11 +612,11 @@ bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn 
 			if (nMaxColors < 64) {
 				int offset = GetARGBIndex(c1, hasSemiTransparency, transparentPixelIndex >= 0);
 				if (!lookup[offset])
-					lookup[offset] = ditherFn(pPalette, nMaxColors, argb) + 1;
+					lookup[offset] = ditherFn(pPalette, argb, i + j) + 1;
 				qPixels[pixelIndex] = lookup[offset] - 1;
 			}
 			else
-				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, argb);
+				qPixels[pixelIndex] = ditherFn(pPalette, argb, i + j);
 
 			Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 			qPixels[pixelIndex] = hasSemiTransparency ? c2.GetValue() : GetARGBIndex(c2, false, transparentPixelIndex >= 0);

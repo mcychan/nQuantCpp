@@ -585,7 +585,7 @@ namespace EdgeAwareSQuant
 		}
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -600,6 +600,7 @@ namespace EdgeAwareSQuant
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 
+		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
 			auto curdist = sqr(c2.GetA() - c.GetA()) / exp(0.75);

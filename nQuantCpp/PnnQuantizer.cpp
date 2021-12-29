@@ -207,7 +207,7 @@ namespace PnnQuant
 			pPalette->Count = nMaxColors = k + 1;
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -219,6 +219,7 @@ namespace PnnQuant
 			return k;
 
 		double mindist = INT_MAX;
+		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
 			double curdist = sqr(c2.GetA() - c.GetA());
@@ -244,13 +245,14 @@ namespace PnnQuant
 		return k;
 	}
 
-	unsigned short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
 	{
 		UINT k = 0;
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
 			return k;
 
+		const auto nMaxColors = pPalette->Count;
 		vector<unsigned short> closest(4);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
@@ -280,15 +282,15 @@ namespace PnnQuant
 			closest = got->second;
 
 		auto MAX_ERR = pPalette->Count;
-		if (closest[2] == 0 || (rand() % (closest[3] + closest[2])) <= closest[3]) {
-			if (closest[2] >= MAX_ERR)
-				return nearestColorIndex(pPalette, nMaxColors, argb);
-			return closest[0];
-		}
+		int idx = (pos + 1) % 2;
+		if (closest[3] * .67 < (closest[3] - closest[2]))
+			idx = 0;
+		else if (closest[0] > closest[1])
+			idx = pos % 2;
 
-		if (closest[3] >= MAX_ERR)
-			return nearestColorIndex(pPalette, nMaxColors, argb);
-		return closest[1];
+		if (closest[idx + 2] >= MAX_ERR)
+			return nearestColorIndex(pPalette, argb, pos);
+		return closest[idx];
 	}
 
 	inline int GetColorIndex(const Color& c)

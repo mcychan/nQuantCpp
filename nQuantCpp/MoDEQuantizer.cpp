@@ -400,7 +400,7 @@ namespace MoDEQuant
 		return 0;
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
 	{
 		unsigned short k = 0;
 		Color c(argb);
@@ -408,6 +408,7 @@ namespace MoDEQuant
 			return k;
 
 		UINT mindist = INT_MAX;
+		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
 			UINT curdist = sqr(c2.GetA() - c.GetA());
@@ -432,10 +433,12 @@ namespace MoDEQuant
 		return k;
 	}
 
-	unsigned short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
 	{
 		UINT k = 0;
 		Color c(argb);
+		const auto nMaxColors = pPalette->Count;
+
 		vector<unsigned short> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {

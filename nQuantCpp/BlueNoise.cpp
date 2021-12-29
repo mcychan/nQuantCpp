@@ -202,7 +202,7 @@ namespace BlueNoise
 				a_pix = static_cast<BYTE>(min(BYTE_MAX, max(a_pix + (adj * (a_pix - c1.GetA())), 0)));
 
 				c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-				qPixels[x + y * width] = ditherFn(pPalette, pPalette->Count, c1.GetValue());
+				qPixels[x + y * width] = ditherFn(pPalette, c1.GetValue(), x + y);
 			}
 		}
     }

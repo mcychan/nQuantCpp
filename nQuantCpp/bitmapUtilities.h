@@ -58,7 +58,7 @@ BOOL FixBitmapHeight(PVOID pDib, ULONG nSize, BOOL bTopDown);
 
 BOOL FillBitmapFileHeader(LPCVOID pDib, PBITMAPFILEHEADER pbmfh);
 
-typedef unsigned short (*DitherFn)(const ColorPalette*, const UINT nMaxColors, const ARGB);
+typedef unsigned short (*DitherFn)(const ColorPalette*, const ARGB argb, const UINT pos);
 
 typedef int (*GetColorIndexFn)(const Color&);
 

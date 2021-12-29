@@ -641,10 +641,12 @@ namespace nQuant
 			pPalette->Count = lookupsCount;
 	}
 
-	unsigned short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
 	{
 		UINT k = 0;
 		Color c(argb);
+		const auto nMaxColors = pPalette->Count;
+
 		vector<unsigned short> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {

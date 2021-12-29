@@ -108,7 +108,7 @@ namespace OtsuThreshold
 		}
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -120,6 +120,7 @@ namespace OtsuThreshold
 			return k;
 
 		double mindist = INT_MAX;
+		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
 			double curdist = sqr(c2.GetA() - c.GetA());

@@ -65,11 +65,11 @@ namespace Riemersma
             if (m_pPalette->Count < 64) {
                 int offset = m_getColorIndexFn(c1);
                 if (!m_lookup[offset])
-                    m_lookup[offset] = m_ditherFn(m_pPalette, m_pPalette->Count, c1.GetValue()) + 1;
+                    m_lookup[offset] = m_ditherFn(m_pPalette, c1.GetValue(), x + y) + 1;
                 m_qPixels[x + y * m_width] = m_lookup[offset] - 1;
             }
             else
-                m_qPixels[x + y * m_width] = m_ditherFn(m_pPalette, m_pPalette->Count, c1.GetValue());
+                m_qPixels[x + y * m_width] = m_ditherFn(m_pPalette, c1.GetValue(), x + y);
 
 	        errorq.erase(errorq.begin());
 	        Color c2 = m_pPalette->Entries[m_qPixels[x + y * m_width]];

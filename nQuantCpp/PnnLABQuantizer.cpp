@@ -297,7 +297,7 @@ namespace PnnLABQuant
 			pPalette->Count = nMaxColors = k + 1;
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -312,6 +312,7 @@ namespace PnnLABQuant
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 
+		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
 			auto curdist = hasSemiTransparency ? abs(c2.GetA() - c.GetA()) / exp(0.75) : 0;
@@ -372,18 +373,19 @@ namespace PnnLABQuant
 		return k;
 	}
 
-	unsigned short closestColorIndex(const ColorPalette* pPalette, const UINT nMaxColors, const ARGB argb)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
 	{
 		UINT k = 0;
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
 			return k;
 
+		const auto nMaxColors = pPalette->Count;
 		vector<unsigned short> closest(4);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;
-
+			
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
 				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
@@ -408,15 +410,13 @@ namespace PnnLABQuant
 			closest = got->second;
 
 		auto MAX_ERR = pPalette->Count;
-		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3]) {
-			if (closest[2] >= MAX_ERR)
-				return nearestColorIndex(pPalette, nMaxColors, argb);
-			return closest[0];
-		}
+		int idx = 1;
+		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3])
+			idx = 0;
 
-		if (closest[3] >= MAX_ERR)
-			return nearestColorIndex(pPalette, nMaxColors, argb);
-		return closest[1];
+		if (closest[idx + 2] >= MAX_ERR)
+			return nearestColorIndex(pPalette, argb, pos);
+		return closest[idx];
 	}
 
 	inline int GetColorIndex(const Color& c)
