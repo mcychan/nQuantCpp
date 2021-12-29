@@ -366,6 +366,9 @@ namespace PnnQuant
 			}
 		}
 
+		if(!dither)
+			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
+
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];
 			if (nMaxColors > 2)
