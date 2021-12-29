@@ -521,7 +521,7 @@ namespace NeuralNet
 		UINT pixelIndex = 0;
 		for (UINT j = 0; j < height; ++j) {
 			for (UINT i = 0; i < width; ++i)
-				qPixels[pixelIndex++] = nearestColorIndex(pPalette, nMaxColors, pixels[pixelIndex]);
+				qPixels[pixelIndex++] = nearestColorIndex(pPalette, pixels[pixelIndex], i + j);
 		}
 
 		return true;

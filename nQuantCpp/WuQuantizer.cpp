@@ -861,7 +861,7 @@ namespace nQuant
 		}
 
 		for (int i = 0; i < (width * height); ++i)
-			qPixels[i] = closestColorIndex(pPalette, pPalette->Count, pixels[i]);
+			qPixels[i] = closestColorIndex(pPalette, pixels[i], i);
 
 		BlueNoise::dither(width, height, pixels, pPalette, closestColorIndex, GetColorIndex, qPixels);
 		return true;
