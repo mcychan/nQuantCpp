@@ -483,7 +483,7 @@ namespace MoDEQuant
 		UINT pixelIndex = 0;
 		for (int j = 0; j < height; ++j) {
 			for (int i = 0; i < width; ++i)
-				qPixels[pixelIndex++] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
+				qPixels[pixelIndex++] = ditherFn(pPalette, pixels[pixelIndex], i + j);
 		}
 
 		return true;

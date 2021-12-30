@@ -294,7 +294,7 @@ namespace Dl3Quant
 		UINT pixelIndex = 0;
 		for (int j = 0; j < height; ++j) {
 			for (int i = 0; i < width; ++i, ++pixelIndex)
-				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
+				qPixels[pixelIndex] = ditherFn(pPalette, pixels[pixelIndex], i + j);
 		}
 
 		BlueNoise::dither(width, height, pixels, pPalette, ditherFn, GetColorIndex, qPixels);

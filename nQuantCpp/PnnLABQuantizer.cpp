@@ -430,8 +430,11 @@ namespace PnnLABQuant
 		if (dither)
 			return dither_image(pixels, pPalette, ditherFn, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
 
-		for (int pixelIndex = 0; pixelIndex < (width * height); ++pixelIndex)
-			qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, pixels[pixelIndex]);
+		UINT pixelIndex = 0;
+		for (int j = 0; j < height; ++j) {
+			for (int i = 0; i < width; ++i)
+				qPixels[pixelIndex++] = ditherFn(pPalette, pixels[pixelIndex], i + j);
+		}
 		return true;
 	}
 
