@@ -222,7 +222,7 @@ namespace PnnQuant
 		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			double curdist = sqr(c2.GetA() - c.GetA());
+			double curdist = PA * sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
 
