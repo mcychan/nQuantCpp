@@ -17,7 +17,7 @@ namespace PnnQuant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	double PR = .2126, PG = .7152, PB = .0722, PA = .25;
+	double PR = .2126, PG = .7152, PB = .0722, PA = .3333;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 	unordered_map<ARGB, unsigned short > nearestMap;
 
