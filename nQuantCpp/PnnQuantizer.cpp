@@ -41,7 +41,7 @@ namespace PnnQuant
 		for (int i = bin1.fw; i; i = bins[i].fw) {
 			auto nerr = PR * sqr(bins[i].rc - wr) + PG * sqr(bins[i].gc - wg) + PB * sqr(bins[i].bc - wb);
 			if (hasSemiTransparency)
-				nerr += sqr(bins[i].ac - wa);
+				nerr += PA * sqr(bins[i].ac - wa);
 			auto n2 = bins[i].cnt;
 			nerr *= (n1 * n2) / (n1 + n2);
 			if (nerr >= err)
