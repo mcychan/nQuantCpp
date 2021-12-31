@@ -17,7 +17,7 @@ namespace PnnQuant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	double PR = .2126, PG = .7152, PB = .0722;
+	double PR = .2126, PG = .7152, PB = .0722, PA = .25;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 	unordered_map<ARGB, unsigned short > nearestMap;
 
@@ -260,7 +260,10 @@ namespace PnnQuant
 
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
-				auto err = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
+				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
+				if (hasSemiTransparency)
+					err += PA * sqr(c2.GetA() - c.GetA());
+
 				if (err < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];
@@ -326,8 +329,8 @@ namespace PnnQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
-		if (hasSemiTransparency || nMaxColors <= 32)
-			PR = PG = PB = 1;
+		if (nMaxColors <= 32)
+			PR = PG = PB = PA = 1;
 		else if (bitmapWidth < 512 || bitmapHeight < 512) {
 			PR = 0.299; PG = 0.587; PB = 0.114;
 		}

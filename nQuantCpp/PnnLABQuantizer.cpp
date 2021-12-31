@@ -15,7 +15,7 @@ Copyright (c) 2018-2021 Miller Cy Chan
 
 namespace PnnLABQuant
 {
-	double PR = .2126, PG = .7152, PB = .0722;
+	double PR = .2126, PG = .7152, PB = .0722, PA = .25;
 	BYTE alphaThreshold = 0xF;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
@@ -389,6 +389,9 @@ namespace PnnLABQuant
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
 				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
+				if (hasSemiTransparency)
+					err += PA * sqr(c2.GetA() - c.GetA());
+
 				if (err < closest[2]) {
 					closest[1] = closest[0];
 					closest[3] = closest[2];
@@ -463,21 +466,19 @@ namespace PnnLABQuant
 			}
 		}
 
-		bool noBias = m_transparentPixelIndex >= 0 || nMaxColors < 64;
-		if (noBias)
-			PR = PG = PB = 1;
+		if (nMaxColors <= 32)
+			PR = PG = PB = PA = 1;
 		else if (bitmapWidth < 512 || bitmapHeight < 512) {
 			PR = 0.299; PG = 0.587; PB = 0.114;
 		}
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		DitherFn ditherFn = hasSemiTransparency ? nearestColorIndex : closestColorIndex;
 		if (hasSemiTransparency && nMaxColors <= 256)
-			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), 1.75f);
+			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get(), 1.75f);
 		else if (nMaxColors <= 32)
-			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), 1.5f);
+			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get(), 1.5f);
 		else {
-			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
+			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get());
 			if (nMaxColors > 256) {
 				auto qHPixels = make_unique<ARGB[]>(pixels.size());
 				for (int i = 0; i < pixels.size(); ++i) {
@@ -495,7 +496,7 @@ namespace PnnLABQuant
 		if (!dither) {
 			const auto delta = sqr(nMaxColors) / pixelMap.size();
 			auto weight = delta > 0.023 ? 1.0f : (float)(36.921 * delta + 0.906);
-			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), weight);
+			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get(), weight);
 		}
 
 		if (m_transparentPixelIndex >= 0) {
