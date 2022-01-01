@@ -202,12 +202,12 @@ namespace PnnLABQuant
 				ratio = min(1.0, proportional - weight * exp(1.997));
 		}
 		else if (nMaxColors > 256)
-			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : 1.0, 1 - 1.0 / proportional);
+			ratio = min(1.0, 1 - 1.0 / proportional);
 		else
-			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : 1.0, max(.98, 1 - weight * .7));
+			ratio = min(1.0, max(.98, 1 - weight * .7));
 
 		if (quan_rt < 0)
-			ratio = min(m_transparentPixelIndex >= 0 ? 0.0 : 1.0, weight * exp(1.997));
+			ratio = min(1.0, weight * exp(1.997));
 
 		int h, l, l2;
 		/* Initialize nearest neighbors and build heap of them */
