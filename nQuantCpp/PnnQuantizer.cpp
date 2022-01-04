@@ -65,8 +65,9 @@ namespace PnnQuant
 		return[](const float& cnt) { return cnt; };
 	}
 
-	void pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT& nMaxColors, short quan_rt)
+	void pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT& nMaxColors)
 	{
+		short quan_rt = 1;
 		vector<pnnbin> bins(USHRT_MAX + 1);
 
 		Color c0(m_transparentColor);
@@ -78,18 +79,15 @@ namespace PnnQuant
 
 			int index = GetARGBIndex(c, hasSemiTransparency, nMaxColors < 64 || m_transparentPixelIndex >= 0);
 			auto& tb = bins[index];
-			if (c.GetA() <= alphaThreshold) {
-				tb.rc += c0.GetR();
-				tb.gc += c0.GetG();
-				tb.bc += c0.GetB();
-			}
+			if (c.GetA() <= alphaThreshold)
+				tb.cnt = 1.0;
 			else {
 				tb.ac += c.GetA();
 				tb.rc += c.GetR();
 				tb.gc += c.GetG();
 				tb.bc += c.GetB();
-			}
-			tb.cnt += 1.0;
+				tb.cnt += 1.0;
+			}			
 		}
 
 		/* Cluster nonempty bins at one end of array */
@@ -344,7 +342,7 @@ namespace PnnQuant
 		}
 
 		if (nMaxColors > 2)
-			pnnquan(pixels, pPalette, nMaxColors, 1);
+			pnnquan(pixels, pPalette, nMaxColors);
 		else {
 			if (m_transparentPixelIndex >= 0) {
 				pPalette->Entries[0] = m_transparentColor;

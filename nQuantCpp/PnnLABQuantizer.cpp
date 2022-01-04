@@ -126,12 +126,11 @@ namespace PnnLABQuant
 		return[](const float& cnt) { return cnt; };
 	}
 
-	void PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT& nMaxColors, short quan_rt)
+	void PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT& nMaxColors)
 	{
+		short quan_rt = 1;
 		vector<pnnbin> bins(USHRT_MAX + 1);
 
-		CIELABConvertor::Lab lab0;
-		getLab(m_transparentColor, lab0);
 		/* Build histogram */
 		for (const auto& pixel : pixels) {
 			// !!! Can throw gamma correction in here, but what to do about perceptual
@@ -142,18 +141,16 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
-			if (c.GetA() <= alphaThreshold) {
-				bins[index].Lc += lab0.L;
-				bins[index].Ac += lab0.A;
-				bins[index].Bc += lab0.B;
-			}
+			auto& tb = bins[index];
+			if (c.GetA() <= alphaThreshold)
+				tb.cnt = 1.0;
 			else {
-				bins[index].ac += c.GetA();
-				bins[index].Lc += lab1.L;
-				bins[index].Ac += lab1.A;
-				bins[index].Bc += lab1.B;
-			}
-			bins[index].cnt += 1.0;
+				tb.ac += c.GetA();
+				tb.Lc += lab1.L;
+				tb.Ac += lab1.A;
+				tb.Bc += lab1.B;
+				tb.cnt += 1.0;
+			}			
 		}
 
 		/* Cluster nonempty bins at one end of array */
@@ -463,7 +460,7 @@ namespace PnnLABQuant
 		pPalette->Count = nMaxColors;
 
 		if (nMaxColors > 2)
-			pnnquan(pixels, pPalette, nMaxColors, 1);
+			pnnquan(pixels, pPalette, nMaxColors);
 		else {
 			if (m_transparentPixelIndex >= 0) {
 				pPalette->Entries[0] = m_transparentColor;
