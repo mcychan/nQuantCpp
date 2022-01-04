@@ -319,12 +319,12 @@ namespace nQuant
 				for (UINT x = 0; x < bitmapWidth; ++x, ++pixelIndex) {
 					Color color;
 					sourceImage->GetPixel(x, y, &color);
-					if (color.GetA() < BYTE_MAX) {						
+					if (color.GetA() < 0xE0) {
 						if (color.GetA() == 0) {
 							m_transparentPixelIndex = pixelIndex;
 							m_transparentColor = color.GetValue();
 						}
-						else
+						else if (color.GetA() > alphaThreshold)
 							hasSemiTransparency = true;
 					}
 					Histogram3d(colorData, color, alphaThreshold, alphaFader);
@@ -336,7 +336,7 @@ namespace nQuant
 		}
 
 		BitmapData data;
-		Status status = sourceImage->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, sourceImage->GetPixelFormat(), &data);
+		Status status = sourceImage->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, PixelFormat32bppARGB, &data);
 		if (status != Ok)
 			return;
 
@@ -363,15 +363,15 @@ namespace nQuant
 				BYTE pixelBlue = *pPixelSource++;
 				BYTE pixelGreen = *pPixelSource++;
 				BYTE pixelRed = *pPixelSource++;
-				BYTE pixelAlpha = bitDepth < 32 ? BYTE_MAX : *pPixelSource++;
+				BYTE pixelAlpha = *pPixelSource++;
 
 				Color color(Color::MakeARGB(pixelAlpha, pixelRed, pixelGreen, pixelBlue));
-				if (pixelAlpha < BYTE_MAX) {
+				if (color.GetA() < 0xE0) {
 					if (pixelAlpha == 0) {
 						m_transparentPixelIndex = pixelIndex;
 						m_transparentColor = color.GetValue();
 					}
-					else
+					else if (color.GetA() > alphaThreshold)
 						hasSemiTransparency = true;
 				}
 				Histogram3d(colorData, color, alphaThreshold, alphaFader);
