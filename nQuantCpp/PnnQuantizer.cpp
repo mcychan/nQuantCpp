@@ -69,6 +69,7 @@ namespace PnnQuant
 	{
 		vector<pnnbin> bins(USHRT_MAX + 1);
 
+		Color c0(m_transparentColor);
 		/* Build histogram */
 		for (const auto& pixel : pixels) {
 			// !!! Can throw gamma correction in here, but what to do about perceptual
@@ -77,10 +78,17 @@ namespace PnnQuant
 
 			int index = GetARGBIndex(c, hasSemiTransparency, nMaxColors < 64 || m_transparentPixelIndex >= 0);
 			auto& tb = bins[index];
-			tb.ac += c.GetA();
-			tb.rc += c.GetR();
-			tb.gc += c.GetG();
-			tb.bc += c.GetB();
+			if (c.GetA() <= alphaThreshold) {
+				tb.rc += c0.GetR();
+				tb.gc += c0.GetG();
+				tb.bc += c0.GetB();
+			}
+			else {
+				tb.ac += c.GetA();
+				tb.rc += c.GetR();
+				tb.gc += c.GetG();
+				tb.bc += c.GetB();
+			}
 			tb.cnt += 1.0;
 		}
 

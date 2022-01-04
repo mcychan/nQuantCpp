@@ -130,6 +130,8 @@ namespace PnnLABQuant
 	{
 		vector<pnnbin> bins(USHRT_MAX + 1);
 
+		CIELABConvertor::Lab lab0;
+		getLab(m_transparentColor, lab0);
 		/* Build histogram */
 		for (const auto& pixel : pixels) {
 			// !!! Can throw gamma correction in here, but what to do about perceptual
@@ -140,10 +142,17 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
-			bins[index].ac += c.GetA();
-			bins[index].Lc += lab1.L;
-			bins[index].Ac += lab1.A;
-			bins[index].Bc += lab1.B;
+			if (c.GetA() <= alphaThreshold) {
+				bins[index].Lc += lab0.L;
+				bins[index].Ac += lab0.A;
+				bins[index].Bc += lab0.B;
+			}
+			else {
+				bins[index].ac += c.GetA();
+				bins[index].Lc += lab1.L;
+				bins[index].Ac += lab1.A;
+				bins[index].Bc += lab1.B;
+			}
 			bins[index].cnt += 1.0;
 		}
 
