@@ -132,25 +132,21 @@ namespace PnnLABQuant
 		vector<pnnbin> bins(USHRT_MAX + 1);
 
 		/* Build histogram */
-		for (const auto& pixel : pixels) {
-			// !!! Can throw gamma correction in here, but what to do about perceptual
-			// !!! nonuniformity then?			
+		for (const auto& pixel : pixels) {		
 			Color c(pixel);
+			if (c.GetA() <= alphaThreshold)
+				c = m_transparentColor;
 
 			int index = GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
 
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
 			auto& tb = bins[index];
-			if (c.GetA() <= alphaThreshold)
-				tb.cnt = 1.0;
-			else {
-				tb.ac += c.GetA();
-				tb.Lc += lab1.L;
-				tb.Ac += lab1.A;
-				tb.Bc += lab1.B;
-				tb.cnt += 1.0;
-			}			
+			tb.ac += c.GetA();
+			tb.Lc += lab1.L;
+			tb.Ac += lab1.A;
+			tb.Bc += lab1.B;
+			tb.cnt += 1.0;			
 		}
 
 		/* Cluster nonempty bins at one end of array */

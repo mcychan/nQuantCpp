@@ -39,6 +39,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SpatialQuant
 {
+	BYTE alphaThreshold = 0xF;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
@@ -408,14 +409,14 @@ namespace SpatialQuant
 			for (int i_x = 0; i_x < a_width; ++i_x) {
 				for (int j_y = max(0, i_y - radius_height); j_y < a_height && j_y <= i_y + radius_height; ++j_y) {
 					for (int j_x = max(0, i_x - radius_width); j_x < a_width && j_x <= i_x + radius_width; ++j_x) {
-						Color jPixel(image[j_y * a.get_width() + j_x]);
-						if (jPixel.GetA() == 0)
-							continue;
+						Color jPixel(image[j_y * a.get_width() + j_x]);						
+						if (jPixel.GetA() <= alphaThreshold)
+							jPixel = m_transparentColor;
 
-						vector_fixed<double, 4> pixel;
 						CIELABConvertor::Lab lab1;
 						getLab(jPixel, lab1);
 
+						vector_fixed<double, 4> pixel;
 						pixel[0] = lab1.L;
 						pixel[1] = lab1.A;
 						pixel[2] = lab1.B;
@@ -546,7 +547,7 @@ namespace SpatialQuant
 							auto v1 = coarse_variables(i_x, i_y, v);
 							for (int alpha = v; alpha < palette_size; ++alpha) {
 								auto mult = v1 * coarse_variables(j_x, j_y, alpha);
-								for (BYTE p = 0; p < length; ++p)
+								for (int p = 0; p < length; ++p)
 									s(v, alpha)[p] += mult * b_ij[p];
 							}
 						}

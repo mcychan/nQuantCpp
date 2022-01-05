@@ -41,6 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace EdgeAwareSQuant
 {
+	BYTE alphaThreshold = 0xF;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
@@ -184,8 +185,8 @@ namespace EdgeAwareSQuant
 							continue;
 
 						Color jPixel(image[j_y * a.get_width() + j_x]);
-						if(jPixel.GetA() == 0)
-							continue;
+						if (jPixel.GetA() <= alphaThreshold)
+							jPixel = m_transparentColor;
 
 						CIELABConvertor::Lab lab1;
 						getLab(jPixel, lab1);
@@ -561,7 +562,11 @@ namespace EdgeAwareSQuant
 					for (int xx = max(0, xxMin); xx < weightMaps.get_width() && xx <= xxMax; ++xx) {
 						auto spaceD = sqr(y - yy) + sqr(x - xx);
 						Color pixelXY(img[y * weightMaps.get_width() + x]);
+						if (pixelXY.GetA() <= alphaThreshold)
+							pixelXY = m_transparentColor;
 						Color pixelXXYY(img[yy * weightMaps.get_width() + xx]);
+						if (pixelXXYY.GetA() <= alphaThreshold)
+							pixelXXYY = m_transparentColor;
 
 						CIELABConvertor::Lab lab1, lab2;
 						getLab(pixelXY, lab1);

@@ -34,6 +34,7 @@ namespace NeuralNet
 	*/
 
 	double PR = .2126, PG = .7152, PB = .0722;
+	BYTE alphaThreshold = 0xF;
 	const short specials = 3;		// number of reserved colours used
 	const int ncycles = 115;			// no. of learning cycles
 	const int radiusbiasshift = 8;
@@ -357,7 +358,9 @@ namespace NeuralNet
 		while (i < learning_extension * samplepixels) {
 			Color c(pixels[pos]);
 
-			BYTE al = c.GetA();
+			auto al = c.GetA();
+			if (c.GetA() <= alphaThreshold)
+				c = m_transparentColor;
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
 

@@ -736,7 +736,7 @@ namespace nQuant
 			auto argb = data.pixels[pixelIndex];
 			Color pixel(argb);
 			if (pixel.GetA() <= alphaThreshold)
-				continue;
+				pixel = m_transparentColor;
 
 			UINT bestMatch = nearestColorIndex(pPalette, argb, alphaThreshold);
 
