@@ -608,7 +608,7 @@ namespace EdgeAwareSQuant
 		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			auto curdist = sqr(c2.GetA() - c.GetA()) / exp(0.75);
+			auto curdist = abs(c2.GetA() - c.GetA()) / exp(0.75);
 			if (curdist > mindist)
 				continue;
 
