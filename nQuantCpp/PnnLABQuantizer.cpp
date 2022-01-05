@@ -476,7 +476,8 @@ namespace PnnLABQuant
 		}
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		if (nMaxColors <= 32 || (hasSemiTransparency && pPalette->Count == maxColors))
+		const auto delta = sqr(nMaxColors) / pixelMap.size();
+		if (nMaxColors <= 32 || (hasSemiTransparency && delta < 1))
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get(), 1.5f);
 		else {
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get());
@@ -494,8 +495,7 @@ namespace PnnLABQuant
 			}
 		}
 
-		if (!dither) {
-			const auto delta = sqr(nMaxColors) / pixelMap.size();
+		if (!dither) {			
 			auto weight = delta > 0.023 ? 1.0f : (float)(36.921 * delta + 0.906);
 			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get(), weight);
 		}
