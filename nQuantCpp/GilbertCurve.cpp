@@ -34,50 +34,48 @@ namespace Peano
     };
 	
     float m_divisor = 1.0f;
-	UINT m_width, m_height;
-	const ARGB* m_image;
-	const ColorPalette* m_pPalette;
-	unsigned short* m_qPixels;
-	DitherFn m_ditherFn;
+    UINT m_width, m_height;
+    const ARGB* m_image;
+    const ColorPalette* m_pPalette;
+    unsigned short* m_qPixels;
+    DitherFn m_ditherFn;
     GetColorIndexFn m_getColorIndexFn;
     deque<ErrorBox> errorq;
-	float* m_weights;
+    float* m_weights;
     
-	static const BYTE DITHER_MAX = 9;
-	static const float BLOCK_SIZE = 343.0f; 
+    static const BYTE DITHER_MAX = 9;
+    static const float BLOCK_SIZE = 343.0f; 
     
-    static int sign(int x) {
-    	if(x < 0)
-    		return -1;
-    	return (x > 0) ? 1 : 0;
+    template <typename T> int sign(T val) {
+        return (T(0) < val) - (val < T(0));
     }
 	
     void ditherPixel(int x, int y)
-	{
-	    int bidx = x + y * m_width;
-		Color pixel(m_image[bidx]);
-		ErrorBox error(pixel);
+    {
+        int bidx = x + y * m_width;
+        Color pixel(m_image[bidx]);
+        ErrorBox error(pixel);
         int i = 0;
         for (auto& eb : errorq) {
-			for(int j = 0; j < eb.length(); ++j)
-				error[j] += eb[j] * m_weights[i];
-            ++i;
-		}
+		for(int j = 0; j < eb.length(); ++j)
+                    error[j] += eb[j] * m_weights[i];
+		++i;
+        }
 
-		auto r_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[0], 0)));
-		auto g_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[1], 0)));
-		auto b_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[2], 0)));
-		auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
+        auto r_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[0], 0)));
+        auto g_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[1], 0)));
+        auto b_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[2], 0)));
+        auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
 		
-		Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-		m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), x + y);
+        auto c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+        m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), x + y);
 
-		errorq.pop_front();
-		c2 = m_pPalette->Entries[m_qPixels[bidx]];
-		error[0] = r_pix - c2.GetR();
-		error[1] = g_pix - c2.GetG();
-		error[2] = b_pix - c2.GetB();
-		error[3] = a_pix - c2.GetA();
+        errorq.pop_front();
+        c2 = m_pPalette->Entries[m_qPixels[bidx]];
+        error[0] = r_pix - c2.GetR();
+        error[1] = g_pix - c2.GetG();
+        error[2] = b_pix - c2.GetB();
+        error[3] = a_pix - c2.GetA();
 		
         if (m_divisor < 3 || m_pPalette->Count > 16) {
             for (int j = 0; j < error.length(); ++j) {
@@ -87,8 +85,8 @@ namespace Peano
                 error[j] /= m_divisor;
             }
         }
-		errorq.emplace_back(error);
-	}
+        errorq.emplace_back(error);
+    }
     
     void generate2d(int x, int y, int ax, int ay, int bx, int by) {    	
     	int w = abs(ax + ay);
@@ -134,17 +132,17 @@ namespace Peano
     		return;
     	}
     	
-		if ((h2 % 2) != 0 && h > 2) {
-			bx2 += dbx;
-			by2 += dby;
-		}
+    	if ((h2 % 2) != 0 && h > 2) {
+    		bx2 += dbx;
+    		by2 += dby;
+    	}
 		
-		generate2d(x, y, bx2, by2, ax2, ay2);
-		generate2d(x + bx2, y + by2, ax, ay, bx - bx2, by - by2);
-		generate2d(x + (ax - dax) + (bx2 - dbx), y + (ay - day) + (by2 - dby), -bx2, -by2, -(ax - ax2), -(ay - ay2));    		
+    	generate2d(x, y, bx2, by2, ax2, ay2);
+    	generate2d(x + bx2, y + by2, ax, ay, bx - bx2, by - by2);
+    	generate2d(x + (ax - dax) + (bx2 - dbx), y + (ay - day) + (by2 - dby), -bx2, -by2, -(ax - ax2), -(ay - ay2));    		
     }
 	
-	void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, float divisor)
+    void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, float divisor)
     {
         m_divisor = divisor;
 		m_width = width;
