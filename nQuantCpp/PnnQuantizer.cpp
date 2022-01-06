@@ -18,6 +18,7 @@ namespace PnnQuant
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
 	double PR = .2126, PG = .7152, PB = .0722, PA = .3333;
+	double weight;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 	unordered_map<ARGB, unsigned short > nearestMap;
 
@@ -105,7 +106,7 @@ namespace PnnQuant
 		if (nMaxColors < 16)
 			quan_rt = -1;
 
-		auto weight = nMaxColors * 1.0 / maxbins;
+		weight = nMaxColors * 1.0 / maxbins;
 		if (weight > .003 && weight < .005)
 			quan_rt = 0;
 		if (weight < .025 && PG < 1) {
@@ -336,7 +337,6 @@ namespace PnnQuant
 			PR = 0.299; PG = 0.587; PB = 0.114;
 		}
 
-		const auto maxColors = nMaxColors;
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors);
 		else {
@@ -352,7 +352,7 @@ namespace PnnQuant
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		DitherFn ditherFn = dither ? nearestColorIndex : closestColorIndex;
-		if (nMaxColors <= 32 || (hasSemiTransparency && pPalette->Count == maxColors))
+		if (nMaxColors <= 32 || (hasSemiTransparency && weight < .3))
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), nMaxColors > 2 ? 1.8f : 1.5f);
 		else {
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
