@@ -67,7 +67,7 @@ namespace Peano
         auto b_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[2], 0)));
         auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
 		
-        auto c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+        Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
         m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), x + y);
 
         errorq.pop_front();
