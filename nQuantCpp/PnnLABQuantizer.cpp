@@ -114,16 +114,24 @@ namespace PnnLABQuant
 		bin1.nn = nn;
 	}
 
-	typedef float (*QuanFn)(const float& cnt);
+	typedef float (*QuanFn)(const float& cnt, const bool isBlack);
 	QuanFn getQuanFn(const UINT& nMaxColors, const short quan_rt) {
 		if (quan_rt > 0) {
 			if (quan_rt > 1)
-				return[](const float& cnt) { return (float)(int)pow(cnt, 0.75); };
+				return[](const float& cnt, const bool isBlack) { return (float)(int)pow(cnt, 0.75); };
 			if (nMaxColors < 64)
-				return[](const float& cnt) { return (float)(int)_sqrt(cnt); };
-			return[](const float& cnt) { return (float)_sqrt(cnt); };
+				return[](const float& cnt, const bool isBlack) {
+					if(isBlack)
+						return (float)(int)pow(cnt, 0.75);
+					return (float)(int)_sqrt(cnt);
+				};
+			return[](const float& cnt, const bool isBlack) {
+				if (isBlack)
+					return (float)pow(cnt, 0.75);
+				return (float)_sqrt(cnt);
+			};
 		}
-		return[](const float& cnt) { return cnt; };
+		return[](const float& cnt, const bool isBlack) { return cnt; };
 	}
 
 	void PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT& nMaxColors)
@@ -185,9 +193,9 @@ namespace PnnLABQuant
 			bins[j].fw = j + 1;
 			bins[j + 1].bk = j;
 
-			bins[j].cnt = quanFn(bins[j].cnt);
+			bins[j].cnt = quanFn(bins[j].cnt, j == 0);
 		}
-		bins[j].cnt = quanFn(bins[j].cnt);
+		bins[j].cnt = quanFn(bins[j].cnt, j == 0);
 
 		const bool texicab = proportional > .025;		
 		
