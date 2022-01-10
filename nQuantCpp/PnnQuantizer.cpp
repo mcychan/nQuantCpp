@@ -294,7 +294,7 @@ namespace PnnQuant
 		else
 			closest = got->second;
 
-		auto MAX_ERR = pPalette->Count;
+		auto MAX_ERR = pPalette->Count << 2;
 		int idx = (pos + 1) % 2;
 		if (closest[3] * .67 < (closest[3] - closest[2]))
 			idx = 0;

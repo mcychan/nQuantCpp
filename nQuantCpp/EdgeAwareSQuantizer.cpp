@@ -173,7 +173,7 @@ namespace EdgeAwareSQuant
 		return b_yx(k_y, k_x);
 	}
 
-	void compute_a_image_ea(const vector<ARGB>& image, Mat<Mat<float> >& b, array2d<vector_fixed<float, 4> >& a)
+	void compute_a_image_ea(const vector<ARGB>& image, Mat<Mat<float> >& b, array2d<vector_fixed<float, 4> >& a, const UINT nMaxColors)
 	{
 		int extendedFilterRadius = (b(0, 0).get_width() - 1) / 2;
 		for (int i_y = 0; i_y < a.get_height(); ++i_y) {
@@ -188,13 +188,20 @@ namespace EdgeAwareSQuant
 						if (jPixel.GetA() <= alphaThreshold)
 							jPixel = m_transparentColor;
 
-						CIELABConvertor::Lab lab1;
-						getLab(jPixel, lab1);
+						if (nMaxColors > 2) {
+							CIELABConvertor::Lab lab1;
+							getLab(jPixel, lab1);
 
-						a(i_x, i_y)[0] += tmpBvalue * lab1.L;
-						a(i_x, i_y)[1] += tmpBvalue * lab1.A;
-						a(i_x, i_y)[2] += tmpBvalue * lab1.B;
-						a(i_x, i_y)[3] += tmpBvalue * lab1.alpha;
+							a(i_x, i_y)[0] += tmpBvalue * lab1.L;
+							a(i_x, i_y)[1] += tmpBvalue * lab1.A;
+							a(i_x, i_y)[2] += tmpBvalue * lab1.B;
+						}
+						else {
+							a(i_x, i_y)[0] += tmpBvalue * jPixel.GetR();
+							a(i_x, i_y)[1] += tmpBvalue * jPixel.GetG();
+							a(i_x, i_y)[2] += tmpBvalue * jPixel.GetB();
+						}
+						a(i_x, i_y)[3] += tmpBvalue * jPixel.GetA();
 					}
 				}
 				a(i_x, i_y) *= -2.0f;
@@ -315,11 +322,12 @@ namespace EdgeAwareSQuant
 			auto& R_k = extract_vector_layer_1d(r, k);
 			auto& palette_channel = (-2.0f * S_k).matrix_inverse() * R_k;
 			for (UINT v = 0; v < palette.size(); ++v) {
-				auto val = palette_channel[v];				
-				if (val < minLabValues[k] || isnan(val))
-					val = minLabValues[k];
-				else if (val > maxLabValues[k])
-					val = maxLabValues[k];
+				auto val = palette_channel[v];
+				auto j = palette.size() > 2 ? k : 3;
+				if (val < minLabValues[j] || isnan(val))
+					val = minLabValues[j];
+				else if (val > maxLabValues[j])
+					val = maxLabValues[j];
 
 				float palette_delta = abs(palette[v][k] - val);
 				if (palette_delta > 1.0f / divisor)
@@ -352,7 +360,7 @@ namespace EdgeAwareSQuant
 
 		auto& a0 = a_array[0];
 		a0.reset(bitmapWidth, bitmapHeight);
-		compute_a_image_ea(image, b0, a0);
+		compute_a_image_ea(image, b0, a0, palette.size());
 
 		for (int coarse_level = 1; coarse_level <= max_coarse_level; ++coarse_level) {
 			auto& ai = a_array[coarse_level];
@@ -633,6 +641,25 @@ namespace EdgeAwareSQuant
 		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
 	}
 
+	void arrange2Colors(const vector<ARGB>& pixels, ColorPalette* pPalette, unsigned short* qPixels)
+	{
+		if (m_transparentPixelIndex >= 0) {
+			UINT k = qPixels[m_transparentPixelIndex];
+			pPalette->Entries[k] = m_transparentColor;
+
+			if (k > 0) {
+				swap(pPalette->Entries[k], pPalette->Entries[0]);
+				for (int pixelIndex = 0; pixelIndex < pixels.size(); ++pixelIndex) {
+					Color c(pixels[pixelIndex]);
+					if (qPixels[pixelIndex] == k || c.GetA() == 0)
+						qPixels[pixelIndex] = 0;
+					if (qPixels[pixelIndex] == 0 && c.GetA() > 0)
+						qPixels[pixelIndex] = k;
+				}
+			}
+		}
+	}
+
 	bool EdgeAwareSQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
 		const UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
@@ -649,8 +676,12 @@ namespace EdgeAwareSQuant
 		float saliencyBase = 0.1;
 		for (int y = 0; y < saliencyMap.get_height(); ++y) {
 			for (int x = 0; x < saliencyMap.get_width(); ++x) {
+				Color c(pixels[pixelIndex++]);
+				if (c.GetA() < alphaThreshold)
+					c = m_transparentColor;
+
 				CIELABConvertor::Lab lab1;
-				getLab(pixels[pixelIndex++], lab1);					
+				getLab(c, lab1);					
 				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) * lab1.L / 255.0f;
 			}
 		}
@@ -686,40 +717,38 @@ namespace EdgeAwareSQuant
 		if (nMaxColors > 2) {
 			/* Fill palette */
 			for (UINT k = 0; k < nMaxColors; ++k) {
-				CIELABConvertor::Lab lab1;
-				lab1.alpha = (m_transparentPixelIndex >= 0 || hasSemiTransparency) ? static_cast<BYTE>(palette[k][3]) : BYTE_MAX;
-				lab1.L = palette[k][0], lab1.A = palette[k][1], lab1.B = palette[k][2];
-				pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
-			}
-
-			if (m_transparentPixelIndex >= 0) {
-				UINT k = qPixels[m_transparentPixelIndex];
-				pPalette->Entries[k] = m_transparentColor;
-
-				if (k > 0) {
-					swap(pPalette->Entries[k], pPalette->Entries[0]);
-					for (int pixelIndex = 0; pixelIndex < pixels.size(); ++pixelIndex) {
-						Color c(pixels[pixelIndex]);
-						if (qPixels[pixelIndex] == k || c.GetA() == 0)
-							qPixels[pixelIndex] = 0;
-						if (qPixels[pixelIndex] == 0 && c.GetA() > 0)
-							qPixels[pixelIndex] = k;
-					}
+				if (nMaxColors > 2) {
+					CIELABConvertor::Lab lab1;
+					lab1.alpha = (m_transparentPixelIndex >= 0 || hasSemiTransparency) ? static_cast<BYTE>(palette[k][3]) : BYTE_MAX;
+					lab1.L = palette[k][0], lab1.A = palette[k][1], lab1.B = palette[k][2];
+					pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
+				}
+				else {
+					pPalette->Entries[k] = Color::MakeARGB(clamp(static_cast<int>(palette[k][3]), 0, BYTE_MAX), clamp(static_cast<int>(palette[k][0]), 0, BYTE_MAX),
+						clamp(static_cast<int>(palette[k][1]), 0, BYTE_MAX), clamp(static_cast<int>(palette[k][2]), 0, BYTE_MAX));
 				}
 			}
+
+			arrange2Colors(pixels, pPalette, qPixels.get());
 		}
 		else {
 			if (m_transparentPixelIndex >= 0) {
-				pPalette->Entries[0] = m_transparentColor;
+				arrange2Colors(pixels, pPalette, qPixels.get());
 				pPalette->Entries[1] = Color::Black;
 			}
 			else {
-				pPalette->Entries[1] = Color::Black;
-				pPalette->Entries[0] = Color::White;
+				if (pPalette->Entries[1] < pPalette->Entries[0]) {
+					pPalette->Entries[1] = Color::Black;
+					pPalette->Entries[0] = Color::White;
+				}
+				else {
+					pPalette->Entries[1] = Color::White;
+					pPalette->Entries[0] = Color::Black;
+				}
 			}
 		}
 
-		if (!dither) {
+		if (!dither && nMaxColors > 2) {
 			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nearestColorIndex, GetColorIndex, qPixels.get(), 0.5f);
 			nearestMap.clear();
 		}

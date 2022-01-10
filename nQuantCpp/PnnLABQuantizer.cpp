@@ -422,7 +422,7 @@ namespace PnnLABQuant
 		else
 			closest = got->second;
 
-		auto MAX_ERR = pPalette->Count;
+		auto MAX_ERR = pPalette->Count << 2;
 		int idx = 1;
 		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3])
 			idx = 0;
