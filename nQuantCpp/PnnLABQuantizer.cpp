@@ -186,6 +186,22 @@ namespace PnnLABQuant
 			PB += delta;
 		}
 
+		if (pixelMap.size() <= nMaxColors) {
+			/* Fill palette */
+			nMaxColors = pPalette->Count = pixelMap.size();
+			int k = 0;
+			for (const auto& [pixel, lab] : pixelMap) {
+				pPalette->Entries[k] = pixel;
+
+				Color c(pPalette->Entries[k]);
+				if (c.GetA() == 0)
+					swap(pPalette->Entries[k], pPalette->Entries[0]);
+				++k;
+			}
+
+			return;
+		}
+
 		auto quanFn = getQuanFn(nMaxColors, quan_rt);
 
 		int j = 0;
