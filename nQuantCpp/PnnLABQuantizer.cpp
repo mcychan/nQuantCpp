@@ -499,7 +499,6 @@ namespace PnnLABQuant
 		}
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		dither &= nMaxColors <= pPalette->Count;
 		if (nMaxColors <= 32 || (hasSemiTransparency && weight < .3))
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get(), 1.5f);
 		else {
