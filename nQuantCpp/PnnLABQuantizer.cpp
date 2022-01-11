@@ -194,7 +194,7 @@ namespace PnnLABQuant
 				pPalette->Entries[k] = pixel;
 
 				Color c(pPalette->Entries[k]);
-				if (c.GetA() == 0)
+				if (k > 0 && c.GetA() == 0)
 					swap(pPalette->Entries[k], pPalette->Entries[0]);
 				++k;
 			}
@@ -323,7 +323,7 @@ namespace PnnLABQuant
 			pPalette->Count = nMaxColors = k + 1;
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -332,7 +332,7 @@ namespace PnnLABQuant
 		unsigned short k = 0;
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
-			return k;
+			c = m_transparentColor;
 
 		double mindist = INT_MAX;
 		CIELABConvertor::Lab lab1, lab2;
@@ -399,12 +399,12 @@ namespace PnnLABQuant
 		return k;
 	}
 
-	unsigned short closestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
 	{
 		UINT k = 0;
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
-			return k;
+			c = m_transparentColor;
 
 		const auto nMaxColors = pPalette->Count;
 		vector<unsigned short> closest(4);

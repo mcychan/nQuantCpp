@@ -208,7 +208,7 @@ namespace Dl3Quant
 		}
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
 	{
 		unsigned short k = 0;
 		Color c(argb);
@@ -239,10 +239,13 @@ namespace Dl3Quant
 		return k;
 	}
 
-	unsigned short closestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
 	{
 		unsigned short k = 0;
 		Color c(argb);
+		if (c.GetA() <= 0xF)
+			c = m_transparentColor;
+
 		const auto nMaxColors = pPalette->Count;
 
 		vector<unsigned short> closest(5);

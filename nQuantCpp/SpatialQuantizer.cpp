@@ -881,7 +881,7 @@ namespace SpatialQuant
 		return true;
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -890,7 +890,7 @@ namespace SpatialQuant
 		unsigned short k = 0;
 		Color c(argb);
 		if (c.GetA() <= 0)
-			return k;
+			c = m_transparentColor;
 
 		double mindist = INT_MAX;
 		CIELABConvertor::Lab lab1, lab2;

@@ -641,10 +641,13 @@ namespace nQuant
 			pPalette->Count = lookupsCount;
 	}
 
-	unsigned short closestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
 	{
 		UINT k = 0;
 		Color c(argb);
+		if (c.GetA() <= 0xF)
+			c = m_transparentColor;
+
 		const auto nMaxColors = pPalette->Count;
 
 		vector<unsigned short> closest(5);
@@ -682,12 +685,12 @@ namespace nQuant
 		return k;
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const BYTE alphaThreshold)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const BYTE alphaThreshold)
 	{
 		Color c(argb);
 		unsigned short k = 0;
 		if (c.GetA() <= alphaThreshold)
-			return k;
+			c = m_transparentColor;
 
 		auto got = nearestMap.find(argb);
 		if (got == nearestMap.end()) {

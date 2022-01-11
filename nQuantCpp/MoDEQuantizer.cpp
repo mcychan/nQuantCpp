@@ -400,12 +400,12 @@ namespace MoDEQuant
 		return 0;
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
 	{
 		unsigned short k = 0;
 		Color c(argb);
 		if (c.GetA() <= 0)
-			return k;
+			c = m_transparentColor;
 
 		UINT mindist = INT_MAX;
 		const auto nMaxColors = pPalette->Count;
@@ -433,7 +433,7 @@ namespace MoDEQuant
 		return k;
 	}
 
-	unsigned short closestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
 	{
 		UINT k = 0;
 		Color c(argb);

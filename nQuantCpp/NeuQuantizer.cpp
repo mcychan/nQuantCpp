@@ -149,7 +149,7 @@ namespace NeuralNet
 	}
 
 	void Altersingle(double alpha, UINT i, BYTE al, double L, double A, double B) {
-		double colorimp = 1.0;//0.5;// + 0.7 * colorimportance(al);
+		auto colorimp = 1.0;//0.5;// + 0.7 * colorimportance(al);
 
 		alpha /= initalpha;
 
@@ -222,7 +222,7 @@ namespace NeuralNet
 		 /* repel_step is the amount we move the neurons away by in each component.
 		  * radpower[0]/alpharadbias is similar to the proportion alterneigh uses.
 		  * */
-		double repel_step = exclusion_threshold * (radpower[0] / alpharadbias);
+		auto repel_step = exclusion_threshold * (radpower[0] / alpharadbias);
 
 		for (int j = 0; j < netsize; ++j) {
 
@@ -308,7 +308,7 @@ namespace NeuralNet
 			}
 
 			/* Age (decay) the current neurons bias and freq values. */
-			double betafreq = freq[i] * beta;
+			auto betafreq = freq[i] * beta;
 			freq[i] -= betafreq;
 			bias[i] += betafreq * gamma;
 		}
@@ -438,7 +438,7 @@ namespace NeuralNet
 		}
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())

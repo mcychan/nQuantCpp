@@ -217,7 +217,7 @@ namespace PnnQuant
 			pPalette->Count = nMaxColors = k + 1;
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -226,7 +226,7 @@ namespace PnnQuant
 		unsigned short k = 0;
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
-			return k;
+			c = m_transparentColor;
 
 		double mindist = INT_MAX;
 		const auto nMaxColors = pPalette->Count;
@@ -255,12 +255,12 @@ namespace PnnQuant
 		return k;
 	}
 
-	unsigned short closestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
+	unsigned short closestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
 	{
 		UINT k = 0;
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
-			return k;
+			c = m_transparentColor;
 
 		const auto nMaxColors = pPalette->Count;
 		vector<unsigned short> closest(4);
