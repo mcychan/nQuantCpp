@@ -59,8 +59,8 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab2;
 			lab2.alpha = bins[i].ac, lab2.L = bins[i].Lc, lab2.A = bins[i].Ac, lab2.B = bins[i].Bc;
-			auto alphaDiff = hasSemiTransparency ? (lab2.alpha - lab1.alpha) / exp(1.5) : 0;
-			auto nerr = nerr2 * sqr(alphaDiff);
+			auto alphaDiff = hasSemiTransparency ? sqr(lab2.alpha - lab1.alpha) / exp(1.5) : 0;
+			auto nerr = nerr2 * alphaDiff;
 			if (nerr >= err)
 				continue;
 
@@ -341,7 +341,7 @@ namespace PnnLABQuant
 		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			auto curdist = hasSemiTransparency ? abs(c2.GetA() - c.GetA()) / exp(0.75) : 0;
+			auto curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) / exp(0.75) : 0;
 			if (curdist > mindist)
 				continue;
 
@@ -404,7 +404,7 @@ namespace PnnLABQuant
 		UINT k = 0;
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
-			c = m_transparentColor;
+			return nearestColorIndex(pPalette, argb, pos);
 
 		const auto nMaxColors = pPalette->Count;
 		vector<unsigned short> closest(4);

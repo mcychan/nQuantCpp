@@ -415,6 +415,9 @@ namespace EdgeAwareSQuant
 		double rate = 1.5 / log2(palette.size());
 		if (palette.size() > 96 && palette.size() < 192)
 			rate = 4.0 / log2(palette.size());
+		else if (palette.size() >= 192)
+			rate = 1.0 / log2(palette.size());
+
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
 			vector<vector<pair<float, int> > > centroidDist(paletteSize, vector<pair<float, int> >(paletteSize, pair<float, int>(0.0f, -1)));
@@ -551,7 +554,7 @@ namespace EdgeAwareSQuant
 	{
 		// pixel-wise filter		
 		const int radius = 1;
-		float wMin = 100;
+		auto wMin = 100.0f;
 		auto colorDivisor = 2 * sigma_r * sigma_r;
 		auto spacerDivisor = 2 * sigma_s * sigma_s;
 		if (hasSemiTransparency) {
@@ -579,9 +582,10 @@ namespace EdgeAwareSQuant
 						CIELABConvertor::Lab lab1, lab2;
 						getLab(pixelXY, lab1);
 						getLab(pixelXXYY, lab2);
-						float colorD = abs(lab2.L - lab1.L) + _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab2.B));
+						auto colorD = abs(lab2.L - lab1.L) + _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab2.B));
 						if (hasSemiTransparency)
 							colorD += sqr(pixelXY.GetA() - pixelXXYY.GetA()) / exp(0.75);
+
 						auto tmpW = exp(-spaceD / spacerDivisor - colorD / colorDivisor);
 
 						weightSum += tmpW;

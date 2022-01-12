@@ -899,16 +899,20 @@ namespace SpatialQuant
 		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			auto curdist = abs(c2.GetA() - c.GetA()) / exp(0.75);
+			auto curdist = sqr(c2.GetA() - c.GetA()) / exp(1.5);
 			if (curdist > mindist)
 				continue;
 
 			getLab(c2, lab2);
-			curdist += abs(lab2.L - lab1.L);
+			curdist += sqr(lab2.L - lab1.L);
 			if (curdist > mindist)
 				continue;
 
-			curdist += _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B));
+			curdist += sqr(lab2.A - lab1.A);
+			if (curdist > mindist)
+				continue;
+
+			curdist += sqr(lab2.B - lab1.B);
 			if (curdist > mindist)
 				continue;
 
