@@ -820,13 +820,12 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsig
 	return pDest->GetLastStatus() == Ok;
 }
 
-bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency, int& transparentPixelIndex, ARGB& transparentColor, const BYTE alphaThreshold, const UINT nMaxColors)
+bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, int& semiTransCount, int& transparentPixelIndex, ARGB& transparentColor, const BYTE alphaThreshold, const UINT nMaxColors)
 {
 	const auto bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
 	const auto bitmapWidth = pSource->GetWidth();
 	const auto bitmapHeight = pSource->GetHeight();
 
-	hasSemiTransparency = false;
 	transparentPixelIndex = -1;
 
 	int transparentIndex = -1;
@@ -866,6 +865,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 		strideSource = -data.Stride;
 	}
 
+	semiTransCount = 0;
 	// First loop: gather color information
 	for (UINT y = 0; y < bitmapHeight; ++y) {	// For each row...
 		auto pPixelSource = pRowSource;
@@ -890,7 +890,7 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 						argb = transparentColor;
 				}
 				else if (pixelAlpha > alphaThreshold)
-					hasSemiTransparency = true;
+					++semiTransCount;
 			}
 			pixels[pixelIndex++] = argb;
 		}
@@ -899,6 +899,14 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency
 	}
 
 	return pSource->UnlockBits(&data) == Ok;
+}
+
+int GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, bool& hasSemiTransparency, int& transparentPixelIndex, ARGB& transparentColor, const BYTE alphaThreshold, const UINT nMaxColors)
+{
+	int semiTransCount = 0;
+	GrabPixels(pSource, pixels, semiTransCount, transparentPixelIndex, transparentColor, nMaxColors);
+	hasSemiTransparency = semiTransCount > 0;
+	return semiTransCount;
 }
 
 bool HasTransparency(Bitmap* pSource)

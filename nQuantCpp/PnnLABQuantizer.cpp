@@ -19,7 +19,7 @@ namespace PnnLABQuant
 	BYTE alphaThreshold = 0xF;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
-	double ratio = 1.0, weight;
+	double ratio = 1.0;
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
@@ -177,7 +177,7 @@ namespace PnnLABQuant
 		if ((m_transparentPixelIndex >= 0 || hasSemiTransparency) && nMaxColors < 32)
 			quan_rt = -1;
 
-		weight = min(0.9, nMaxColors * 1.0 / maxbins);
+		auto weight = min(0.9, nMaxColors * 1.0 / maxbins);
 		if (weight > .0015 && weight < .002)
 			quan_rt = 2;
 		if (weight < .025 && PG < 1) {
@@ -476,7 +476,9 @@ namespace PnnLABQuant
 		const auto bitmapHeight = pSource->GetHeight();
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, alphaThreshold, nMaxColors);
+		int semiTransCount = 0;
+		GrabPixels(pSource, pixels, semiTransCount, m_transparentPixelIndex, m_transparentColor, alphaThreshold, nMaxColors);
+		hasSemiTransparency = semiTransCount > 0;
 
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
@@ -502,7 +504,7 @@ namespace PnnLABQuant
 		}
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		if (nMaxColors <= 32 || (hasSemiTransparency && weight < .3))
+		if (nMaxColors <= 32 || (hasSemiTransparency && (semiTransCount * 1.0 / pixels.size()) < .3))
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get(), 1.5f);
 		else {
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get());
