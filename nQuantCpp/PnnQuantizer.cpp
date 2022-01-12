@@ -259,7 +259,7 @@ namespace PnnQuant
 		UINT k = 0;
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
-			c = m_transparentColor;
+			return nearestColorIndex(pPalette, argb, pos);
 
 		const auto nMaxColors = pPalette->Count;
 		vector<unsigned short> closest(4);
@@ -361,7 +361,7 @@ namespace PnnQuant
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		DitherFn ditherFn = dither ? nearestColorIndex : closestColorIndex;
-		if (nMaxColors <= 32 || (hasSemiTransparency && (semiTransCount * 1.0 / pixels.size()) < .3))
+		if (nMaxColors <= 32 || (hasSemiTransparency && (semiTransCount * 1.0 / pixels.size()) > .3))
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), nMaxColors > 2 ? 1.8f : 1.5f);
 		else {
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
