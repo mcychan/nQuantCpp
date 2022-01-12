@@ -439,6 +439,9 @@ namespace PnnLABQuant
 			closest = got->second;
 
 		auto MAX_ERR = pPalette->Count << 2;
+		if (c.GetR() > 0xF0 && c.GetG() > 0xF0 && c.GetB() > 0xF0)
+			MAX_ERR = min(0x40, MAX_ERR);
+
 		int idx = 1;
 		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3])
 			idx = 0;
