@@ -582,12 +582,12 @@ namespace SpatialQuant
 					continue;
 				for (int v = 0; v <= alpha; ++v) {
 					auto mult = coarse_variables(i_x, i_y, v);
-					for (BYTE p = 0; p < length; ++p)
+					for (int p = 0; p < length; ++p)
 						s(v, alpha)[p] += mult * delta_b_ij[p];
 				}
 				for (int v = alpha; v < palette_size; ++v) {
 					auto mult = coarse_variables(i_x, i_y, v);
-					for (BYTE p = 0; p < length; ++p)
+					for (int p = 0; p < length; ++p)
 						s(alpha, v)[p] += mult * delta_b_ij[p];
 				}
 			}
@@ -765,7 +765,7 @@ namespace SpatialQuant
 								continue;
 							auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 							auto& j_pal = (*p_palette_sum)(j_x, j_y);
-							for (BYTE p = 0; p < length; ++p)
+							for (int p = 0; p < length; ++p)
 								p_i[p] += b_ij[p] * j_pal[p];
 						}
 					}
@@ -809,7 +809,7 @@ namespace SpatialQuant
 						double delta_m_iv = new_val - coarse_variables(i_x, i_y, v);
 
 						coarse_variables(i_x, i_y, v) = new_val;
-						for (BYTE p = 0; p < length; ++p)
+						for (int p = 0; p < length; ++p)
 							j_pal[p] += delta_m_iv * palette[v][p];
 
 						if (abs(delta_m_iv) > 0.001 && !skip_palette_maintenance)
@@ -889,7 +889,7 @@ namespace SpatialQuant
 
 		unsigned short k = 0;
 		Color c(argb);
-		if (c.GetA() <= 0)
+		if (c.GetA() <= alphaThreshold)
 			c = m_transparentColor;
 
 		double mindist = INT_MAX;
@@ -938,9 +938,9 @@ namespace SpatialQuant
 				swap(pPalette->Entries[k], pPalette->Entries[0]);
 				for (int pixelIndex = 0; pixelIndex < pixels.size(); ++pixelIndex) {
 					Color c(pixels[pixelIndex]);
-					if (qPixels[pixelIndex] == k || c.GetA() == 0)
+					if (qPixels[pixelIndex] == k || c.GetA() <= alphaThreshold)
 						qPixels[pixelIndex] = 0;
-					if (qPixels[pixelIndex] == 0 && c.GetA() > 0)
+					else if (qPixels[pixelIndex] == 0 && c.GetA() > alphaThreshold)
 						qPixels[pixelIndex] = k;
 				}
 			}
@@ -982,7 +982,7 @@ namespace SpatialQuant
 
 		vector<vector_fixed<double, 4> > palette(nMaxColors);
 		for (UINT i = 0; i < nMaxColors; ++i) {
-			for (BYTE p = 0; p < length; ++p)
+			for (int p = 0; p < length; ++p)
 				palette[i][p] = getRandom(p);
 		}
 

@@ -341,7 +341,7 @@ namespace PnnLABQuant
 		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			auto curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) / exp(0.75) : 0;
+			auto curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) / exp(1.5) : 0;
 			if (curdist > mindist)
 				continue;
 
@@ -362,7 +362,18 @@ namespace PnnLABQuant
 					curdist += sqr(c2.GetA() - c.GetA());
 				}
 			}
-			else if (nMaxColors > 32 || hasSemiTransparency) {
+			else if (hasSemiTransparency) {
+				curdist += sqr(lab2.L - lab1.L);
+				if (curdist > mindist)
+					continue;
+
+				curdist += sqr(lab2.A - lab1.A);
+				if (curdist > mindist)
+					continue;
+
+				curdist += sqr(lab2.B - lab1.B);
+			}
+			else if (nMaxColors > 32) {
 				curdist += abs(lab2.L - lab1.L);
 				if (curdist > mindist)
 					continue;
