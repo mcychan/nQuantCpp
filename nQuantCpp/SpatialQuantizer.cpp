@@ -403,15 +403,21 @@ namespace SpatialQuant
 
 	void compute_a_image(const vector<ARGB>& image, array2d<vector_fixed<double, 4> >& b, array2d<vector_fixed<double, 4> >& a, const UINT nMaxColors)
 	{
+		Color lastPixel = m_transparentColor;
+		auto threshold = 256 / nMaxColors;
+
 		const int a_width = a.get_width(), a_height = a.get_height();
 		const int radius_width = (b.get_width() - 1) / 2, radius_height = (b.get_height() - 1) / 2;
 		for (int i_y = 0; i_y < a_height; ++i_y) {
 			for (int i_x = 0; i_x < a_width; ++i_x) {
 				for (int j_y = max(0, i_y - radius_height); j_y < a_height && j_y <= i_y + radius_height; ++j_y) {
 					for (int j_x = max(0, i_x - radius_width); j_x < a_width && j_x <= i_x + radius_width; ++j_x) {
-						Color jPixel(image[j_y * a.get_width() + j_x]);						
+						auto pixelIndex = j_y * a.get_width() + j_x;
+						Color jPixel(image[pixelIndex]);
 						if (jPixel.GetA() <= alphaThreshold)
-							jPixel = m_transparentColor;
+							jPixel = (nMaxColors > 8 && pixelIndex % threshold == 0) ? lastPixel : m_transparentColor;
+						else
+							lastPixel = jPixel;
 
 						vector_fixed<double, 4> pixel;
 						if (nMaxColors > 2) {
@@ -999,23 +1005,22 @@ namespace SpatialQuant
 			return false;
 		}		
 
-		if (nMaxColors > 2) {
-			/* Fill palette */
-			for (UINT k = 0; k < nMaxColors; ++k) {
-				if (nMaxColors > 2) {
-					CIELABConvertor::Lab lab1;
-					lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[k][3]) : BYTE_MAX;
-					lab1.L = palette[k][0], lab1.A = palette[k][1], lab1.B = palette[k][2];
-					pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
-				}
-				else {
-					pPalette->Entries[k] = Color::MakeARGB(clamp(static_cast<int>(palette[k][3]), 0, BYTE_MAX), clamp(static_cast<int>(palette[k][0]), 0, BYTE_MAX),
-						clamp(static_cast<int>(palette[k][1]), 0, BYTE_MAX), clamp(static_cast<int>(palette[k][2]), 0, BYTE_MAX));
-				}
+		/* Fill palette */
+		for (UINT k = 0; k < nMaxColors; ++k) {
+			if (nMaxColors > 2) {
+				CIELABConvertor::Lab lab1;
+				lab1.alpha = (m_transparentPixelIndex >= 0) ? static_cast<BYTE>(palette[k][3]) : BYTE_MAX;
+				lab1.L = palette[k][0], lab1.A = palette[k][1], lab1.B = palette[k][2];
+				pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
 			}
-
-			arrange2Colors(pixels, pPalette, qPixels.get());
+			else {
+				pPalette->Entries[k] = Color::MakeARGB(clamp(static_cast<int>(palette[k][3]), 0, BYTE_MAX), clamp(static_cast<int>(palette[k][0]), 0, BYTE_MAX),
+					clamp(static_cast<int>(palette[k][1]), 0, BYTE_MAX), clamp(static_cast<int>(palette[k][2]), 0, BYTE_MAX));
+			}
 		}
+
+		if (nMaxColors > 2)
+			arrange2Colors(pixels, pPalette, qPixels.get());
 		else {
 			if (m_transparentPixelIndex >= 0) {
 				pPalette->Entries[0] = Color::Black;
