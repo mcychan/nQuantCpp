@@ -81,12 +81,10 @@ namespace PnnQuant
 		/* Build histogram */
 		for (const auto& pixel : pixels) {
 			Color c(pixel);
-			if (c.GetA() <= alphaThreshold)
-				c = m_transparentColor;
 
 			int index = GetARGBIndex(c, hasSemiTransparency, nMaxColors < 64 || m_transparentPixelIndex >= 0);
 			auto& tb = bins[index];
-			tb.ac += c.GetA();
+			tb.ac += max(alphaThreshold >> 1, c.GetA());
 			tb.rc += c.GetR();
 			tb.gc += c.GetG();
 			tb.bc += c.GetB();

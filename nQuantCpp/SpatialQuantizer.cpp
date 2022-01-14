@@ -404,7 +404,7 @@ namespace SpatialQuant
 	void compute_a_image(const vector<ARGB>& image, array2d<vector_fixed<double, 4> >& b, array2d<vector_fixed<double, 4> >& a, const UINT nMaxColors)
 	{
 		Color lastPixel = m_transparentColor;
-		auto threshold = 256 / nMaxColors;
+		int threshold = 256 / nMaxColors;
 
 		const int a_width = a.get_width(), a_height = a.get_height();
 		const int radius_width = (b.get_width() - 1) / 2, radius_height = (b.get_height() - 1) / 2;
@@ -415,8 +415,8 @@ namespace SpatialQuant
 						auto pixelIndex = j_y * a.get_width() + j_x;
 						Color jPixel(image[pixelIndex]);
 						if (jPixel.GetA() <= alphaThreshold)
-							jPixel = (nMaxColors > 8 && pixelIndex % threshold == 0) ? lastPixel : m_transparentColor;
-						else
+							jPixel = (nMaxColors >= 16 && pixelIndex % threshold == 0) ? lastPixel : m_transparentColor;
+						else if (pixelIndex % 2 == 0)
 							lastPixel = jPixel;
 
 						vector_fixed<double, 4> pixel;

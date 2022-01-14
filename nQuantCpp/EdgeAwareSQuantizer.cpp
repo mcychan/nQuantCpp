@@ -176,7 +176,7 @@ namespace EdgeAwareSQuant
 	void compute_a_image_ea(const vector<ARGB>& image, Mat<Mat<float> >& b, array2d<vector_fixed<float, 4> >& a, const UINT nMaxColors)
 	{
 		Color lastPixel = m_transparentColor;
-		auto threshold = 256 / nMaxColors;
+		int threshold = 256 / nMaxColors;
 
 		int extendedFilterRadius = (b(0, 0).get_width() - 1) / 2;
 		for (int i_y = 0; i_y < a.get_height(); ++i_y) {
@@ -190,7 +190,7 @@ namespace EdgeAwareSQuant
 						auto pixelIndex = j_y * a.get_width() + j_x;
 						Color jPixel(image[pixelIndex]);
 						if (jPixel.GetA() <= alphaThreshold)
-							jPixel = (nMaxColors > 8 && pixelIndex % threshold == 0) ? lastPixel : m_transparentColor;
+							jPixel = (nMaxColors >= 16 && pixelIndex % threshold == 0) ? lastPixel : m_transparentColor;
 						else
 							lastPixel = jPixel;
 
