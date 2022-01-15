@@ -84,7 +84,7 @@ namespace PnnQuant
 
 			int index = GetARGBIndex(c, hasSemiTransparency, nMaxColors < 64 || m_transparentPixelIndex >= 0);
 			auto& tb = bins[index];
-			tb.ac += max(alphaThreshold >> 1, c.GetA());
+			tb.ac += max(alphaThreshold + 1, c.GetA());
 			tb.rc += c.GetR();
 			tb.gc += c.GetG();
 			tb.bc += c.GetB();
