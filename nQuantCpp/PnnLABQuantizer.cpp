@@ -148,7 +148,7 @@ namespace PnnLABQuant
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
 			auto& tb = bins[index];
-			tb.ac += max(alphaThreshold >> 1, c.GetA());
+			tb.ac += max(alphaThreshold + 1, c.GetA());
 			tb.Lc += lab1.L;
 			tb.Ac += lab1.A;
 			tb.Bc += lab1.B;
