@@ -337,7 +337,7 @@ namespace EdgeAwareSQuant
 					val = maxLabValues[j];
 
 				if (k > 2)
-					val = max(alphaThreshold >> 1, val);
+					val = max(alphaThreshold, val);
 
 				auto palette_delta = abs(palette[v][k] - val);
 				if (palette_delta > 1.0f / divisor)
