@@ -191,7 +191,7 @@ namespace EdgeAwareSQuant
 						Color jPixel(image[pixelIndex]);
 						if (jPixel.GetA() <= alphaThreshold)
 							jPixel = (nMaxColors >= 16 && pixelIndex % threshold == 0) ? lastPixel : m_transparentColor;
-						else
+						else if (nMaxColors > 64 || pixelIndex % 2 == 0)
 							lastPixel = jPixel;
 
 						if (nMaxColors > 2) {
@@ -321,7 +321,7 @@ namespace EdgeAwareSQuant
 		}
 
 		const int length = hasSemiTransparency ? 4 : 3;
-		const float divisor = 255.0f;
+		const auto divisor = 255.0f;
 		
 		for (short k = 0; k < length; ++k) {
 			auto j = palette.size() > 2 ? k : 3;
@@ -336,7 +336,10 @@ namespace EdgeAwareSQuant
 				else if (val > maxLabValues[j])
 					val = maxLabValues[j];
 
-				float palette_delta = abs(palette[v][k] - val);
+				if (k > 2)
+					val = max(alphaThreshold >> 1, val);
+
+				auto palette_delta = abs(palette[v][k] - val);
 				if (palette_delta > 1.0f / divisor)
 					++palatte_changed;
 				palette[v][k] = val;
@@ -419,19 +422,18 @@ namespace EdgeAwareSQuant
 		const auto total_pixels = pIndexImg8->get_width() * pIndexImg8->get_height();
 		auto paletteSize = palette.size() * 1.0f;
 		const auto divisor = 1.0;
-		auto rate = 1.5 / log2(palette.size());
-		if (palette.size() > 96 && palette.size() < 192)
-			rate = 4.0 / log2(palette.size());
+		auto rate = 2.0 / log2(palette.size());
 
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
 			vector<vector<pair<float, int> > > centroidDist(paletteSize, vector<pair<float, int> >(paletteSize, pair<float, int>(0.0f, -1)));
 			for (int l1 = 0; l1 < palette.size(); ++l1) {
-				for (int l2 = l1; l2 < palette.size(); ++l2) {
-					CIELABConvertor::Lab lab1, lab2;
-					lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[l1][3]) : BYTE_MAX;
-					lab1.L = palette[l1][0], lab1.A = palette[l1][1], lab1.B = palette[l1][2];
+				CIELABConvertor::Lab lab1;
+				lab1.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[l1][3]) : BYTE_MAX;
+				lab1.L = palette[l1][0], lab1.A = palette[l1][1], lab1.B = palette[l1][2];
 
+				for (int l2 = l1; l2 < palette.size(); ++l2) {
+					CIELABConvertor::Lab lab2;
 					lab2.alpha = hasSemiTransparency ? static_cast<BYTE>(palette[l2][3]) : BYTE_MAX;
 					lab2.L = palette[l2][0], lab2.A = palette[l2][1], lab2.B = palette[l2][2];
 
@@ -526,7 +528,8 @@ namespace EdgeAwareSQuant
 							}
 						}
 
-
+						if (length > 3)
+							palette[bestLabel][3] = max(alphaThreshold + 1, palette[bestLabel][3]);
 						pIndexImg8->at(i_y, i_x) = bestLabel;
 						if ((palette[bestLabel] - palette[old_max_v]).norm_squared() >= divisor)
 							++pixels_changed;
@@ -688,7 +691,7 @@ namespace EdgeAwareSQuant
 		UINT pixelIndex = 0;
 		// see equation (7) in the paper
 		Mat<float> saliencyMap(bitmapHeight, bitmapWidth);
-		float saliencyBase = 0.1;
+		auto saliencyBase = 0.1f;
 		for (int y = 0; y < saliencyMap.get_height(); ++y) {
 			for (int x = 0; x < saliencyMap.get_width(); ++x) {
 				Color c(pixels[pixelIndex++]);
@@ -712,7 +715,7 @@ namespace EdgeAwareSQuant
 		DivQuant::DivQuantizer divQuantizer;
 		divQuantizer.quant_varpart_fast(pixels.data(), pixels.size(), pPalette);
 
-		const float divisor = hasSemiTransparency ? 255.0f : 1.0f;
+		const auto divisor = hasSemiTransparency ? 255.0f : 1.0f;
 		vector<vector_fixed<float, 4> > palette(nMaxColors);
 		for (UINT k = 0; k < nMaxColors; ++k) {
 			Color c(pPalette->Entries[k]);

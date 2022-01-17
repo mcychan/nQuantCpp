@@ -416,7 +416,7 @@ namespace SpatialQuant
 						Color jPixel(image[pixelIndex]);
 						if (jPixel.GetA() <= alphaThreshold)
 							jPixel = (nMaxColors >= 16 && pixelIndex % threshold == 0) ? lastPixel : m_transparentColor;
-						else if (pixelIndex % 2 == 0)
+						else if (nMaxColors > 64 || pixelIndex % 2 == 0)
 							lastPixel = jPixel;
 
 						vector_fixed<double, 4> pixel;
@@ -505,20 +505,20 @@ namespace SpatialQuant
 		// To mix the pixels a little, we assume each fine pixel
 		// is 1.2 fine pixels wide and high.
 		for (int y = 0; y < coarse_height; ++y) {
-			const double top = max(0.0, (y - 0.1) / 2.0), bottom = min(smallVal.get_height() - 0.001, (y + 1.1) / 2.0);
-			const int y_top = (int)floor(top), y_bottom = (int)floor(bottom);
+			const auto top = max(0.0, (y - 0.1) / 2.0), bottom = min(smallVal.get_height() - 0.001, (y + 1.1) / 2.0);
+			const auto y_top = (int)floor(top), y_bottom = (int)floor(bottom);
 			for (int x = 0; x < coarse_width; ++x) {
-				const double left = max(0.0, (x - 0.1) / 2.0), right = min(smallVal.get_width() - 0.001, (x + 1.1) / 2.0);
-				const int x_left = (int)floor(left), x_right = (int)floor(right);
-				const double area = (right - left) * (bottom - top);
-				const double top_left_weight = (ceil(left) - left) * (ceil(top) - top) / area;
-				const double top_right_weight = (right - floor(right)) * (ceil(top) - top) / area;
-				const double bottom_left_weight = (ceil(left) - left) * (bottom - floor(bottom)) / area;
-				const double bottom_right_weight = (right - floor(right)) * (bottom - floor(bottom)) / area;
-				const double top_weight = (right - left) * (ceil(top) - top) / area;
-				const double bottom_weight = (right - left) * (bottom - floor(bottom)) / area;
-				const double left_weight = (bottom - top) * (ceil(left) - left) / area;
-				const double right_weight = (bottom - top) * (right - floor(right)) / area;
+				const auto left = max(0.0, (x - 0.1) / 2.0), right = min(smallVal.get_width() - 0.001, (x + 1.1) / 2.0);
+				const auto x_left = (int)floor(left), x_right = (int)floor(right);
+				const auto area = (right - left) * (bottom - top);
+				const auto top_left_weight = (ceil(left) - left) * (ceil(top) - top) / area;
+				const auto top_right_weight = (right - floor(right)) * (ceil(top) - top) / area;
+				const auto bottom_left_weight = (ceil(left) - left) * (bottom - floor(bottom)) / area;
+				const auto bottom_right_weight = (right - floor(right)) * (bottom - floor(bottom)) / area;
+				const auto top_weight = (right - left) * (ceil(top) - top) / area;
+				const auto bottom_weight = (right - left) * (bottom - floor(bottom)) / area;
+				const auto left_weight = (bottom - top) * (ceil(left) - left) / area;
+				const auto right_weight = (bottom - top) * (right - floor(right)) / area;
 				for (int z = 0; z < big.get_depth(); ++z) {
 					if (x_left == x_right && y_top == y_bottom)
 						big(x, y, z) = smallVal(x_left, y_top, z);
@@ -555,6 +555,7 @@ namespace SpatialQuant
 					for (int j_x = max(0, i_x - center_x); j_x < max_j_x; ++j_x) {
 						if (i_x == j_x && i_y == j_y)
 							continue;
+
 						auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 						for (int v = 0; v < palette_size; ++v) {
 							auto v1 = coarse_variables(i_x, i_y, v);
@@ -634,6 +635,8 @@ namespace SpatialQuant
 				else if (val > maxLabValues[j])
 					val = maxLabValues[j];
 
+				if (k > 2)
+					val = max(alphaThreshold + 1, val);
 				palette[v][k] = val;
 			}
 		}
@@ -778,8 +781,8 @@ namespace SpatialQuant
 					p_i *= 2.0;
 					p_i += a(i_x, i_y);
 
-					double max_meanfield_log = -numeric_limits<double>::infinity();
-					double meanfield_sum = 0.0;
+					auto max_meanfield_log = -numeric_limits<double>::infinity();
+					auto meanfield_sum = 0.0;
 					auto meanfield_logs = make_unique<double[]>(nMaxColor);
 
 					for (UINT v = 0; v < nMaxColor; ++v) {
@@ -805,14 +808,14 @@ namespace SpatialQuant
 					auto old_max_v = best_match_color(coarse_variables, i_x, i_y, nMaxColor);
 					auto& j_pal = (*p_palette_sum)(i_x, i_y);
 					for (UINT v = 0; v < nMaxColor; ++v) {
-						double new_val = meanfields[v] / meanfield_sum;
+						auto new_val = meanfields[v] / meanfield_sum;
 						// Prevent the matrix S from becoming singular
 						if (new_val <= 0)
 							new_val = 1e-10;
 						if (new_val >= 1)
 							new_val = 1 - 1e-10;
 
-						double delta_m_iv = new_val - coarse_variables(i_x, i_y, v);
+						auto delta_m_iv = new_val - coarse_variables(i_x, i_y, v);
 
 						coarse_variables(i_x, i_y, v) = new_val;
 						for (int p = 0; p < length; ++p)
@@ -823,7 +826,8 @@ namespace SpatialQuant
 					}
 					meanfields.reset();
 
-					auto max_v = best_match_color(coarse_variables, i_x, i_y, nMaxColor);
+					auto max_v = best_match_color(coarse_variables, i_x, i_y, nMaxColor);					
+
 					// Only consider it a change if the colors are different enough
 					if ((palette[max_v] - palette[old_max_v]).norm_squared() >= divisor) {
 						++pixels_changed;
@@ -846,6 +850,8 @@ namespace SpatialQuant
 							}
 						}
 					}
+					if (length > 3)
+						palette[max_v][3] = max(alphaThreshold + 1, palette[max_v][3]);
 					++pixels_visited;
 
 					// Show progress with dots - in a graphical interface,
