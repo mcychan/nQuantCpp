@@ -322,7 +322,7 @@ namespace EdgeAwareSQuant
 		}
 
 		const int length = hasSemiTransparency ? 4 : 3;
-		const auto maxDelta = 1.0f / 255.0f;
+		const auto maxDelta = hasSemiTransparency ? alphaThreshold / 255.0f : 1.0f / 255.0f;
 		
 		for (short k = 0; k < length; ++k) {
 			auto j = palette.size() > 2 ? k : 3;
