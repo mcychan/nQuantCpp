@@ -410,12 +410,13 @@ namespace SpatialQuant
 		const int radius_width = (b.get_width() - 1) / 2, radius_height = (b.get_height() - 1) / 2;
 		for (int i_y = 0; i_y < a_height; ++i_y) {
 			for (int i_x = 0; i_x < a_width; ++i_x) {
+				Color iPixel(image[i_y * a.get_width() + i_x]);
 				for (int j_y = max(0, i_y - radius_height); j_y < a_height && j_y <= i_y + radius_height; ++j_y) {
 					for (int j_x = max(0, i_x - radius_width); j_x < a_width && j_x <= i_x + radius_width; ++j_x) {
 						auto pixelIndex = j_y * a.get_width() + j_x;
 						Color jPixel(image[pixelIndex]);
 						if (jPixel.GetA() <= alphaThreshold)
-							jPixel = (nMaxColors >= 16 && pixelIndex % threshold == 0) ? lastPixel : m_transparentColor;
+							jPixel = (nMaxColors >= 16 && pixelIndex % threshold == 0) ? lastPixel : iPixel;
 						else if (nMaxColors > 64 || pixelIndex % 2 == 0)
 							lastPixel = jPixel;
 
@@ -636,7 +637,7 @@ namespace SpatialQuant
 					val = maxLabValues[j];
 
 				if (k > 2)
-					val = max(alphaThreshold + 1, val);
+					val = max(alphaThreshold, val);
 				palette[v][k] = val;
 			}
 		}
@@ -672,7 +673,7 @@ namespace SpatialQuant
 
 		p_coarse_variables->fill_random(length);
 
-		double temperature = initial_temperature;
+		auto temperature = initial_temperature;
 
 		// Compute a_i, b_{ij} according to (11)
 		int extended_neighborhood_width = filter_weights.get_width() * 2 - 1;
@@ -717,7 +718,7 @@ namespace SpatialQuant
 		// Multiscale annealing
 		int coarse_level = max_coarse_level;
 		const int iters_per_level = temps_per_level;
-		double temperature_multiplier = pow(final_temperature / initial_temperature, 1.0 / (max(length, max_coarse_level * iters_per_level)));
+		auto temperature_multiplier = pow(final_temperature / initial_temperature, 1.0 / (max(length, max_coarse_level * iters_per_level)));
 
 		int iters_at_current_level = 0;
 		bool skip_palette_maintenance = false;
@@ -726,7 +727,7 @@ namespace SpatialQuant
 		auto p_palette_sum = make_unique<array2d< vector_fixed<double, 4> > >(p_coarse_variables->get_width(), p_coarse_variables->get_height());
 		compute_initial_j_palette_sum(*p_palette_sum, *p_coarse_variables, palette);
 
-		const double divisor = 1.0;
+		const auto maxDelta = hasSemiTransparency ? 4.0 : 1.0;
 		while (coarse_level >= 0 || temperature > final_temperature) {
 			// Need to reseat this reference in case we changed p_coarse_variables
 			auto& coarse_variables = *p_coarse_variables;
@@ -826,10 +827,12 @@ namespace SpatialQuant
 					}
 					meanfields.reset();
 
-					auto max_v = best_match_color(coarse_variables, i_x, i_y, nMaxColor);					
+					auto max_v = best_match_color(coarse_variables, i_x, i_y, nMaxColor);
+					if (length > 3)
+						palette[max_v][3] = max(alphaThreshold + 1, palette[max_v][3]);
 
 					// Only consider it a change if the colors are different enough
-					if ((palette[max_v] - palette[old_max_v]).norm_squared() >= divisor) {
+					if ((palette[max_v] - palette[old_max_v]).norm_squared() >= maxDelta) {
 						++pixels_changed;
 						// We don't add the outer layer of pixels , because
 						// there isn't much weight there, and if it does need
@@ -849,9 +852,7 @@ namespace SpatialQuant
 								visit_queue.emplace_front(j_x, j_y);
 							}
 						}
-					}
-					if (length > 3)
-						palette[max_v][3] = max(alphaThreshold + 1, palette[max_v][3]);
+					}					
 					++pixels_visited;
 
 					// Show progress with dots - in a graphical interface,

@@ -181,6 +181,7 @@ namespace EdgeAwareSQuant
 		int extendedFilterRadius = (b(0, 0).get_width() - 1) / 2;
 		for (int i_y = 0; i_y < a.get_height(); ++i_y) {
 			for (int i_x = 0; i_x < a.get_width(); ++i_x) {
+				Color iPixel(image[i_y * a.get_width() + i_x]);
 				for (int j_y = max(0, i_y - extendedFilterRadius); j_y < a.get_height() && j_y <= i_y + extendedFilterRadius; ++j_y) {
 					for (int j_x = max(0, i_x - extendedFilterRadius); j_x < a.get_width() && j_x <= i_x + extendedFilterRadius; ++j_x) {
 						auto tmpBvalue = b_value_ea(b, i_x, i_y, j_x, j_y);
@@ -190,7 +191,7 @@ namespace EdgeAwareSQuant
 						auto pixelIndex = j_y * a.get_width() + j_x;
 						Color jPixel(image[pixelIndex]);
 						if (jPixel.GetA() <= alphaThreshold)
-							jPixel = (nMaxColors >= 16 && pixelIndex % threshold == 0) ? lastPixel : m_transparentColor;
+							jPixel = (nMaxColors >= 16 && pixelIndex % threshold == 0) ? lastPixel : iPixel;
 						else if (nMaxColors > 64 || pixelIndex % 2 == 0)
 							lastPixel = jPixel;
 
@@ -321,7 +322,7 @@ namespace EdgeAwareSQuant
 		}
 
 		const int length = hasSemiTransparency ? 4 : 3;
-		const auto divisor = 255.0f;
+		const auto maxDelta = 1.0f / 255.0f;
 		
 		for (short k = 0; k < length; ++k) {
 			auto j = palette.size() > 2 ? k : 3;
@@ -340,7 +341,7 @@ namespace EdgeAwareSQuant
 					val = max(alphaThreshold, val);
 
 				auto palette_delta = abs(palette[v][k] - val);
-				if (palette_delta > 1.0f / divisor)
+				if (palette_delta > maxDelta)
 					++palatte_changed;
 				palette[v][k] = val;
 			}
@@ -421,8 +422,8 @@ namespace EdgeAwareSQuant
 
 		const auto total_pixels = pIndexImg8->get_width() * pIndexImg8->get_height();
 		auto paletteSize = palette.size() * 1.0f;
-		const auto divisor = 1.0;
-		auto rate = 2.0 / log2(palette.size());
+		const auto maxDelta = hasSemiTransparency ? 4.0 : 1.0;
+		auto rate = 2.0 / log2(paletteSize);
 
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
@@ -531,7 +532,7 @@ namespace EdgeAwareSQuant
 						if (length > 3)
 							palette[bestLabel][3] = max(alphaThreshold + 1, palette[bestLabel][3]);
 						pIndexImg8->at(i_y, i_x) = bestLabel;
-						if ((palette[bestLabel] - palette[old_max_v]).norm_squared() >= divisor)
+						if ((palette[bestLabel] - palette[old_max_v]).norm_squared() >= maxDelta)
 							++pixels_changed;
 
 						++pixels_visited;
