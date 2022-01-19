@@ -348,18 +348,17 @@ namespace SpatialQuant
 		return result;
 	}
 
-	void random_permutation(int count, vector<int>& result) {
-		result.resize(count);
+	void random_permutation(vector<int>& result) {
 		iota(result.begin(), result.end(), 0);
 		auto rng = default_random_engine{};
 		shuffle(result.begin(), result.end(), rng);
 	}
 
 	void random_permutation_2d(int width, int height, deque<pair<int, int> >& result) {
-		vector<int> perm1d;
-		random_permutation(width * height, perm1d);
-		for (auto& it = perm1d.cbegin(); it != perm1d.cend(); ++it)
-			result.emplace_front(*it % width, *it / width);
+		vector<int> perm1d(width * height);
+		random_permutation(perm1d);
+		for (const auto& val : perm1d)
+			result.emplace_front(val % width, val / width);
 	}
 
 	void compute_b_array(array2d<vector_fixed<double, 4> >& filter_weights,
@@ -727,7 +726,7 @@ namespace SpatialQuant
 		auto p_palette_sum = make_unique<array2d< vector_fixed<double, 4> > >(p_coarse_variables->get_width(), p_coarse_variables->get_height());
 		compute_initial_j_palette_sum(*p_palette_sum, *p_coarse_variables, palette);
 
-		const auto maxDelta = hasSemiTransparency ? 4.0 : 1.0;
+		const auto maxDelta = hasSemiTransparency ? 1.0 / palette.size() : 16.0 / palette.size();
 		while (coarse_level >= 0 || temperature > final_temperature) {
 			// Need to reseat this reference in case we changed p_coarse_variables
 			auto& coarse_variables = *p_coarse_variables;
@@ -962,9 +961,9 @@ namespace SpatialQuant
 
 	bool SpatialQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
-		const UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
-		const UINT bitmapWidth = pSource->GetWidth();
-		const UINT bitmapHeight = pSource->GetHeight();
+		const auto bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
+		const auto bitmapWidth = pSource->GetWidth();
+		const auto bitmapHeight = pSource->GetHeight();
 
 		hasSemiTransparency = false;
 		m_transparentPixelIndex = -1;
@@ -999,9 +998,8 @@ namespace SpatialQuant
 				palette[i][p] = getRandom(p);
 		}
 
-		auto pPaletteBYTEs = make_unique<BYTE[]>(pDest->GetPaletteSize());
-		auto pPalette = (ColorPalette*)pPaletteBYTEs.get();
-		pPalette->Count = nMaxColors;
+		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 
 		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
 			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
@@ -1012,6 +1010,7 @@ namespace SpatialQuant
 			return false;
 		}		
 
+		nMaxColors = pPalette->Count = palette.size();
 		/* Fill palette */
 		for (UINT k = 0; k < nMaxColors; ++k) {
 			if (nMaxColors > 2) {

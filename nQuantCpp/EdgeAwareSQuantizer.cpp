@@ -104,18 +104,17 @@ namespace EdgeAwareSQuant
 		}
 	}
 
-	void random_permutation(int count, vector<int>& result) {
-		result.resize(count);
+	void random_permutation(vector<int>& result) {
 		iota(result.begin(), result.end(), 0);
 		auto rng = default_random_engine{};
 		shuffle(result.begin(), result.end(), rng);
 	}
 
 	void random_permutation_2d(int width, int height, deque<pair<int, int> >& result) {
-		vector<int> perm1d;
-		random_permutation(width * height, perm1d);
-		for (auto& it = perm1d.cbegin(); it != perm1d.cend(); ++it)
-			result.emplace_front(*it % width, *it / width);
+		vector<int> perm1d(width * height);
+		random_permutation(perm1d);
+		for (const auto& val : perm1d)
+			result.emplace_front(val % width, val / width);
 	}
 
 	void getLab(const Color& c, CIELABConvertor::Lab& lab1)
@@ -304,7 +303,7 @@ namespace EdgeAwareSQuant
 	}
 
 	void refine_palette_icm_mat(array2d<vector_fixed<float, 4> >& s, const Mat<BYTE>& indexImg8,
-		const array2d<vector_fixed<float, 4> >& a, vector<vector_fixed<float, 4> >& palette, int& palatte_changed)
+		const array2d<vector_fixed<float, 4> >& a, const double maxDelta, vector<vector_fixed<float, 4> >& palette, int& palatte_changed)
 	{
 		// We only computed the half of S above the diagonal - reflect it
 		for (int v = 0; v < s.get_width(); v++) {
@@ -322,7 +321,6 @@ namespace EdgeAwareSQuant
 		}
 
 		const int length = hasSemiTransparency ? 4 : 3;
-		const auto maxDelta = hasSemiTransparency ? alphaThreshold / 255.0f : 1.0f / 255.0f;
 		
 		for (short k = 0; k < length; ++k) {
 			auto j = palette.size() > 2 ? k : 3;
@@ -422,7 +420,7 @@ namespace EdgeAwareSQuant
 
 		const auto total_pixels = pIndexImg8->get_width() * pIndexImg8->get_height();
 		auto paletteSize = palette.size() * 1.0f;
-		const auto maxDelta = hasSemiTransparency ? 4.0 : 1.0;
+		const auto maxDelta = hasSemiTransparency ? 1.0 / paletteSize : 16.0 / paletteSize;
 		auto rate = 2.0 / log2(paletteSize);
 
 		while (coarse_level >= 0) {
@@ -541,7 +539,7 @@ namespace EdgeAwareSQuant
 
 				//----update palette----
 				compute_initial_s_ea_icm(s, *pIndexImg8, b_array[coarse_level]);
-				refine_palette_icm_mat(s, *pIndexImg8, a, palette, palette_changed);
+				refine_palette_icm_mat(s, *pIndexImg8, a, maxDelta, palette, palette_changed);
 			}
 
 			if (--coarse_level < 0)
@@ -681,9 +679,9 @@ namespace EdgeAwareSQuant
 
 	bool EdgeAwareSQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
-		const UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
-		const UINT bitmapWidth = pSource->GetWidth();
-		const UINT bitmapHeight = pSource->GetHeight();
+		const auto bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
+		const auto bitmapWidth = pSource->GetWidth();
+		const auto bitmapHeight = pSource->GetHeight();
 
 		m_transparentPixelIndex = -1;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
@@ -706,9 +704,8 @@ namespace EdgeAwareSQuant
 		if (nMaxColors > 256)
 			nMaxColors = 256;
 
-		auto pPaletteBYTEs = make_unique<BYTE[]>(pDest->GetPaletteSize());
-		auto pPalette = (ColorPalette*)pPaletteBYTEs.get();
-		pPalette->Count = nMaxColors;
+		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 
 		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
 			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
@@ -718,7 +715,7 @@ namespace EdgeAwareSQuant
 
 		const auto divisor = hasSemiTransparency ? 255.0f : 1.0f;
 		vector<vector_fixed<float, 4> > palette(nMaxColors);
-		for (UINT k = 0; k < nMaxColors; ++k) {
+		for (UINT k = 0; k < pPalette->Count; ++k) {
 			Color c(pPalette->Entries[k]);
 			palette[k][0] = c.GetR() / 255.0f;
 			palette[k][1] = c.GetG() / 255.0f;
@@ -730,6 +727,8 @@ namespace EdgeAwareSQuant
 		filter_bila(pixels, weightMaps);
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		spatial_color_quant_ea_icm_saliency(pixels, weightMaps, saliencyMap, qPixels.get(), palette);		
+
+		nMaxColors = pPalette->Count = palette.size();
 
 		/* Fill palette */
 		for (UINT k = 0; k < nMaxColors; ++k) {			
