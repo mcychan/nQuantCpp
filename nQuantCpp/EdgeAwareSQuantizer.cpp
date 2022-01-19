@@ -104,17 +104,18 @@ namespace EdgeAwareSQuant
 		}
 	}
 
-	void random_permutation(vector<int>& result) {
+	void random_permutation(int count, vector<int>& result) {
+		result.resize(count);
 		iota(result.begin(), result.end(), 0);
 		auto rng = default_random_engine{};
 		shuffle(result.begin(), result.end(), rng);
 	}
 
 	void random_permutation_2d(int width, int height, deque<pair<int, int> >& result) {
-		vector<int> perm1d(width * height);
-		random_permutation(perm1d);
-		for (const auto& val : perm1d)
-			result.emplace_front(val % width, val / width);
+		vector<int> perm1d;
+		random_permutation(width * height, perm1d);
+		for (auto& it = perm1d.cbegin(); it != perm1d.cend(); ++it)
+			result.emplace_front(*it % width, *it / width);
 	}
 
 	void getLab(const Color& c, CIELABConvertor::Lab& lab1)
@@ -303,7 +304,7 @@ namespace EdgeAwareSQuant
 	}
 
 	void refine_palette_icm_mat(array2d<vector_fixed<float, 4> >& s, const Mat<BYTE>& indexImg8,
-		const array2d<vector_fixed<float, 4> >& a, const double maxDelta, vector<vector_fixed<float, 4> >& palette, int& palatte_changed)
+		const array2d<vector_fixed<float, 4> >& a, vector<vector_fixed<float, 4> >& palette, int& palatte_changed)
 	{
 		// We only computed the half of S above the diagonal - reflect it
 		for (int v = 0; v < s.get_width(); v++) {
@@ -321,15 +322,16 @@ namespace EdgeAwareSQuant
 		}
 
 		const int length = hasSemiTransparency ? 4 : 3;
-		
-		for (short k = 0; k < length; ++k) {
+		const auto maxDelta = hasSemiTransparency ? 1.0 / palette.size() : 1.0f / 64.0f;
+
+		for (short k = 0; k < length; ++k) {			
 			auto j = palette.size() > 2 ? k : 3;
 
 			auto& S_k = extract_vector_layer_2d(s, k);
 			auto& R_k = extract_vector_layer_1d(r, k);
 			auto& palette_channel = (-2.0f * S_k).matrix_inverse() * R_k;
 			for (UINT v = 0; v < palette.size(); ++v) {
-				auto val = palette_channel[v];				
+				auto val = palette_channel[v];
 				if (val < minLabValues[j] || isnan(val))
 					val = minLabValues[j];
 				else if (val > maxLabValues[j])
@@ -420,7 +422,7 @@ namespace EdgeAwareSQuant
 
 		const auto total_pixels = pIndexImg8->get_width() * pIndexImg8->get_height();
 		auto paletteSize = palette.size() * 1.0f;
-		const auto maxDelta = hasSemiTransparency ? 1.0 / paletteSize : 16.0 / paletteSize;
+		const auto maxDelta = hasSemiTransparency ? 4.0 : 1.0;
 		auto rate = 2.0 / log2(paletteSize);
 
 		while (coarse_level >= 0) {
@@ -539,7 +541,7 @@ namespace EdgeAwareSQuant
 
 				//----update palette----
 				compute_initial_s_ea_icm(s, *pIndexImg8, b_array[coarse_level]);
-				refine_palette_icm_mat(s, *pIndexImg8, a, maxDelta, palette, palette_changed);
+				refine_palette_icm_mat(s, *pIndexImg8, a, palette, palette_changed);
 			}
 
 			if (--coarse_level < 0)
@@ -584,7 +586,7 @@ namespace EdgeAwareSQuant
 				for (int yy = max(0, yyMin); yy < weightMaps.get_height() && yy <= yyMax; ++yy) {
 					for (int xx = max(0, xxMin); xx < weightMaps.get_width() && xx <= xxMax; ++xx) {
 						auto spaceD = sqr(y - yy) + sqr(x - xx);
-						
+
 						Color pixelXXYY(img[yy * weightMaps.get_width() + xx]);
 						CIELABConvertor::Lab lab2;
 						getLab(pixelXXYY, lab2);
@@ -593,7 +595,7 @@ namespace EdgeAwareSQuant
 						if (hasSemiTransparency)
 							colorD += sqr(lab2.L - lab1.L) + sqr(pixelXY.GetA() - pixelXXYY.GetA()) / exp(1.5);
 						else
-							colorD = abs(lab2.L - lab1.L) + _sqrt(colorD);						
+							colorD = abs(lab2.L - lab1.L) + _sqrt(colorD);
 
 						auto tmpW = exp(-spaceD / spacerDivisor - colorD / colorDivisor);
 
@@ -679,9 +681,9 @@ namespace EdgeAwareSQuant
 
 	bool EdgeAwareSQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
-		const auto bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
-		const auto bitmapWidth = pSource->GetWidth();
-		const auto bitmapHeight = pSource->GetHeight();
+		const UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
+		const UINT bitmapWidth = pSource->GetWidth();
+		const UINT bitmapHeight = pSource->GetHeight();
 
 		m_transparentPixelIndex = -1;
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
@@ -696,7 +698,7 @@ namespace EdgeAwareSQuant
 				Color c(pixels[pixelIndex++]);
 
 				CIELABConvertor::Lab lab1;
-				getLab(c, lab1);					
+				getLab(c, lab1);
 				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) * lab1.L / 255.0f;
 			}
 		}
@@ -704,8 +706,9 @@ namespace EdgeAwareSQuant
 		if (nMaxColors > 256)
 			nMaxColors = 256;
 
-		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
-		auto pPalette = (ColorPalette*)pPaletteBytes.get();
+		auto pPaletteBYTEs = make_unique<BYTE[]>(pDest->GetPaletteSize());
+		auto pPalette = (ColorPalette*)pPaletteBYTEs.get();
+		pPalette->Count = nMaxColors;
 
 		if (nMaxColors == 256 && pDest->GetPixelFormat() != PixelFormat8bppIndexed)
 			pDest->ConvertFormat(PixelFormat8bppIndexed, DitherTypeSolid, PaletteTypeCustom, pPalette, 0);
@@ -715,7 +718,7 @@ namespace EdgeAwareSQuant
 
 		const auto divisor = hasSemiTransparency ? 255.0f : 1.0f;
 		vector<vector_fixed<float, 4> > palette(nMaxColors);
-		for (UINT k = 0; k < pPalette->Count; ++k) {
+		for (UINT k = 0; k < nMaxColors; ++k) {
 			Color c(pPalette->Entries[k]);
 			palette[k][0] = c.GetR() / 255.0f;
 			palette[k][1] = c.GetG() / 255.0f;
@@ -726,12 +729,10 @@ namespace EdgeAwareSQuant
 		Mat<Mat<float> > weightMaps(bitmapHeight, bitmapWidth);
 		filter_bila(pixels, weightMaps);
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		spatial_color_quant_ea_icm_saliency(pixels, weightMaps, saliencyMap, qPixels.get(), palette);		
-
-		nMaxColors = pPalette->Count = palette.size();
+		spatial_color_quant_ea_icm_saliency(pixels, weightMaps, saliencyMap, qPixels.get(), palette);
 
 		/* Fill palette */
-		for (UINT k = 0; k < nMaxColors; ++k) {			
+		for (UINT k = 0; k < nMaxColors; ++k) {
 			if (nMaxColors > 2) {
 				CIELABConvertor::Lab lab1;
 				lab1.alpha = (m_transparentPixelIndex >= 0) ? static_cast<BYTE>(palette[k][3]) : BYTE_MAX;
@@ -740,9 +741,9 @@ namespace EdgeAwareSQuant
 			}
 			else {
 				pPalette->Entries[k] = Color::MakeARGB(clamp(static_cast<int>(palette[k][3]), 0, BYTE_MAX), clamp(static_cast<int>(palette[k][0]), 0, BYTE_MAX),
-					clamp(static_cast<int>(palette[k][1]), 0, BYTE_MAX), clamp(static_cast<int>(palette[k][2]), 0, BYTE_MAX));				
+					clamp(static_cast<int>(palette[k][1]), 0, BYTE_MAX), clamp(static_cast<int>(palette[k][2]), 0, BYTE_MAX));
 			}
-		}			
+		}
 
 		if (nMaxColors > 2)
 			arrange2Colors(pixels, pPalette, qPixels.get());

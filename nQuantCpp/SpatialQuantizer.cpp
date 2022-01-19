@@ -726,7 +726,6 @@ namespace SpatialQuant
 		auto p_palette_sum = make_unique<array2d< vector_fixed<double, 4> > >(p_coarse_variables->get_width(), p_coarse_variables->get_height());
 		compute_initial_j_palette_sum(*p_palette_sum, *p_coarse_variables, palette);
 
-		const auto maxDelta = hasSemiTransparency ? 1.0 / palette.size() : 16.0 / palette.size();
 		while (coarse_level >= 0 || temperature > final_temperature) {
 			// Need to reseat this reference in case we changed p_coarse_variables
 			auto& coarse_variables = *p_coarse_variables;
@@ -831,7 +830,7 @@ namespace SpatialQuant
 						palette[max_v][3] = max(alphaThreshold + 1, palette[max_v][3]);
 
 					// Only consider it a change if the colors are different enough
-					if ((palette[max_v] - palette[old_max_v]).norm_squared() >= maxDelta) {
+					if ((palette[max_v] - palette[old_max_v]).norm_squared() >= length) {
 						++pixels_changed;
 						// We don't add the outer layer of pixels , because
 						// there isn't much weight there, and if it does need
