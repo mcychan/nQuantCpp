@@ -676,6 +676,13 @@ namespace EdgeAwareSQuant
 						qPixels[pixelIndex] = k;
 				}
 			}
+			else {
+				for (int pixelIndex = 0; pixelIndex < pixels.size(); ++pixelIndex) {
+					Color c(pixels[pixelIndex]);
+					if (c.GetA() <= alphaThreshold)
+						qPixels[pixelIndex] = 0;
+				}
+			}
 		}
 	}
 
