@@ -118,6 +118,8 @@ namespace PnnQuant
 			auto delta = 3 * (.025 + weight);
 			PG -= delta;
 			PB += delta;
+			if (nMaxColors >= 64)
+				quan_rt = 0;
 		}
 
 		auto quanFn = getQuanFn(nMaxColors, quan_rt);
