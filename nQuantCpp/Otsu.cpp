@@ -108,7 +108,7 @@ namespace OtsuThreshold
 		}
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
+	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -117,7 +117,7 @@ namespace OtsuThreshold
 		unsigned short k = 0;
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
-			c = m_transparentColor;
+			return k;
 
 		double mindist = INT_MAX;
 		const auto nMaxColors = pPalette->Count;
@@ -249,8 +249,7 @@ namespace OtsuThreshold
 		auto bitmapHeight = pSrcImg->GetHeight();
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		if (!GrabPixels(pSrcImg, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, alphaThreshold))
-			return false;
+		GrabPixels(pSrcImg, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, alphaThreshold);
 
 		if (!isGrayscale)
 			convertToGrayScale(pixels);

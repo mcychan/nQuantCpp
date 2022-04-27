@@ -309,7 +309,7 @@ namespace PnnLABQuant
 		short k = 0;
 		for (int i = 0;; ++k) {
 			CIELABConvertor::Lab lab1;
-			lab1.alpha = m_transparentPixelIndex > -1 ? rint(bins[i].ac) : BYTE_MAX;
+			lab1.alpha = (hasSemiTransparency || m_transparentPixelIndex > -1) ? rint(bins[i].ac) : BYTE_MAX;
 			lab1.L = bins[i].Lc, lab1.A = bins[i].Ac, lab1.B = bins[i].Bc;
 			pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
 			if (m_transparentPixelIndex >= 0 && lab1.alpha == 0) {
