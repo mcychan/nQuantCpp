@@ -1,6 +1,6 @@
 #pragma once
 /* Generalized Hilbert ("gilbert") space-filling curve for rectangular domains of arbitrary (non-power of two) sizes.
-Copyright (c) 2021 Miller Cy Chan
+Copyright (c) 2021 - 2022 Miller Cy Chan
 * A general rectangle with a known orientation is split into three regions ("up", "right", "down"), for which the function calls itself recursively, until a trivial path can be produced. */
 
 #include "stdafx.h"
@@ -57,9 +57,9 @@ namespace Peano
         ErrorBox error(pixel);
         int i = 0;
         for (auto& eb : errorq) {
-		for(int j = 0; j < eb.length(); ++j)
-                    error[j] += eb[j] * m_weights[i];
-		++i;
+		    for(int j = 0; j < eb.length(); ++j)
+                error[j] += eb[j] * m_weights[i];
+		    ++i;
         }
 
         auto r_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[0], 0)));
@@ -68,7 +68,7 @@ namespace Peano
         auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
 		
         Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-        m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), x + y);
+        m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
 
         errorq.pop_front();
         c2 = m_pPalette->Entries[m_qPixels[bidx]];

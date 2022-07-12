@@ -24,6 +24,7 @@ namespace PnnLABQuant
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 	unordered_map<ARGB, unsigned short> nearestMap;
+	unique_ptr<float[]> saliencies;
 
 	struct pnnbin {
 		float ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
@@ -134,13 +135,21 @@ namespace PnnLABQuant
 		return[](const float& cnt, const bool isBlack) { return cnt; };
 	}
 
+	static float getSaliency(float L)
+	{
+		float saliencyBase = 0.1f;
+		return saliencyBase + (1 - saliencyBase) * L / 255.0f;
+	}
+
 	void PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT& nMaxColors)
 	{
 		short quan_rt = 1;
+		saliencies = make_unique<float[]>(pixels.size());
 		vector<pnnbin> bins(USHRT_MAX + 1);
 
 		/* Build histogram */
-		for (const auto& pixel : pixels) {
+		for (int i = 0; i < pixels.size(); ++i) {
+			const auto& pixel = pixels[i];
 			Color c(pixel);
 			if (c.GetA() <= alphaThreshold)
 				c = m_transparentColor;
@@ -149,6 +158,7 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
+			saliencies[i] = getSaliency(lab1.L);
 			auto& tb = bins[index];
 			tb.ac += c.GetA();
 			tb.Lc += lab1.L;
@@ -365,6 +375,10 @@ namespace PnnLABQuant
 				}
 			}
 			else if (hasSemiTransparency) {
+				curdist += sqr(getSaliency(lab2.L) - saliencies[pos]);
+				if (curdist > mindist)
+					continue;
+
 				curdist += sqr(lab2.L - lab1.L);
 				if (curdist > mindist)
 					continue;
@@ -376,6 +390,10 @@ namespace PnnLABQuant
 				curdist += sqr(lab2.B - lab1.B);
 			}
 			else if (nMaxColors > 32) {
+				curdist += sqr(getSaliency(lab2.L) - saliencies[pos]);
+				if (curdist > mindist)
+					continue;
+
 				curdist += abs(lab2.L - lab1.L);
 				if (curdist > mindist)
 					continue;
@@ -383,6 +401,10 @@ namespace PnnLABQuant
 				curdist += _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B));
 			}
 			else {
+				curdist += sqr(getSaliency(lab2.L) - saliencies[pos]);
+				if (curdist > mindist)
+					continue;
+
 				auto deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
