@@ -441,7 +441,8 @@ namespace PnnLABQuant
 				getLab(c2, lab2);
 				
 				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
-				err += sqr(getSaliency(lab2.L) - saliencies[pos]);
+				if (saliencies.get() != nullptr)
+					err += sqr(getSaliency(lab2.L) - saliencies[pos]);
 				if (hasSemiTransparency)
 					err += PA * sqr(c2.GetA() - c.GetA());
 
