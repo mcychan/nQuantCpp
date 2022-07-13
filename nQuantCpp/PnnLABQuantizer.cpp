@@ -375,10 +375,6 @@ namespace PnnLABQuant
 				}
 			}
 			else if (hasSemiTransparency) {
-				curdist += sqr(getSaliency(lab2.L) - saliencies[pos]);
-				if (curdist > mindist)
-					continue;
-
 				curdist += sqr(lab2.L - lab1.L);
 				if (curdist > mindist)
 					continue;
@@ -390,10 +386,6 @@ namespace PnnLABQuant
 				curdist += sqr(lab2.B - lab1.B);
 			}
 			else if (nMaxColors > 32) {
-				curdist += sqr(getSaliency(lab2.L) - saliencies[pos]);
-				if (curdist > mindist)
-					continue;
-
 				curdist += abs(lab2.L - lab1.L);
 				if (curdist > mindist)
 					continue;
@@ -401,10 +393,6 @@ namespace PnnLABQuant
 				curdist += _sqrt(sqr(lab2.A - lab1.A) + sqr(lab2.B - lab1.B));
 			}
 			else {
-				curdist += sqr(getSaliency(lab2.L) - saliencies[pos]);
-				if (curdist > mindist)
-					continue;
-
 				auto deltaL_prime_div_k_L_S_L = CIELABConvertor::L_prime_div_k_L_S_L(lab1, lab2);
 				curdist += sqr(deltaL_prime_div_k_L_S_L);
 				if (curdist > mindist)
@@ -449,7 +437,9 @@ namespace PnnLABQuant
 			
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
+				getLab(c2, lab2);
 				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
+				err += sqr(getSaliency(lab2.L) - saliencies[pos]);
 				if (hasSemiTransparency)
 					err += PA * sqr(c2.GetA() - c.GetA());
 
