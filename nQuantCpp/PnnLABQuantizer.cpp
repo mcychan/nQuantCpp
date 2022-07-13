@@ -437,7 +437,9 @@ namespace PnnLABQuant
 			
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
+				CIELABConvertor::Lab lab2;
 				getLab(c2, lab2);
+				
 				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
 				err += sqr(getSaliency(lab2.L) - saliencies[pos]);
 				if (hasSemiTransparency)
