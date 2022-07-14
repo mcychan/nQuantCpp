@@ -436,13 +436,14 @@ namespace PnnLABQuant
 			closest[2] = closest[3] = USHRT_MAX;
 			
 			for (; k < nMaxColors; ++k) {
-				Color c2(pPalette->Entries[k]);
-				CIELABConvertor::Lab lab2;
-				getLab(c2, lab2);
+				Color c2(pPalette->Entries[k]);				
 				
 				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
-				if (saliencies.get() != nullptr)
+				if (saliencies.get() != nullptr) {
+					CIELABConvertor::Lab lab2;
+					getLab(c2, lab2);
 					err += sqr(getSaliency(lab2.L) - saliencies[pos]);
+				}
 				if (hasSemiTransparency)
 					err += PA * sqr(c2.GetA() - c.GetA());
 
