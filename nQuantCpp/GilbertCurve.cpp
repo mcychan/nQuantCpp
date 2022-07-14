@@ -144,8 +144,10 @@ namespace Peano
 	
     void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, float divisor)
     {
-        m_divisor = divisor;
-		m_width = width;
+        m_divisor = (divisor < 3) ? 0.4f + divisor - pPalette->Count / 64.0f : divisor;
+    	if (divisor < 3 && this.divisor > divisor)
+            m_divisor = divisor;
+        m_width = width;
         m_height = height;
         m_image = pixels;
         m_pPalette = pPalette;
