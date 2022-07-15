@@ -137,7 +137,6 @@ namespace PnnLABQuant
 	void PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT& nMaxColors)
 	{
 		short quan_rt = 1;
-		saliencies = make_unique<float[]>(pixels.size());
 		vector<pnnbin> bins(USHRT_MAX + 1);
 
 		/* Build histogram */
