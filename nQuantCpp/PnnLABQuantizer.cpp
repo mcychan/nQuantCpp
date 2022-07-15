@@ -24,7 +24,6 @@ namespace PnnLABQuant
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 	unordered_map<ARGB, unsigned short> nearestMap;
-	unique_ptr<float[]> saliencies;
 
 	struct pnnbin {
 		float ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
@@ -135,12 +134,6 @@ namespace PnnLABQuant
 		return[](const float& cnt, const bool isBlack) { return cnt; };
 	}
 
-	static float getSaliency(float L)
-	{
-		float saliencyBase = 0.1f;
-		return saliencyBase + (1 - saliencyBase) * L / 255.0f;
-	}
-
 	void PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT& nMaxColors)
 	{
 		short quan_rt = 1;
@@ -158,7 +151,6 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab1;
 			getLab(c, lab1);
-			saliencies[i] = getSaliency(lab1.L);
 			auto& tb = bins[index];
 			tb.ac += c.GetA();
 			tb.Lc += lab1.L;
@@ -439,11 +431,6 @@ namespace PnnLABQuant
 				Color c2(pPalette->Entries[k]);				
 				
 				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
-				if (saliencies.get() != nullptr) {
-					CIELABConvertor::Lab lab2;
-					getLab(c2, lab2);
-					err += sqr(getSaliency(lab2.L) - saliencies[pos]);
-				}
 				if (hasSemiTransparency)
 					err += PA * sqr(c2.GetA() - c.GetA());
 
