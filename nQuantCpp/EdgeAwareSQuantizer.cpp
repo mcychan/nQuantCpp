@@ -568,10 +568,6 @@ namespace EdgeAwareSQuant
 		auto wMin = 100.0f;
 		auto colorDivisor = 2 * sigma_r * sigma_r;
 		auto spacerDivisor = 2 * sigma_s * sigma_s;
-		if (hasSemiTransparency) {
-			colorDivisor *= sigma_r;
-			spacerDivisor *= sigma_s;
-		}
 
 		for (int y = 0; y < weightMaps.get_height(); ++y) {
 			for (int x = 0; x < weightMaps.get_width(); ++x) {
@@ -706,7 +702,7 @@ namespace EdgeAwareSQuant
 
 				CIELABConvertor::Lab lab1;
 				getLab(c, lab1);
-				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) * lab1.L / 255.0f;
+				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f;
 			}
 		}
 
