@@ -25,6 +25,12 @@ namespace PnnLABQuant
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 	unordered_map<ARGB, unsigned short> nearestMap;
 
+	static const float coeffs[3][3] = {
+		{0.299f, 0.587f, 0.114f},
+		{-0.168735f, -0.331264f, 0.5f},
+		{0.5f, -0.418688f, -0.081312f}
+	};
+
 	struct pnnbin {
 		float ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
 		float cnt = 0;
@@ -429,9 +435,16 @@ namespace PnnLABQuant
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);				
 				
-				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
-				if (hasSemiTransparency)
-					err += PA * sqr(c2.GetA() - c.GetA());
+				auto err = 0.0;
+				if (hasSemiTransparency || pos % 2 == 0) {
+					if (hasSemiTransparency)
+						err += PA * sqr(c2.GetA() - c.GetA());
+					err += PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
+				}
+				else {
+					for (short i = 0; i < 3; ++i)
+						err += sqr(coeffs[i][0] * (c2.GetR() - c.GetR())) + sqr(coeffs[i][1] * (c2.GetG() - c.GetG())) + sqr(coeffs[i][2] * (c2.GetB() - c.GetB()));
+				}
 
 				if (err < closest[2]) {
 					closest[1] = closest[0];
