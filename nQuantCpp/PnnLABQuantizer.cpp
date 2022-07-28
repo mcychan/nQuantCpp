@@ -437,13 +437,35 @@ namespace PnnLABQuant
 				
 				auto err = 0.0;
 				if (hasSemiTransparency || pos % 2 == 0) {
-					if (hasSemiTransparency)
+					if (hasSemiTransparency) {
 						err += PA * sqr(c2.GetA() - c.GetA());
-					err += PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
+						if (err >= closest[3])
+							continue;
+					}
+					err += PR * sqr(c2.GetR() - c.GetR());
+					if (err >= closest[3])
+						continue;
+					
+					err += PG * sqr(c2.GetG() - c.GetG());
+					if (err >= closest[3])
+						continue;
+					
+					err += PB * sqr(c2.GetB() - c.GetB());
 				}
 				else {
-					for (short i = 0; i < 3; ++i)
-						err += sqr(coeffs[i][0] * (c2.GetR() - c.GetR())) + sqr(coeffs[i][1] * (c2.GetG() - c.GetG())) + sqr(coeffs[i][2] * (c2.GetB() - c.GetB()));
+					for (short i = 0; i < 3; ++i) {
+						err += sqr(coeffs[i][0] * (c2.GetR() - c.GetR()));
+						if (err >= closest[3])
+							break;
+						
+						err += sqr(coeffs[i][1] * (c2.GetG() - c.GetG()));
+						if (err >= closest[3])
+							break;
+						
+						err += sqr(coeffs[i][2] * (c2.GetB() - c.GetB()));
+						if (err >= closest[3])
+							break;
+					}
 				}
 
 				if (err < closest[2]) {
