@@ -435,34 +435,31 @@ namespace PnnLABQuant
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);				
 				
-				auto err = 0.0;
-				if (hasSemiTransparency || pos % 2 == 0) {
-					if (hasSemiTransparency) {
-						err += PA * sqr(c2.GetA() - c.GetA());
-						if (err >= closest[3])
-							continue;
-					}
-					err += PR * sqr(c2.GetR() - c.GetR());
-					if (err >= closest[3])
-						continue;
-					
-					err += PG * sqr(c2.GetG() - c.GetG());
-					if (err >= closest[3])
-						continue;
-					
-					err += PB * sqr(c2.GetB() - c.GetB());
-				}
+				auto err = PR * (1 - ratio) * sqr(c2.GetR() - c.GetR());
+				if (err >= closest[3])
+					continue;
+
+				err += PG * (1 - ratio) * sqr(c2.GetG() - c.GetG());
+				if (err >= closest[3])
+					continue;
+
+				err += PB * (1 - ratio) * sqr(c2.GetB() - c.GetB());
+				if (err >= closest[3])
+					continue;
+
+				if (hasSemiTransparency)
+					err += PA * (1 - ratio) * sqr(c2.GetA() - c.GetA());
 				else {
 					for (short i = 0; i < 3; ++i) {
-						err += sqr(coeffs[i][0] * (c2.GetR() - c.GetR()));
+						err += ratio * sqr(coeffs[i][0] * (c2.GetR() - c.GetR()));
 						if (err >= closest[3])
 							break;
 						
-						err += sqr(coeffs[i][1] * (c2.GetG() - c.GetG()));
+						err += ratio * sqr(coeffs[i][1] * (c2.GetG() - c.GetG()));
 						if (err >= closest[3])
 							break;
 						
-						err += sqr(coeffs[i][2] * (c2.GetB() - c.GetB()));
+						err += ratio * sqr(coeffs[i][2] * (c2.GetB() - c.GetB()));
 						if (err >= closest[3])
 							break;
 					}
