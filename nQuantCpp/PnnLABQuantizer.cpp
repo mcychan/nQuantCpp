@@ -485,9 +485,12 @@ namespace PnnLABQuant
 		else
 			closest = got->second;
 
-		auto MAX_ERR = pPalette->Count << 1;
-		if (c.GetR() > 0xF0 && c.GetG() > 0xF0 && c.GetB() > 0xF0)
-			MAX_ERR = pPalette->Count >> 1;
+		auto MAX_ERR = pPalette->Count;
+		if(hasSemiTransparency && MAX_ERR > 32) {
+			MAX_ERR = pPalette->Count << 1;
+			if (c.GetR() > 0xF0 && c.GetG() > 0xF0 && c.GetB() > 0xF0)
+				MAX_ERR = pPalette->Count >> 1;
+		}
 
 		int idx = 1;
 		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3])
