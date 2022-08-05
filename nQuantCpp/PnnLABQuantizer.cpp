@@ -19,6 +19,7 @@ namespace PnnLABQuant
 	BYTE alphaThreshold = 0xF;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
+	UINT width = 0;
 	double ratio = 1.0;
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
@@ -27,8 +28,8 @@ namespace PnnLABQuant
 
 	static const float coeffs[3][3] = {
 		{0.299f, 0.587f, 0.114f},
-		{-0.168735f, -0.331264f, 0.5f},
-		{0.5f, -0.418688f, -0.081312f}
+		{-0.14713f, -0.28886f, 0.436f},
+		{0.615f, -0.51499f, -0.10001f}
 	};
 
 	struct pnnbin {
@@ -432,6 +433,10 @@ namespace PnnLABQuant
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;
 			
+			int channel = 3;
+			if((pos / width) % 2 > 0 || (pos % width) % 2 > 0)
+				channel = 1;
+			
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);				
 				
@@ -450,7 +455,7 @@ namespace PnnLABQuant
 				if (hasSemiTransparency)
 					err += PA * (1 - ratio) * sqr(c2.GetA() - c.GetA());
 				else {
-					for (short i = 0; i < 3; ++i) {
+					for (short i = 0; i < channel; ++i) {
 						err += ratio * sqr(coeffs[i][0] * (c2.GetR() - c.GetR()));
 						if (err >= closest[3])
 							break;
@@ -522,7 +527,7 @@ namespace PnnLABQuant
 
 	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
-		const auto bitmapWidth = pSource->GetWidth();
+		const auto bitmapWidth = width = pSource->GetWidth();
 		const auto bitmapHeight = pSource->GetHeight();
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
