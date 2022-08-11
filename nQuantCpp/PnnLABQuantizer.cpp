@@ -19,7 +19,6 @@ namespace PnnLABQuant
 	BYTE alphaThreshold = 0xF;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
-	UINT width = 0;
 	double ratio = 1.0;
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
@@ -433,9 +432,9 @@ namespace PnnLABQuant
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;
 			
-			int channel = 3;
-			if((pos / width) % 2 > 0 || (pos % width) % 2 > 0)
-				channel = 1;
+			int start = 0;
+			if((pos % 5) > 0)
+				start = 1;
 			
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);				
@@ -455,7 +454,7 @@ namespace PnnLABQuant
 				if (hasSemiTransparency)
 					err += PA * (1 - ratio) * sqr(c2.GetA() - c.GetA());
 				else {
-					for (short i = 0; i < channel; ++i) {
+					for (int i = start; i < 3; ++i) {
 						err += ratio * sqr(coeffs[i][0] * (c2.GetR() - c.GetR()));
 						if (err >= closest[3])
 							break;
