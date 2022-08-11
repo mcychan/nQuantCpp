@@ -526,7 +526,7 @@ namespace PnnLABQuant
 
 	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
-		const auto bitmapWidth = width = pSource->GetWidth();
+		const auto bitmapWidth = pSource->GetWidth();
 		const auto bitmapHeight = pSource->GetHeight();
 
 		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
