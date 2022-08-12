@@ -491,9 +491,9 @@ namespace PnnLABQuant
 
 		auto MAX_ERR = pPalette->Count;
 		if(hasSemiTransparency && MAX_ERR > 32) {
-			MAX_ERR = pPalette->Count << 1;
+			MAX_ERR <<= 1;
 			if (c.GetR() > 0xF0 && c.GetG() > 0xF0 && c.GetB() > 0xF0)
-				MAX_ERR = pPalette->Count >> 1;
+				MAX_ERR >>= 1;
 		}
 
 		int idx = 1;
