@@ -15,7 +15,7 @@ Copyright (c) 2018-2021 Miller Cy Chan
 
 namespace PnnLABQuant
 {
-	double PR = .2126, PG = .7152, PB = .0722, PA = .3333;
+	double PR = 0.299, PG = 0.587, PB = 0.114, PA = .3333;
 	BYTE alphaThreshold = 0xF;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
@@ -433,7 +433,7 @@ namespace PnnLABQuant
 			closest[2] = closest[3] = USHRT_MAX;
 			
 			int start = 0;
-			if((pos % 5) > 0)
+			if((pos % ((rand() % (int) 5) + 1)) > 0)
 				start = 1;
 			
 			for (; k < nMaxColors; ++k) {
@@ -553,9 +553,6 @@ namespace PnnLABQuant
 
 		if (nMaxColors <= 32)
 			PR = PG = PB = PA = 1;
-		else if (bitmapWidth < 512 || bitmapHeight < 512) {
-			PR = 0.299; PG = 0.587; PB = 0.114;
-		}
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		if ((semiTransCount * 1.0 / pixels.size()) > .099)
