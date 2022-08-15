@@ -17,7 +17,7 @@ namespace PnnQuant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
-	double PR = .2126, PG = .7152, PB = .0722, PA = .3333;
+	double PR = .299, PG = .587, PB = .114, PA = .3333;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 	unordered_map<ARGB, unsigned short > nearestMap;
 
@@ -344,9 +344,6 @@ namespace PnnQuant
 
 		if (nMaxColors <= 32)
 			PR = PG = PB = PA = 1;
-		else if (bitmapWidth < 512 || bitmapHeight < 512) {
-			PR = 0.299; PG = 0.587; PB = 0.114;
-		}
 
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors);
