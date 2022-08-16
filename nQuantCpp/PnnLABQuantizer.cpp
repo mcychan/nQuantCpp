@@ -433,7 +433,7 @@ namespace PnnLABQuant
 			closest[2] = closest[3] = USHRT_MAX;
 			
 			int start = 0;
-			if(BlueNoise.RAW_BLUE_NOISE[pos & 63] > 6)
+			if(BlueNoise::RAW_BLUE_NOISE[pos & 63] > 6)
 				start = 1;
 			
 			for (; k < nMaxColors; ++k) {
