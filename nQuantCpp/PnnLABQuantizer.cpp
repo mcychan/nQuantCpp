@@ -224,7 +224,9 @@ namespace PnnLABQuant
 
 		const bool texicab = proportional > .025;		
 		
-		if (quan_rt != 0 && nMaxColors < 64) {
+		if (hasSemiTransparency)
+			ratio = .5;
+		else if (quan_rt != 0 && nMaxColors < 64) {
 			if (proportional > .018 && proportional < .022)
 				ratio = min(1.0, proportional + weight * exp(3.872));
 			else if (proportional > .1)
@@ -241,7 +243,7 @@ namespace PnnLABQuant
 		else
 			ratio = min(1.0, max(.98, 1 - weight * .7));
 
-		if (quan_rt < 0)
+		if (!hasSemiTransparency && quan_rt < 0)
 			ratio = min(1.0, weight * exp(1.997));
 
 		int h, l, l2;
@@ -432,7 +434,6 @@ namespace PnnLABQuant
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;
 			
-			auto delta = hasSemiTransparency ? 0.5 : ratio;
 			int start = 0;
 			if(BlueNoise::RAW_BLUE_NOISE[pos & 4095] > 0)
 				start = 1;
@@ -440,33 +441,33 @@ namespace PnnLABQuant
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);				
 				
-				auto err = PR * (1 - delta) * sqr(c2.GetR() - c.GetR());
+				auto err = PR * (1 - ratio) * sqr(c2.GetR() - c.GetR());
 				if (err >= closest[3])
 					continue;
 
-				err += PG * (1 - delta) * sqr(c2.GetG() - c.GetG());
+				err += PG * (1 - ratio) * sqr(c2.GetG() - c.GetG());
 				if (err >= closest[3])
 					continue;
 
-				err += PB * (1 - delta) * sqr(c2.GetB() - c.GetB());
+				err += PB * (1 - ratio) * sqr(c2.GetB() - c.GetB());
 				if (err >= closest[3])
 					continue;
 
 				if (hasSemiTransparency) {
-					err += PA * (1 - delta) * sqr(c2.GetA() - c.GetA());
+					err += PA * (1 - ratio) * sqr(c2.GetA() - c.GetA());
 					start = 1;
 				}
 				
 				for (int i = start; i < 3; ++i) {
-					err += delta * sqr(coeffs[i][0] * (c2.GetR() - c.GetR()));
+					err += ratio * sqr(coeffs[i][0] * (c2.GetR() - c.GetR()));
 					if (err >= closest[3])
 						break;
 						
-					err += delta * sqr(coeffs[i][1] * (c2.GetG() - c.GetG()));
+					err += ratio * sqr(coeffs[i][1] * (c2.GetG() - c.GetG()));
 					if (err >= closest[3])
 						break;
 						
-					err += delta * sqr(coeffs[i][2] * (c2.GetB() - c.GetB()));
+					err += ratio * sqr(coeffs[i][2] * (c2.GetB() - c.GetB()));
 					if (err >= closest[3])
 						break;
 				}
@@ -502,7 +503,7 @@ namespace PnnLABQuant
 		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3])
 			idx = 0;
 
-		if (!hasSemiTransparency && closest[idx + 2] >= MAX_ERR)
+		if (closest[idx + 2] >= MAX_ERR)
 			return nearestColorIndex(pPalette, argb, pos);
 		return closest[idx];
 	}
