@@ -16,10 +16,17 @@ namespace PnnQuant
 	BYTE alphaThreshold = 0xF;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
+	double ratio = .5;
 	ARGB m_transparentColor = Color::Transparent;
 	double PR = .299, PG = .587, PB = .114, PA = .3333;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
 	unordered_map<ARGB, unsigned short > nearestMap;
+
+	static const float coeffs[3][3] = {
+		{0.299f, 0.587f, 0.114f},
+		{-0.14713f, -0.28886f, 0.436f},
+		{0.615f, -0.51499f, -0.10001f}
+	};
 
 	struct pnnbin {
 		float ac = 0, rc = 0, gc = 0, bc = 0, err = 0;
@@ -38,12 +45,50 @@ namespace PnnQuant
 		auto wr = bin1.rc;
 		auto wg = bin1.gc;
 		auto wb = bin1.bc;
+
+		int start = 0;
+		if (BlueNoise::RAW_BLUE_NOISE[idx & 4095] > -77)
+			start = 1;
+
 		for (int i = bin1.fw; i; i = bins[i].fw) {
-			auto nerr = PR * sqr(bins[i].rc - wr) + PG * sqr(bins[i].gc - wg) + PB * sqr(bins[i].bc - wb);
-			if (hasSemiTransparency)
-				nerr += PA * sqr(bins[i].ac - wa);
-			auto n2 = bins[i].cnt;
-			nerr *= (n1 * n2) / (n1 + n2);
+			auto n2 = bins[i].cnt, nerr2 = (n1 * n2) / (n1 + n2);
+			if (nerr2 >= err)
+				continue;
+
+			auto nerr = 0.0;
+			if (hasSemiTransparency) {
+				start = 1;
+				nerr += nerr2 * (1 - ratio) * PA * sqr(bins[i].ac - wa);
+				if (nerr >= err)
+					continue;
+			}
+
+			nerr += nerr2 * (1 - ratio) * PR * sqr(bins[i].rc - wr);
+			if (nerr >= err)
+				continue;
+
+			nerr += nerr2 * (1 - ratio) * PG * sqr(bins[i].gc - wg);
+			if (nerr >= err)
+				continue;
+
+			nerr += nerr2 * (1 - ratio) * PB* sqr(bins[i].bc - wb);
+			if (nerr >= err)
+				continue;
+
+			for (int j = start; j < 3; ++j) {
+				nerr += nerr2 * ratio * sqr(coeffs[j][0] * (bins[i].rc - wr));
+				if (nerr >= err)
+					break;
+
+				nerr += nerr2 * ratio * sqr(coeffs[j][1] * (bins[i].gc - wg));
+				if (nerr >= err)
+					break;
+
+				nerr += nerr2 * ratio * sqr(coeffs[j][2] * (bins[i].bc - wb));
+				if (nerr >= err)
+					break;
+			}
+
 			if (nerr >= err)
 				continue;
 			err = nerr;
@@ -271,7 +316,18 @@ namespace PnnQuant
 
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
-				auto err = PR * sqr(c2.GetR() - c.GetR()) + PG * sqr(c2.GetG() - c.GetG()) + PB * sqr(c2.GetB() - c.GetB());
+				auto err = PR * sqr(c2.GetR() - c.GetR());
+				if (err >= closest[3])
+					break;
+
+				err += PG* sqr(c2.GetG() - c.GetG());
+				if (err >= closest[3])
+					break;
+
+				err += PB* sqr(c2.GetB() - c.GetB());
+				if (err >= closest[3])
+					break;
+
 				if (hasSemiTransparency)
 					err += PA * sqr(c2.GetA() - c.GetA());
 
