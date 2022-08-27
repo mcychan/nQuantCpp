@@ -187,7 +187,7 @@ namespace PnnLABQuant
 		auto weight = min(0.9, nMaxColors * 1.0 / maxbins);
 		if (weight > .0015 && weight < .002)
 			quan_rt = 2;
-		if (weight < .025 && nMaxColors > 32) {
+		if (weight < .025 && PG < 1 && PG >= coeffs[0][1]) {
 			auto delta = 3 * (.025 + weight);
 			PG -= delta;
 			PB += delta;
