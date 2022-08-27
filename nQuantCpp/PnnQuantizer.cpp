@@ -400,6 +400,9 @@ namespace PnnQuant
 
 		if (nMaxColors <= 32)
 			PR = PG = PB = PA = 1;
+		else {
+			PR = coeffs[0][0]; PG = coeffs[0][1]; PB = coeffs[0][2];
+		}
 
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors);
