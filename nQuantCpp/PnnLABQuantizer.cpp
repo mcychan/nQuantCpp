@@ -120,24 +120,20 @@ namespace PnnLABQuant
 		bin1.nn = nn;
 	}
 
-	typedef float (*QuanFn)(const float& cnt, const bool isBlack);
+	typedef float (*QuanFn)(const float& cnt);
 	QuanFn getQuanFn(const UINT& nMaxColors, const short quan_rt) {
 		if (quan_rt > 0) {
 			if (quan_rt > 1)
-				return[](const float& cnt, const bool isBlack) { return (float)(int)pow(cnt, 0.75); };
+				return[](const float& cnt) { return (float)(int)pow(cnt, 0.75); };
 			if (nMaxColors < 64)
-				return[](const float& cnt, const bool isBlack) {
-					if(isBlack)
-						return (float)(int)pow(cnt, 0.75);
+				return[](const float& cnt) {
 					return (float)(int)_sqrt(cnt);
 				};
-			return[](const float& cnt, const bool isBlack) {
-				if (isBlack)
-					return (float)pow(cnt, 0.75);
+			return[](const float& cnt) {
 				return (float)_sqrt(cnt);
 			};
 		}
-		return[](const float& cnt, const bool isBlack) { return cnt; };
+		return[](const float& cnt) { return cnt; };
 	}
 
 	void PnnLABQuantizer::pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT& nMaxColors)
@@ -187,8 +183,8 @@ namespace PnnLABQuant
 		auto weight = min(0.9, nMaxColors * 1.0 / maxbins);
 		if (weight > .0015 && weight < .002)
 			quan_rt = 2;
-		if (weight < .025 && PG < 1 && PG >= coeffs[0][1]) {
-			auto delta = 3 * (.025 + weight);
+		if (weight < .04 && PG < 1 && PG >= coeffs[0][1]) {
+			auto delta = exp(1.75) * weight;
 			PG -= delta;
 			PB += delta;
 			if (nMaxColors >= 64)
@@ -218,11 +214,11 @@ namespace PnnLABQuant
 			bins[j].fw = j + 1;
 			bins[j + 1].bk = j;
 
-			bins[j].cnt = quanFn(bins[j].cnt, j == 0);
+			bins[j].cnt = quanFn(bins[j].cnt);
 		}
-		bins[j].cnt = quanFn(bins[j].cnt, j == 0);
+		bins[j].cnt = quanFn(bins[j].cnt);
 
-		const bool texicab = proportional > .025;		
+		const bool texicab = proportional > .025;
 		
 		if (hasSemiTransparency)
 			ratio = .5;
@@ -305,7 +301,7 @@ namespace PnnLABQuant
 			tb.Lc = d * (n1 * tb.Lc + n2 * nb.Lc);
 			tb.Ac = d * (n1 * tb.Ac + n2 * nb.Ac);
 			tb.Bc = d * (n1 * tb.Bc + n2 * nb.Bc);
-			tb.cnt += nb.cnt;
+			tb.cnt += n2;
 			tb.mtm = ++i;
 
 			/* Unchain deleted bin */
@@ -439,7 +435,7 @@ namespace PnnLABQuant
 				start = 1;
 			
 			for (; k < nMaxColors; ++k) {
-				Color c2(pPalette->Entries[k]);				
+				Color c2(pPalette->Entries[k]);
 				
 				auto err = PR * (1 - ratio) * sqr(c2.GetR() - c.GetR());
 				if (err >= closest[3])
@@ -498,6 +494,9 @@ namespace PnnLABQuant
 			if (c.GetR() > 0xF0 && c.GetG() > 0xF0 && c.GetB() > 0xF0)
 				MAX_ERR >>= 1;
 		}
+
+		if(PG < coeffs[0][1] && BlueNoise::RAW_BLUE_NOISE[pos & 4095] > -88)
+			return nearestColorIndex(pPalette, argb, pos);
 
 		int idx = 1;
 		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3])

@@ -48,7 +48,7 @@ namespace PnnQuant
 
 		int start = 0;
 		if (BlueNoise::RAW_BLUE_NOISE[idx & 4095] > -88)
-			start = 1;
+			start = (PG < coeffs[0][1]) ? 3 : 1;
 
 		for (int i = bin1.fw; i; i = bins[i].fw) {
 			auto n2 = bins[i].cnt, nerr2 = (n1 * n2) / (n1 + n2);
@@ -98,24 +98,20 @@ namespace PnnQuant
 		bin1.nn = nn;
 	}
 
-	typedef float (*QuanFn)(const float& cnt, const bool isBlack);
+	typedef float (*QuanFn)(const float& cnt);
 	QuanFn getQuanFn(const UINT& nMaxColors, const short quan_rt) {
 		if (quan_rt > 0) {
 			if (nMaxColors < 64)
-				return[](const float& cnt, const bool isBlack) {
-					if (isBlack)
-						return (float)(int)pow(cnt, 0.75);
+				return[](const float& cnt) {
 					return (float)(int)_sqrt(cnt);
 				};
-			return[](const float& cnt, const bool isBlack) {
-				if (isBlack)
-					return (float)pow(cnt, 0.75);
+			return[](const float& cnt) {
 				return (float)_sqrt(cnt);
 			};
 		}
 		if (quan_rt < 0)
-			return[](const float& cnt, const bool isBlack) { return (float)(int)cbrt(cnt); };
-		return[](const float& cnt, const bool isBlack) { return cnt; };
+			return[](const float& cnt) { return (float)(int)cbrt(cnt); };
+		return[](const float& cnt) { return cnt; };
 	}
 
 	void pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT& nMaxColors)
@@ -161,10 +157,8 @@ namespace PnnQuant
 		double weight = nMaxColors * 1.0 / maxbins;
 		if (weight > .003 && weight < .005)
 			quan_rt = 0;
-		if (weight < .025 && PG < 1 && PG >= coeffs[0][1]) {
-			auto delta = 3 * (.025 + weight);
-			PG -= delta;
-			PB += delta;
+		if (weight < .04 && PG < 1 && PG >= coeffs[0][1]) {
+			PR = PG = PB = PA = 1;
 			if (nMaxColors >= 64)
 				quan_rt = 0;
 		}
@@ -176,9 +170,9 @@ namespace PnnQuant
 			bins[j].fw = j + 1;
 			bins[j + 1].bk = j;
 
-			bins[j].cnt = quanFn(bins[j].cnt, j == 0);
+			bins[j].cnt = quanFn(bins[j].cnt);
 		}
-		bins[j].cnt = quanFn(bins[j].cnt, j == 0);
+		bins[j].cnt = quanFn(bins[j].cnt);
 
 		auto heap = make_unique<int[]>(bins.size() + 1);
 		int h, l, l2;
@@ -204,7 +198,7 @@ namespace PnnQuant
 			/* Use heap to find which bins to merge */
 			for (;;) {
 				auto& tb = bins[b1 = heap[1]]; /* One with least error */
-											   /* Is stored error up to date? */
+				/* Is stored error up to date? */
 				if ((tb.tm >= tb.mtm) && (bins[tb.nn].mtm <= tb.tm))
 					break;
 				if (tb.mtm == USHRT_MAX) /* Deleted node */
@@ -236,7 +230,7 @@ namespace PnnQuant
 			tb.rc = d * rint(n1 * tb.rc + n2 * nb.rc);
 			tb.gc = d * rint(n1 * tb.gc + n2 * nb.gc);
 			tb.bc = d * rint(n1 * tb.bc + n2 * nb.bc);
-			tb.cnt += nb.cnt;
+			tb.cnt += n2;
 			tb.mtm = ++i;
 
 			/* Unchain deleted bin */
@@ -273,6 +267,11 @@ namespace PnnQuant
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
 			c = m_transparentColor;
+		
+		auto pr = PR, pg = PG, pb = PB;
+		if(BlueNoise::RAW_BLUE_NOISE[pos & 4095] > -88) {
+			pr = coeffs[0][0]; pg = coeffs[0][1]; pb = coeffs[0][2];
+		}
 
 		double mindist = INT_MAX;
 		const auto nMaxColors = pPalette->Count;
@@ -282,15 +281,15 @@ namespace PnnQuant
 			if (curdist > mindist)
 				continue;
 
-			curdist += PR * sqr(c2.GetR() - c.GetR());
+			curdist += pr * sqr(c2.GetR() - c.GetR());
 			if (curdist > mindist)
 				continue;
 
-			curdist += PG * sqr(c2.GetG() - c.GetG());
+			curdist += pg * sqr(c2.GetG() - c.GetG());
 			if (curdist > mindist)
 				continue;
 
-			curdist += PB * sqr(c2.GetB() - c.GetB());
+			curdist += pb * sqr(c2.GetB() - c.GetB());
 			if (curdist > mindist)
 				continue;
 
@@ -314,17 +313,22 @@ namespace PnnQuant
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;
 
+			auto pr = PR, pg = PG, pb = PB;
+			if(BlueNoise::RAW_BLUE_NOISE[pos & 4095] > -88) {
+				pr = coeffs[0][0]; pg = coeffs[0][1]; pb = coeffs[0][2];
+			}
+
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
-				auto err = PR * sqr(c2.GetR() - c.GetR());
+				auto err = pr * sqr(c2.GetR() - c.GetR());
 				if (err >= closest[3])
 					break;
 
-				err += PG* sqr(c2.GetG() - c.GetG());
+				err += pg* sqr(c2.GetG() - c.GetG());
 				if (err >= closest[3])
 					break;
 
-				err += PB* sqr(c2.GetB() - c.GetB());
+				err += pb* sqr(c2.GetB() - c.GetB());
 				if (err >= closest[3])
 					break;
 
