@@ -231,8 +231,10 @@ namespace PnnLABQuant
 				ratio = min(1.0, weight * exp(2.28));
 			else if (proportional > .03)
 				ratio = min(1.0, weight * exp(3.275));
-			else
-				ratio = min(1.0, proportional - weight * exp(1.997));
+			else {
+				auto beta = (maxbins % 2 == 0) ? -1 : 1;
+				ratio = min(1.0, proportional + beta * weight * exp(1.997));
+			}
 		}
 		else if (nMaxColors > 256)
 			ratio = min(1.0, 1 - 1.0 / proportional);
