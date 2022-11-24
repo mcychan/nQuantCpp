@@ -75,9 +75,12 @@ namespace Dl3Quant
 
 	double calc_err(CUBE3* rgb_table3, const int* squares3, const UINT& c1, const UINT& c2)
 	{
-		UINT P1 = rgb_table3[c1].pixel_count;
-		UINT P2 = rgb_table3[c2].pixel_count;
-		UINT P3 = P1 + P2;
+		auto P1 = rgb_table3[c1].pixel_count;
+		auto P2 = rgb_table3[c2].pixel_count;
+		auto P3 = P1 + P2;
+
+		if (P3 == 0)
+			return UINT_MAX;
 
 		int A3 = (rgb_table3[c1].a + rgb_table3[c2].a + (P3 >> 1)) / P3;
 		int R3 = (rgb_table3[c1].r + rgb_table3[c2].r + (P3 >> 1)) / P3;
@@ -121,7 +124,7 @@ namespace Dl3Quant
 			build_table3(rgb_table3, pixel);
 
 		UINT tot_colors = 0;
-		for (int i = 0; i < 65536; ++i) {
+		for (int i = 0; i < USHRT_MAX + 1; ++i) {
 			if (rgb_table3[i].pixel_count > 0) {
 				setARGB(rgb_table3[i]);
 				rgb_table3[tot_colors] = rgb_table3[i];
@@ -330,7 +333,7 @@ namespace Dl3Quant
 		pPalette->Count = nMaxColors;
 
 		if (nMaxColors > 2) {
-			auto rgb_table3 = make_unique<CUBE3[]>(65536);
+			auto rgb_table3 = make_unique<CUBE3[]>(USHRT_MAX + 1);
 			UINT tot_colors = build_table3(rgb_table3.get(), pixels);
 			int sqr_tbl[BYTE_MAX + BYTE_MAX + 1];
 
