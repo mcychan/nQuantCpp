@@ -18,6 +18,7 @@ namespace fs = std::filesystem;
 #include "EdgeAwareSQuantizer.h"
 #include "SpatialQuantizer.h"
 #include "DivQuantizer.h"
+#include "Dl3Quantizer.h"
 #include "MedianCut.h"
 #include "Otsu.h"
 #include <unordered_map>
@@ -35,7 +36,7 @@ ostream& tcout = cout;
 GdiplusStartupInput  m_gdiplusStartupInput;
 ULONG_PTR m_gdiplusToken;
 
-wstring algs[] = { L"PNN", L"PNNLAB", L"NEU", L"WU", L"EAS", L"SPA", L"DIV", L"MMC", L"OTSU" };
+wstring algs[] = { L"PNN", L"PNNLAB", L"NEU", L"WU", L"EAS", L"SPA", L"DIV", L"DL3", L"MMC", L"OTSU" };
 unordered_map<LPCTSTR, CLSID> extensionMap;
 
 void PrintUsage()
@@ -165,7 +166,11 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 	else if (algorithm == L"DIV") {
 		DivQuant::DivQuantizer divQuantizer;
 		bSucceeded = divQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
-	}	
+	}
+	else if (algorithm == L"DL3") {
+		Dl3Quant::Dl3Quantizer dl3Quantizer;
+		bSucceeded = dl3Quantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
+	}
 	else if (algorithm == L"MMC") {
 		MedianCutQuant::MedianCut mmcQuantizer;
 		bSucceeded = mmcQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
