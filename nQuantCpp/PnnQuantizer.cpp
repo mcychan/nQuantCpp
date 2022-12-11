@@ -16,7 +16,7 @@ namespace PnnQuant
 	BYTE alphaThreshold = 0xF;
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
-	double ratio = .5;
+	double ratio = .5, weight = 1.0;
 	ARGB m_transparentColor = Color::Transparent;
 	double PR = .299, PG = .587, PB = .114, PA = .3333;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
@@ -154,7 +154,7 @@ namespace PnnQuant
 		if (nMaxColors < 16)
 			quan_rt = -1;
 
-		double weight = nMaxColors * 1.0 / maxbins;
+		weight = nMaxColors * 1.0 / maxbins;
 		if (weight > .003 && weight < .005)
 			quan_rt = 0;
 		if (weight < .04 && PG < 1 && PG >= coeffs[0][1]) {
@@ -423,21 +423,21 @@ namespace PnnQuant
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		DitherFn ditherFn = dither ? nearestColorIndex : closestColorIndex;
-		if (nMaxColors <= 32 || (hasSemiTransparency && (semiTransCount * 1.0 / pixels.size()) > .099))
-			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), nMaxColors > 2 ? 1.8f : 1.5f);
-		else {
-			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get());
-			if (nMaxColors > 256) {
-				auto qHPixels = make_unique<ARGB[]>(pixels.size());
-				for (int i = 0; i < pixels.size(); ++i) {
-					Color c(pPalette->Entries[qPixels[i]]);
-					qHPixels[i] = hasSemiTransparency ? c.GetValue() : GetARGBIndex(c, false, m_transparentPixelIndex >= 0);
-				}
+		if ((semiTransCount * 1.0 / pixels.size()) > .099)
+			weight *= .01;
 
-				closestMap.clear();
-				nearestMap.clear();
-				return ProcessImagePixels(pDest, qHPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
+		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), weight);
+
+		if (nMaxColors > 256) {
+			auto qHPixels = make_unique<ARGB[]>(pixels.size());
+			for (int i = 0; i < pixels.size(); ++i) {
+				Color c(pPalette->Entries[qPixels[i]]);
+				qHPixels[i] = hasSemiTransparency ? c.GetValue() : GetARGBIndex(c, false, m_transparentPixelIndex >= 0);
 			}
+
+			closestMap.clear();
+			nearestMap.clear();
+			return ProcessImagePixels(pDest, qHPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
 		}
 
 		if(!dither)

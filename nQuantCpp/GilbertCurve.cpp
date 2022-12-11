@@ -32,8 +32,7 @@ namespace Peano
             return 4;
         }
     };
-	
-    float m_divisor = 1.0f;
+
     UINT m_width, m_height;
     const ARGB* m_image;
     const ColorPalette* m_pPalette;
@@ -43,7 +42,7 @@ namespace Peano
     deque<ErrorBox> errorq;
     float* m_weights;
     
-    static const BYTE DITHER_MAX = 9;
+    static BYTE DITHER_MAX = 9;
     static const float BLOCK_SIZE = 343.0f; 
     
     template <typename T> int sign(T val) {
@@ -56,9 +55,15 @@ namespace Peano
         Color pixel(m_image[bidx]);
         ErrorBox error(pixel);
         int i = 0;
+		float maxErr = DITHER_MAX - 1;
         for (auto& eb : errorq) {
 		    for(int j = 0; j < eb.length(); ++j)
                 error[j] += eb[j] * m_weights[i];
+
+			for (int j = 0; j < eb.length(); ++j) {
+				if(error[j] > maxErr)
+					maxErr = error[j];
+			}
 		    ++i;
         }
 
@@ -76,19 +81,18 @@ namespace Peano
         error[1] = g_pix - c2.GetG();
         error[2] = b_pix - c2.GetB();
         error[3] = a_pix - c2.GetA();
-		
-        if (m_divisor < 3 || m_pPalette->Count > 16) {
-            for (int j = 0; j < error.length(); ++j) {
-                if (abs(error[j]) < DITHER_MAX)
-                    continue;
 
-                error[j] /= m_divisor;
-            }
-        }
+		for (int j = 0; j < error.length(); ++j) {
+			if (abs(error[j]) < DITHER_MAX)
+				continue;
+
+			error[j] = (float) tanh(error.p[j] / maxErr * 8) * (DITHER_MAX - 1);
+		}
+
         errorq.emplace_back(error);
     }
     
-    void generate2d(int x, int y, int ax, int ay, int bx, int by) {    	
+    void generate2d(int x, int y, int ax, int ay, int bx, int by) {
     	int w = abs(ax + ay);
     	int h = abs(bx + by);
     	int dax = sign(ax);
@@ -126,7 +130,7 @@ namespace Peano
     		if ((w2 % 2) != 0 && w > 2) {
     			ax2 += dax;
     			ay2 += day;
-    		}    		
+    		}
     		generate2d(x, y, ax2, ay2, bx, by);
     		generate2d(x + ax2, y + ay2, ax - ax2, ay - ay2, bx, by);
     		return;
@@ -139,14 +143,11 @@ namespace Peano
 		
     	generate2d(x, y, bx2, by2, ax2, ay2);
     	generate2d(x + bx2, y + by2, ax, ay, bx - bx2, by - by2);
-    	generate2d(x + (ax - dax) + (bx2 - dbx), y + (ay - day) + (by2 - dby), -bx2, -by2, -(ax - ax2), -(ay - ay2));    		
+    	generate2d(x + (ax - dax) + (bx2 - dbx), y + (ay - day) + (by2 - dby), -bx2, -by2, -(ax - ax2), -(ay - ay2));
     }
 	
-    void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, float divisor)
+    void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, double weight)
     {
-        m_divisor = (divisor < 3) ? 0.4f + divisor - pPalette->Count / 64.0f : divisor;
-    	if (divisor >= 1.5f || m_divisor > 1.5f)
-            m_divisor = divisor;
         m_width = width;
         m_height = height;
         m_image = pixels;
@@ -154,9 +155,10 @@ namespace Peano
         m_qPixels = qPixels;
         m_ditherFn = ditherFn;
         m_getColorIndexFn = getColorIndexFn;
+		DITHER_MAX = weight < .01 ? (BYTE) 25 : 9;
         auto pWeights = make_unique<float[]>(DITHER_MAX);
         m_weights = pWeights.get();
-    	
+
         /* Dithers all pixels of the image in sequence using
          * the Gilbert path, and distributes the error in
          * a sequence of 9 pixels.
@@ -164,8 +166,9 @@ namespace Peano
         errorq.clear();
         errorq.resize(DITHER_MAX);
         const auto weightRatio = (float)pow(BLOCK_SIZE + 1.0f, 1.0f / (DITHER_MAX - 1.0f));
-        auto weight = 1.0f, sumweight = 0.0f;
-        for (int c = 0; c < DITHER_MAX; ++c) {            
+        weight = 1.0f;
+        auto sumweight = 0.0f;
+        for (int c = 0; c < DITHER_MAX; ++c) {
             sumweight += (m_weights[DITHER_MAX - c - 1] = 1.0f / weight);
             weight *= weightRatio;
         }
