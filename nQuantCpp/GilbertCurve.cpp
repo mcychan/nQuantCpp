@@ -55,16 +55,13 @@ namespace Peano
         Color pixel(m_image[bidx]);
         ErrorBox error(pixel);
         int i = 0;
-		float maxErr = DITHER_MAX - 1;
+	float maxErr = DITHER_MAX - 1;
         for (auto& eb : errorq) {
-		    for(int j = 0; j < eb.length(); ++j)
-                error[j] += eb[j] * m_weights[i];
-
-			for (int j = 0; j < eb.length(); ++j) {
-				if(error[j] > maxErr)
-					maxErr = error[j];
-			}
-		    ++i;
+    		for(int j = 0; j < eb.length(); ++j) {                
+    			if(error[j] > maxErr)
+    				maxErr = error[j];
+    		}
+    		++i;
         }
 
         auto r_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[0], 0)));
@@ -82,12 +79,12 @@ namespace Peano
         error[2] = b_pix - c2.GetB();
         error[3] = a_pix - c2.GetA();
 
-		for (int j = 0; j < error.length(); ++j) {
-			if (abs(error[j]) < DITHER_MAX)
-				continue;
+    	for (int j = 0; j < error.length(); ++j) {
+		if (abs(error[j]) < DITHER_MAX)
+			continue;
 
-			error[j] = (float) tanh(error.p[j] / maxErr * 8) * (DITHER_MAX - 1);
-		}
+		error[j] = (float) tanh(error.p[j] / maxErr * 8) * (DITHER_MAX - 1);
+	}
 
         errorq.emplace_back(error);
     }
