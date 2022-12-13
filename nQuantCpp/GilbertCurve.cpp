@@ -57,7 +57,8 @@ namespace Peano
         int i = 0;
 	float maxErr = DITHER_MAX - 1;
         for (auto& eb : errorq) {
-    		for(int j = 0; j < eb.length(); ++j) {                
+    		for(int j = 0; j < eb.length(); ++j) {
+			error[j] += eb[j] * m_weights[i];
     			if(error[j] > maxErr)
     				maxErr = error[j];
     		}
