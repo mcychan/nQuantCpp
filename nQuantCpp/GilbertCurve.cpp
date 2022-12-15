@@ -84,7 +84,8 @@ namespace Peano
 		if (abs(error[j]) < DITHER_MAX)
 			continue;
 
-		error[j] = (float) tanh(error.p[j] / maxErr * 8) * (DITHER_MAX - 1);
+		if(m_pPalette->Count > 2)
+			error[j] = (float) tanh(error.p[j] / maxErr * 8) * (DITHER_MAX - 1);
 	}
 
         errorq.emplace_back(error);
