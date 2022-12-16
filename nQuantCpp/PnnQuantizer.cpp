@@ -244,10 +244,6 @@ namespace PnnQuant
 		for (int i = 0;; ++k) {
 			auto alpha = (hasSemiTransparency || m_transparentPixelIndex > -1) ? rint(bins[i].ac) : BYTE_MAX;
 			pPalette->Entries[k] = Color::MakeARGB(alpha, (int) bins[i].rc, (int) bins[i].gc, (int) bins[i].bc);
-			if (m_transparentPixelIndex >= 0 && alpha == 0) {
-				swap(pPalette->Entries[0], pPalette->Entries[k]);
-				pPalette->Entries[0] = m_transparentColor;
-			}
 
 			if (!(i = bins[i].fw))
 				break;
@@ -267,15 +263,18 @@ namespace PnnQuant
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
 			c = m_transparentColor;
+
+		const auto nMaxColors = pPalette->Count;
+		if (nMaxColors > 2 && m_transparentPixelIndex >= 0 && c.GetA() > alphaThreshold)
+			k = 1;
 		
 		auto pr = PR, pg = PG, pb = PB;
 		if(BlueNoise::RAW_BLUE_NOISE[pos & 4095] > -88) {
 			pr = coeffs[0][0]; pg = coeffs[0][1]; pb = coeffs[0][2];
 		}
 
-		double mindist = INT_MAX;
-		const auto nMaxColors = pPalette->Count;
-		for (UINT i = 0; i < nMaxColors; ++i) {
+		double mindist = INT_MAX;		
+		for (UINT i = k; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
 			double curdist = PA * sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
@@ -362,7 +361,7 @@ namespace PnnQuant
 		else if (closest[0] > closest[1])
 			idx = pos % 2;
 
-		if (closest[idx + 2] >= MAX_ERR)
+		if (closest[idx + 2] >= MAX_ERR || (m_transparentPixelIndex >= 0 && closest[idx] == 0))
 			return nearestColorIndex(pPalette, argb, pos);
 		return closest[idx];
 	}

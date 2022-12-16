@@ -319,10 +319,6 @@ namespace PnnLABQuant
 			lab1.alpha = (hasSemiTransparency || m_transparentPixelIndex > -1) ? rint(bins[i].ac) : BYTE_MAX;
 			lab1.L = bins[i].Lc, lab1.A = bins[i].Ac, lab1.B = bins[i].Bc;
 			pPalette->Entries[k] = CIELABConvertor::LAB2RGB(lab1);
-			if (m_transparentPixelIndex >= 0 && lab1.alpha == 0) {
-				swap(pPalette->Entries[0], pPalette->Entries[k]);
-				pPalette->Entries[0] = m_transparentColor;
-			}
 
 			if (!(i = bins[i].fw))
 				break;
@@ -343,12 +339,15 @@ namespace PnnLABQuant
 		if (c.GetA() <= alphaThreshold)
 			c = m_transparentColor;
 
+		const auto nMaxColors = pPalette->Count;
+		if (nMaxColors > 2 && m_transparentPixelIndex >= 0 && c.GetA() > alphaThreshold)
+			k = 1;
+
 		double mindist = INT_MAX;
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
-
-		const auto nMaxColors = pPalette->Count;
-		for (UINT i = 0; i < nMaxColors; ++i) {
+		
+		for (UINT i = k; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
 			auto curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) / exp(1.5) : 0;
 			if (curdist > mindist)
@@ -504,7 +503,7 @@ namespace PnnLABQuant
 		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3])
 			idx = 0;
 
-		if (closest[idx + 2] >= MAX_ERR)
+		if (closest[idx + 2] >= MAX_ERR || (m_transparentPixelIndex >= 0 && closest[idx] == 0))
 			return nearestColorIndex(pPalette, argb, pos);
 		return closest[idx];
 	}
