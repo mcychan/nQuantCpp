@@ -345,7 +345,7 @@ namespace PnnLABQuant
 			c = m_transparentColor;
 
 		const auto nMaxColors = pPalette->Count;
-		if (m_transparentPixelIndex >= 0 && c.GetA() > alphaThreshold)
+		if (nMaxColors > 2 && m_transparentPixelIndex >= 0 && c.GetA() > alphaThreshold)
 			k = 1;
 
 		double mindist = INT_MAX;
