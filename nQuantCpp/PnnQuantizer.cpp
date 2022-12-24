@@ -265,7 +265,7 @@ namespace PnnQuant
 			c = m_transparentColor;
 
 		const auto nMaxColors = pPalette->Count;
-		if (nMaxColors > 2 && m_transparentPixelIndex >= 0 && c.GetA() > alphaThreshold)
+		if (m_transparentPixelIndex >= 0 && c.GetA() > alphaThreshold)
 			k = 1;
 		
 		auto pr = PR, pg = PG, pb = PB;

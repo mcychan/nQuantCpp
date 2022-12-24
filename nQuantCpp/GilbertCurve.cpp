@@ -96,7 +96,7 @@ namespace Peano
 				continue;
 
 			if(m_pPalette->Count > 2) {
-				if(m_saliencies != nullptr || BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88)
+				if(m_saliencies != nullptr || (DIVISOR > 2 && BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88))
 					error[j] = (float) tanh(error.p[j] / maxErr * 8) * (DITHER_MAX - 1);
 				else
 					error.p[j] /= DIVISOR;
