@@ -180,29 +180,36 @@ namespace BlueNoise
 		14, -9, -91, -55, 99, -111, -20, 31, 88, -3, 105, 53, -29, -90, -10, -70, 9, -57, 123, -99, 5			
 	};
 	
+	ARGB diffuse(const Color& pixel, const Color& qPixel, const float weight, const float strength, const int x, const int y)
+	{
+		int r_pix = pixel.GetR();
+		int g_pix = pixel.GetG();
+		int b_pix = pixel.GetB();
+		int a_pix = pixel.GetA();
+
+		auto adj = (RAW_BLUE_NOISE[(x & 63) | (y & 63) << 6] + 0.5f) / 127.5f;
+		adj += ((x + y & 1) - 0.5f) * strength / 8.0f;
+		adj *= weight;
+		r_pix = static_cast<BYTE>(min(BYTE_MAX, max(r_pix + (adj * (r_pix - qPixel.GetR())), 0)));
+		g_pix = static_cast<BYTE>(min(BYTE_MAX, max(g_pix + (adj * (g_pix - qPixel.GetG())), 0)));
+		b_pix = static_cast<BYTE>(min(BYTE_MAX, max(b_pix + (adj * (b_pix - qPixel.GetB())), 0)));
+		a_pix = static_cast<BYTE>(min(BYTE_MAX, max(a_pix + (adj * (a_pix - qPixel.GetA())), 0)));
+
+		return Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+	}
+	
 	void dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, const float weight)
-    {
+	{
 		const float strength = 1 / 3.0f;  	
 		
 		for (UINT y = 0; y < height; ++y) {
 			for (UINT x = 0; x < width; ++x) {
-				Color pixel(pixels[x + y * width]);
-				int r_pix = pixel.GetR();
-				int g_pix = pixel.GetG();
-				int b_pix = pixel.GetB();
-				int a_pix = pixel.GetA();
+				UINT bidx = x + y * width;
+				Color pixel(pixels[bidx]);
+				Color c1 = pPalette->Entries[qPixels[bidx]];
 
-				Color c1 = pPalette->Entries[qPixels[x + y * width]];
-				float adj = (RAW_BLUE_NOISE[(x & 63) | (y & 63) << 6] + 0.5f) / 127.5f;
-				adj += ((x + y & 1) - 0.5f) * strength / 8.0f;
-				adj *= weight;
-				r_pix = static_cast<BYTE>(min(BYTE_MAX, max(r_pix + (adj * (r_pix - c1.GetR())), 0)));
-				g_pix = static_cast<BYTE>(min(BYTE_MAX, max(g_pix + (adj * (g_pix - c1.GetG())), 0)));
-				b_pix = static_cast<BYTE>(min(BYTE_MAX, max(b_pix + (adj * (b_pix - c1.GetB())), 0)));
-				a_pix = static_cast<BYTE>(min(BYTE_MAX, max(a_pix + (adj * (a_pix - c1.GetA())), 0)));
-
-				c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-				qPixels[x + y * width] = ditherFn(pPalette, c1.GetValue(), x + y);
+				c1 = diffuse(pixel, c1, weight, strength, x, y);
+				qPixels[bidx] = ditherFn(pPalette, c1.GetValue(), bidx);
 			}
 		}
     }

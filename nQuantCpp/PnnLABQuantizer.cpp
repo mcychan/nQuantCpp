@@ -20,6 +20,7 @@ namespace PnnLABQuant
 	bool hasSemiTransparency = false;
 	int m_transparentPixelIndex = -1;
 	double ratio = 1.0, weight = 1.0;
+	unique_ptr<float[]> saliencies;
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
 	unordered_map<ARGB, vector<unsigned short> > closestMap;
@@ -140,6 +141,8 @@ namespace PnnLABQuant
 	{
 		short quan_rt = 1;
 		vector<pnnbin> bins(USHRT_MAX + 1);
+		saliencies = make_unique<float[]>(pixels.size());
+		auto saliencyBase = .1f;
 
 		/* Build histogram */
 		for (int i = 0; i < pixels.size(); ++i) {
@@ -158,6 +161,8 @@ namespace PnnLABQuant
 			tb.Ac += lab1.A;
 			tb.Bc += lab1.B;
 			tb.cnt += 1.0;
+			if(lab1.alpha > alphaThreshold)
+				saliencies[i] = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f;
 		}
 
 		/* Cluster nonempty bins at one end of array */
@@ -567,7 +572,7 @@ namespace PnnLABQuant
 		if ((semiTransCount * 1.0 / pixels.size()) > .099)
 			weight *= .01;
 
-		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get(), weight);
+		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get(), saliencies.get(), weight);
 
 		if (nMaxColors > 256) {
 			auto qHPixels = make_unique<ARGB[]>(pixels.size());

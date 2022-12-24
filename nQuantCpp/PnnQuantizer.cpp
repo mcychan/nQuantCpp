@@ -422,10 +422,11 @@ namespace PnnQuant
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		DitherFn ditherFn = dither ? nearestColorIndex : closestColorIndex;
+		auto weight = 3.0;
 		if ((semiTransCount * 1.0 / pixels.size()) > .099)
-			weight *= .01;
+			weight /= 2;
 
-		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), weight);
+		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), nullptr, weight);
 
 		if (nMaxColors > 256) {
 			auto qHPixels = make_unique<ARGB[]>(pixels.size());

@@ -5,6 +5,7 @@ Copyright (c) 2021 - 2022 Miller Cy Chan
 
 #include "stdafx.h"
 #include "GilbertCurve.h"
+#include "BlueNoise.h"
 
 #include <memory>
 #include <deque>
@@ -38,11 +39,13 @@ namespace Peano
     const ColorPalette* m_pPalette;
     unsigned short* m_qPixels;
     DitherFn m_ditherFn;
+	float* m_saliencies;
     GetColorIndexFn m_getColorIndexFn;
     deque<ErrorBox> errorq;
     float* m_weights;
     
     static BYTE DITHER_MAX = 9;
+	static float DIVISOR = 3.0f;
     static const float BLOCK_SIZE = 343.0f; 
     
     template <typename T> int sign(T val) {
@@ -55,7 +58,7 @@ namespace Peano
         Color pixel(m_image[bidx]);
         ErrorBox error(pixel);
         int i = 0;
-	float maxErr = DITHER_MAX - 1;
+		auto maxErr = DITHER_MAX - 1;
         for (auto& eb : errorq) {
     		for(int j = 0; j < eb.length(); ++j) {
 			error[j] += eb[j] * m_weights[i];
@@ -71,6 +74,14 @@ namespace Peano
         auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
 		
         Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+		if (m_pPalette->Count <= 32 && a_pix > 0xF0)
+		{
+			if(m_saliencies != nullptr && m_saliencies[bidx] > .65f && m_saliencies[bidx] < .75f) {
+				auto strength = 1 / 3.0f;
+				c2 = BlueNoise::diffuse(pixel, m_pPalette->Entries[m_qPixels[bidx]], m_saliencies[bidx] * .45f, strength, x, y);
+				m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
+			}
+		}
         m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
 
         errorq.pop_front();
@@ -80,13 +91,17 @@ namespace Peano
         error[2] = b_pix - c2.GetB();
         error[3] = a_pix - c2.GetA();
 
-    	for (int j = 0; j < error.length(); ++j) {
-		if (abs(error[j]) < DITHER_MAX)
-			continue;
+		for (int j = 0; j < error.length(); ++j) {
+			if (abs(error[j]) < DITHER_MAX)
+				continue;
 
-		if(m_pPalette->Count > 2)
-			error[j] = (float) tanh(error.p[j] / maxErr * 8) * (DITHER_MAX - 1);
-	}
+			if(m_pPalette->Count > 2) {
+				if(m_saliencies != nullptr || BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88)
+					error[j] = (float) tanh(error.p[j] / maxErr * 8) * (DITHER_MAX - 1);
+				else
+					error.p[j] /= DIVISOR;
+			}
+		}
 
         errorq.emplace_back(error);
     }
@@ -145,7 +160,7 @@ namespace Peano
     	generate2d(x + (ax - dax) + (bx2 - dbx), y + (ay - day) + (by2 - dby), -bx2, -by2, -(ax - ax2), -(ay - ay2));
     }
 	
-    void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, double weight)
+    void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, float* saliencies, double weight)
     {
         m_width = width;
         m_height = height;
@@ -153,14 +168,16 @@ namespace Peano
         m_pPalette = pPalette;
         m_qPixels = qPixels;
         m_ditherFn = ditherFn;
+		m_saliencies = saliencies;
         m_getColorIndexFn = getColorIndexFn;
 		DITHER_MAX = weight < .01 ? (BYTE) 25 : 9;
+		DIVISOR = saliencies != nullptr ? 3.0f : (float) weight;
         auto pWeights = make_unique<float[]>(DITHER_MAX);
         m_weights = pWeights.get();
 
         /* Dithers all pixels of the image in sequence using
          * the Gilbert path, and distributes the error in
-         * a sequence of 9 pixels.
+         * a sequence of DITHER_MAX pixels.
          */
         errorq.clear();
         errorq.resize(DITHER_MAX);

@@ -270,7 +270,7 @@ namespace OtsuThreshold
 		}
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nearestColorIndex, GetColorIndex, qPixels.get());
+		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nearestColorIndex, GetColorIndex, qPixels.get(), nullptr, 3.0f);
 		if (m_transparentPixelIndex >= 0)
 		{
 			auto k = qPixels[m_transparentPixelIndex];
