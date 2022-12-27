@@ -92,8 +92,8 @@ namespace Peano
         error[3] = a_pix - c2.GetA();
 
         for (int j = 0; j < error.length(); ++j) {
-            int k = DIVISOR < 2 ? 0 : DITHER_MAX;
-            while (abs(error.p[j]) >= DITHER_MAX && k-- > 0) {
+            int k = (m_pPalette->Count < 3 || DIVISOR < 2) ? 0 : DITHER_MAX;
+            while (abs(error[j]) >= DITHER_MAX && k-- > 0) {
                 if (m_saliencies != nullptr || (DIVISOR > 2 && BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88))
                     error[j] = (float)tanh(error.p[j] / maxErr * 8) * (DITHER_MAX - 1);
                 else
