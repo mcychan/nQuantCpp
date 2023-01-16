@@ -39,7 +39,7 @@ namespace Peano
     const ColorPalette* m_pPalette;
     unsigned short* m_qPixels;
     DitherFn m_ditherFn;
-    float* m_saliencies;
+	float* m_saliencies;
     GetColorIndexFn m_getColorIndexFn;
     deque<ErrorBox> errorq;
     float* m_weights;
@@ -58,7 +58,7 @@ namespace Peano
         Color pixel(m_image[bidx]);
         ErrorBox error(pixel);
         int i = 0;
-	auto maxErr = DITHER_MAX - 1;
+		auto maxErr = DITHER_MAX - 1;
         for (auto& eb : errorq) {
     		for(int j = 0; j < eb.length(); ++j) {
 			error[j] += eb[j] * m_weights[i];
@@ -78,7 +78,7 @@ namespace Peano
 	{
 		if(m_saliencies != nullptr && m_saliencies[bidx] > .65f && m_saliencies[bidx] < .75f) {
 			auto strength = 1 / 3.0f;
-			c2 = BlueNoise::diffuse(pixel, m_pPalette->Entries[m_qPixels[bidx]], m_saliencies[bidx] * .45f, strength, x, y);
+			c2 = BlueNoise::diffuse(pixel, m_pPalette->Entries[m_qPixels[bidx]], m_saliencies[bidx] * .4f, strength, x, y);
 			m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
 		}
 	}
@@ -91,15 +91,15 @@ namespace Peano
         error[2] = b_pix - c2.GetB();
         error[3] = a_pix - c2.GetA();
 
-        for (int j = 0; j < error.length(); ++j) {
-            int k = (m_pPalette->Count < 3 || DIVISOR < 2) ? 0 : DITHER_MAX;
-            while (abs(error[j]) >= DITHER_MAX && k-- > 0) {
+        auto diffuse = (m_pPalette->Count < 3 || DIVISOR < 2) ? false : true;
+	for (int j = 0; j < error.length(); ++j) {
+            if (abs(error.p[j]) >= DITHER_MAX && diffuse) {
                 if (m_saliencies != nullptr || (DIVISOR > 2 && BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88))
                     error[j] = (float)tanh(error.p[j] / maxErr * 8) * (DITHER_MAX - 1);
                 else
                     error[j] /= DIVISOR;
             }
-        }
+	}
 
         errorq.emplace_back(error);
     }
