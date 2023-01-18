@@ -74,14 +74,14 @@ namespace Peano
         auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
 		
         Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-		if (m_pPalette->Count <= 32 && a_pix > 0xF0)
-		{
-			if(m_saliencies != nullptr && m_saliencies[bidx] > .65f && m_saliencies[bidx] < .75f) {
-				auto strength = 1 / 3.0f;
-				c2 = BlueNoise::diffuse(pixel, m_pPalette->Entries[m_qPixels[bidx]], m_saliencies[bidx] * .4f, strength, x, y);
-				m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
-			}
+	if (m_pPalette->Count <= 32 && a_pix > 0xF0)
+	{
+		if(m_saliencies != nullptr && m_saliencies[bidx] > .65f && m_saliencies[bidx] < .75f) {
+			auto strength = 1 / 3.0f;
+			c2 = BlueNoise::diffuse(pixel, m_pPalette->Entries[m_qPixels[bidx]], m_saliencies[bidx] * .4f, strength, x, y);
+			m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
 		}
+	}
         m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
 
         errorq.pop_front();
@@ -91,15 +91,17 @@ namespace Peano
         error[2] = b_pix - c2.GetB();
         error[3] = a_pix - c2.GetA();
 
-        auto diffuse = (m_pPalette->Count < 3 || DIVISOR < 2) ? false : true;
-		for (int j = 0; j < error.length(); ++j) {
-            if (abs(error.p[j]) >= DITHER_MAX && diffuse) {
-                if (m_saliencies != nullptr || (DIVISOR > 2 && BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88))
+        auto dither = (m_pPalette->Count < 3 || DIVISOR < 2) ? false : true;
+	auto diffuse = DIVISOR > 2 && BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88;
+
+	for (int j = 0; j < error.length(); ++j) {
+            if (abs(error.p[j]) >= DITHER_MAX && dither) {
+                if (diffuse)
                     error[j] = (float)tanh(error.p[j] / maxErr * 8) * (DITHER_MAX - 1);
                 else
                     error[j] /= DIVISOR;
             }
-		}
+	}
 
         errorq.emplace_back(error);
     }
