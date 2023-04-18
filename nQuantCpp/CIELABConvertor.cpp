@@ -22,15 +22,18 @@ static float pivotXyzComponent(double component) {
 		? (float) cbrt(component)
 		: (float)((XYZ_KAPPA * component + 16) / 116.0);
 }
+
+static double gammaToLinear(int channel)
+{
+	auto c = channel / 255.0;
+	return c < 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4);
+}
 	
 void CIELABConvertor::RGB2LAB(const Color& c1, Lab& lab)
 {
-	auto sr = c1.GetR() / 255.0;
-	sr = sr < 0.04045 ? sr / 12.92 : pow((sr + 0.055) / 1.055, 2.4);
-	double sg = c1.GetG() / 255.0;
-	sg = sg < 0.04045 ? sg / 12.92 : pow((sg + 0.055) / 1.055, 2.4);
-	double sb = c1.GetB() / 255.0;
-	sb = sb < 0.04045 ? sb / 12.92 : pow((sb + 0.055) / 1.055, 2.4);
+	auto sr = gammaToLinear(c1.GetR());
+	auto sg = gammaToLinear(c1.GetG());
+	auto sb = gammaToLinear(c1.GetB());
 	const auto x = pivotXyzComponent(100 * (sr * 0.4124 + sg * 0.3576 + sb * 0.1805) / XYZ_WHITE_REFERENCE_X);
 	const auto y = pivotXyzComponent(100 * (sr * 0.2126 + sg * 0.7152 + sb * 0.0722) / XYZ_WHITE_REFERENCE_Y);
 	const auto z = pivotXyzComponent(100 * (sr * 0.0193 + sg * 0.1192 + sb * 0.9505) / XYZ_WHITE_REFERENCE_Z);
@@ -192,4 +195,22 @@ double CIELABConvertor::CIEDE2000(const Lab& lab1, const Lab& lab2)
 		pow(deltaC_prime_div_k_L_S_L, 2.0) +
 		pow(deltaH_prime_div_k_L_S_L, 2.0) +
 		deltaR_T;
+}
+
+double CIELABConvertor::Y_Diff(const Color& c1, const Color& c2)
+{
+	auto sr = gammaToLinear(c1.GetR());
+	auto sg = gammaToLinear(c1.GetG());
+	auto sb = gammaToLinear(c1.GetB());
+	auto y = sr * 0.2126 + sg * 0.7152 + sb * 0.0722;
+	
+	sr = gammaToLinear(c2.GetR());
+	sg = gammaToLinear(c2.GetG());
+	sb = gammaToLinear(c2.GetB());
+	auto y2 = sr * 0.2126 + sg * 0.7152 + sb * 0.0722;
+	auto result = abs(y2 - y) / 100;
+	auto aDiff = abs(c1.GetA() - c2.GetA()) * 1.0;
+	if(aDiff < 16)
+		return result;
+	return result / 2 + aDiff / 510;
 }

@@ -24,4 +24,6 @@ public:
 	/* Color Res. Appl., vol. 30, no. 1, pp. 21-30, Feb. 2005. */
 	/* Return the CIEDE2000 Delta E color difference measure squared, for two Lab values */
 	static double CIEDE2000(const Lab& lab1, const Lab& lab2);
+	
+	static double Y_Diff(const Color& c1, const Color& c2);
 };
