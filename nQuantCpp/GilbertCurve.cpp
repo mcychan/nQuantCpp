@@ -44,6 +44,7 @@ namespace Peano
 	GetColorIndexFn m_getColorIndexFn;
 	deque<ErrorBox> errorq;
 	float* m_weights;
+	short* m_lookup;
 	
 	static BYTE DITHER_MAX = 9;
 	static float DIVISOR = 3.0f;
@@ -77,13 +78,19 @@ namespace Peano
 		Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		if (m_pPalette->Count <= 32 && a_pix > 0xF0)
 		{
+			int offset = m_getColorIndexFn(c2);
+			if (!m_lookup[offset])
+				m_lookup[offset] = m_ditherFn(m_pPalette, c2.GetValue(), bidx) + 1;
+			m_qPixels[bidx] = m_lookup[offset] - 1;
+			
 			if(m_saliencies != nullptr && m_saliencies[bidx] > .65f && m_saliencies[bidx] < .75f) {
 				auto strength = 1 / 3.0f;
 				c2 = BlueNoise::diffuse(pixel, m_pPalette->Entries[m_qPixels[bidx]], m_saliencies[bidx] * .4f, strength, x, y);
 				m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
 			}
 		}
-		m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
+		else
+			m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
 
 		errorq.pop_front();
 		Color c1 = m_pPalette->Entries[m_qPixels[bidx]];
@@ -176,6 +183,8 @@ namespace Peano
 		DIVISOR = saliencies != nullptr ? 3.0f : (float) weight;
 		auto pWeights = make_unique<float[]>(DITHER_MAX);
 		m_weights = pWeights.get();
+		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);
+		m_lookup = pLookup.get();
 
 		/* Dithers all pixels of the image in sequence using
 		 * the Gilbert path, and distributes the error in
