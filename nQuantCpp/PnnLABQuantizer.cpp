@@ -161,7 +161,7 @@ namespace PnnLABQuant
 			tb.Ac += lab1.A;
 			tb.Bc += lab1.B;
 			tb.cnt += 1.0;
-			if(lab1.alpha > alphaThreshold)
+			if(lab1.alpha > alphaThreshold && nMaxColors < 32)
 				saliencies[i] = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f;
 		}
 
