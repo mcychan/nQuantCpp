@@ -100,7 +100,7 @@ namespace Peano
 		error[3] = a_pix - c1.GetA();
 
 		auto dither = (m_pPalette->Count < 3 || DIVISOR < 2) ? false : true;
-		auto diffuse = DIVISOR > 2 && BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88;
+		auto diffuse = BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88;
 		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(c1, c2);
 
 		for (int j = 0; j < error.length(); ++j) {
