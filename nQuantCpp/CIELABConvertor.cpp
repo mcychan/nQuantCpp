@@ -199,16 +199,16 @@ double CIELABConvertor::CIEDE2000(const Lab& lab1, const Lab& lab2)
 
 double CIELABConvertor::Y_Diff(const Color& c1, const Color& c2)
 {
-	auto sr = gammaToLinear(c1.GetR());
-	auto sg = gammaToLinear(c1.GetG());
-	auto sb = gammaToLinear(c1.GetB());
-	auto y = sr * 0.2126 + sg * 0.7152 + sb * 0.0722;
-	
-	sr = gammaToLinear(c2.GetR());
-	sg = gammaToLinear(c2.GetG());
-	sb = gammaToLinear(c2.GetB());
-	auto y2 = sr * 0.2126 + sg * 0.7152 + sb * 0.0722;
-	auto result = abs(y2 - y) / 100;
+	auto color2Y = [](const Color& c) -> double {
+		auto sr = gammaToLinear(c.GetR());
+		auto sg = gammaToLinear(c.GetG());
+		auto sb = gammaToLinear(c.GetB());
+		return sr * 0.2126 + sg * 0.7152 + sb * 0.0722;
+	};
+		
+	auto y = color2Y(c1);
+	auto y2 = color2Y(c2);
+	auto result = abs(y2 - y) / XYZ_WHITE_REFERENCE_Y;
 	auto aDiff = abs(c1.GetA() - c2.GetA()) * 1.0;
 	if(aDiff < 16)
 		return result;
