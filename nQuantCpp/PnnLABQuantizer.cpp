@@ -495,12 +495,6 @@ namespace PnnLABQuant
 			closest = got->second;
 
 		auto MAX_ERR = pPalette->Count;
-		if(hasSemiTransparency && MAX_ERR > 32) {
-			MAX_ERR <<= 1;
-			if (c.GetR() > 0xF0 && c.GetG() > 0xF0 && c.GetB() > 0xF0)
-				MAX_ERR >>= 1;
-		}
-
 		if(PG < coeffs[0][1] && BlueNoise::RAW_BLUE_NOISE[pos & 4095] > -88)
 			return nearestColorIndex(pPalette, argb, pos);
 

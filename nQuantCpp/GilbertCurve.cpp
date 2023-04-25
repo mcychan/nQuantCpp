@@ -100,17 +100,19 @@ namespace Peano
 		error[2] = b_pix - c1.GetB();
 		error[3] = a_pix - c1.GetA();
 
-		auto dither = (m_hasAlpha || m_pPalette->Count < 3) ? false : true;
+		auto dither = (m_pPalette->Count < 3) ? false : true;
 		auto diffuse = BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88;
 		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(c1, c2);
 
-		int errLength = dither ? error.length() : 0;
+		int errLength = dither ? error.length() - 1 : 0;
+		auto ditherMax = (DITHER_MAX > 9) ? 49 : DITHER_MAX;
+
 		for (int j = 0; j < errLength; ++j) {
-			if (abs(error.p[j]) >= DITHER_MAX) {
+			if (abs(error.p[j]) >= ditherMax) {
 				if (diffuse)
-					error[j] = (float) tanh(error.p[j] / maxErr * 8) * (DITHER_MAX - 1);
+					error[j] = (float) tanh(error.p[j] / maxErr * 8) * (ditherMax - 1);
 				else
-					error[j] = (float) (error.p[j] / maxErr * yDiff) * (DITHER_MAX - 1);
+					error[j] = (float) (error.p[j] / maxErr * yDiff) * (ditherMax - 1);
 			}
 		}
 
@@ -181,7 +183,7 @@ namespace Peano
 		m_ditherFn = ditherFn;
 		m_saliencies = saliencies;
 		m_getColorIndexFn = getColorIndexFn;
-		DITHER_MAX = weight < .01 ? (BYTE) 25 : 9;
+		DITHER_MAX = weight < .01 ? (weight > .002) ? (BYTE) 25 : 16 : 9;
 		m_hasAlpha = false;
 		auto pWeights = make_unique<float[]>(DITHER_MAX);
 		m_weights = pWeights.get();
