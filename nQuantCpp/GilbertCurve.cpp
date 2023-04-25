@@ -103,8 +103,9 @@ namespace Peano
 		auto diffuse = BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88;
 		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(c1, c2);
 
-		for (int j = 0; j < error.length(); ++j) {
-			if (abs(error.p[j]) >= DITHER_MAX && dither) {
+		int errLength = dither ? error.length() : 0;
+		for (int j = 0; j < errLength; ++j) {
+			if (abs(error.p[j]) >= DITHER_MAX) {
 				if (diffuse)
 					error[j] = (float) tanh(error.p[j] / maxErr * 8) * (DITHER_MAX - 1);
 				else
@@ -180,7 +181,7 @@ namespace Peano
 		m_saliencies = saliencies;
 		m_getColorIndexFn = getColorIndexFn;
 		DITHER_MAX = weight < .01 ? (BYTE) 25 : 9;
-		DIVISOR = saliencies != nullptr ? 3.0f : (float) weight;
+		DIVISOR = min(3.0f, (float) weight);
 		auto pWeights = make_unique<float[]>(DITHER_MAX);
 		m_weights = pWeights.get();
 		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);
