@@ -181,7 +181,7 @@ namespace Peano
 		m_saliencies = saliencies;
 		m_getColorIndexFn = getColorIndexFn;
 		DITHER_MAX = weight < .01 ? (BYTE) 25 : 9;
-		DIVISOR = min(3.0f, (float) weight);
+		DIVISOR = weight < .01 ? (float) weight : 3.0f;
 		auto pWeights = make_unique<float[]>(DITHER_MAX);
 		m_weights = pWeights.get();
 		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);
