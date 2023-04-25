@@ -424,7 +424,7 @@ namespace PnnQuant
 		DitherFn ditherFn = dither ? nearestColorIndex : closestColorIndex;
 		auto weight = 3.0;
 		if ((semiTransCount * 1.0 / pixels.size()) > .099)
-			weight /= 2;
+			weight *= .01;
 
 		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), nullptr, weight);
 
