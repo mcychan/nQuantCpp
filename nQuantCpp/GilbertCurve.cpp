@@ -183,7 +183,7 @@ namespace Peano
 		m_ditherFn = ditherFn;
 		m_saliencies = saliencies;
 		m_getColorIndexFn = getColorIndexFn;
-		DITHER_MAX = weight < .01 ? (weight > .002) ? (BYTE) 25 : 16 : 9;
+		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE) 25 : 16 : 9;
 		m_hasAlpha = false;
 		auto pWeights = make_unique<float[]>(DITHER_MAX);
 		m_weights = pWeights.get();
