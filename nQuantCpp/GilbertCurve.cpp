@@ -105,7 +105,7 @@ namespace Peano
 		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(c1, c2);
 
 		int errLength = denoise ? error.length() - 1 : 0;
-		auto ditherMax = (m_hasAlpha || DITHER_MAX > 9) ? (BYTE) sqr(_sqrt(DITHER_MAX) + 1) : DITHER_MAX;
+		auto ditherMax = (m_hasAlpha || DITHER_MAX > 9) ? (BYTE) sqr(_sqrt(DITHER_MAX) + 2) : DITHER_MAX;
 
 		for (int j = 0; j < errLength; ++j) {
 			if (abs(error.p[j]) >= ditherMax) {
