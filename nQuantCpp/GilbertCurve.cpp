@@ -45,8 +45,8 @@ namespace Peano
 	deque<ErrorBox> errorq;
 	float* m_weights;
 	short* m_lookup;
-	
-	static BYTE DITHER_MAX = 9, ditherMax;
+	static bool hasAlpha;
+	static BYTE DITHER_MAX = 9;
 	static const float BLOCK_SIZE = 343.0f; 
 	
 	template <typename T> int sign(T val) {
@@ -103,6 +103,8 @@ namespace Peano
 		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(c1, c2);
 
 		int errLength = denoise ? error.length() - 1 : 0;
+		auto offset = floor((1 - yDiff) * 3);
+		auto ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE) sqr(_sqrt(DITHER_MAX) + offset) : DITHER_MAX;
 		for (int j = 0; j < errLength; ++j) {
 			if (abs(error.p[j]) >= ditherMax) {
 				if (diffuse)
@@ -179,10 +181,9 @@ namespace Peano
 		m_ditherFn = ditherFn;
 		m_saliencies = saliencies;
 		m_getColorIndexFn = getColorIndexFn;
-		auto hasAlpha = weight < 0;
+		hasAlpha = weight < 0;
 		weight = abs(weight);
-		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE) 25 : 16 : 9;
-		ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE) sqr(_sqrt(DITHER_MAX) + 2) : DITHER_MAX;
+		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE) 25 : 16 : 9;		
 		auto pWeights = make_unique<float[]>(DITHER_MAX);
 		m_weights = pWeights.get();
 		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);
