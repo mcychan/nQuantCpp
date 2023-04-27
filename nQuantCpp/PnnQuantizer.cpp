@@ -1,7 +1,7 @@
 ﻿#pragma once
 /* Fast pairwise nearest neighbor based algorithm for multilevel thresholding
 Copyright (C) 2004-2016 Mark Tyler and Dmitry Groshev
-Copyright (c) 2018-2021 Miller Cy Chan
+Copyright (c) 2018-2023 Miller Cy Chan
 * error measure; time used is proportional to number of bins squared - WJ */
 
 #include "stdafx.h"
@@ -422,9 +422,8 @@ namespace PnnQuant
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		DitherFn ditherFn = dither ? nearestColorIndex : closestColorIndex;
-		auto weight = 3.0;
-		if ((semiTransCount * 1.0 / pixels.size()) > .099)
-			weight *= .01;
+		if (hasSemiTransparency)
+			weight *= -1;
 
 		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), nullptr, weight);
 

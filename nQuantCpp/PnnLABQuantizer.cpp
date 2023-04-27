@@ -563,8 +563,8 @@ namespace PnnLABQuant
 			PR = PG = PB = PA = 1;
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		if ((semiTransCount * 1.0 / pixels.size()) > .099)
-			weight *= .01;
+		if (hasSemiTransparency)
+			weight *= -1;
 
 		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get(), saliencies.get(), weight);
 

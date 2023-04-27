@@ -46,8 +46,7 @@ namespace Peano
 	float* m_weights;
 	short* m_lookup;
 	
-	static BYTE DITHER_MAX = 9;
-	static bool m_hasAlpha = false;
+	static BYTE DITHER_MAX = 9, ditherMax;
 	static const float BLOCK_SIZE = 343.0f; 
 	
 	template <typename T> int sign(T val) {
@@ -74,7 +73,6 @@ namespace Peano
 		auto g_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[1], 0)));
 		auto b_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[2], 0)));
 		auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
-		m_hasAlpha |= a_pix < BYTE_MAX;
 		
 		Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		if (m_pPalette->Count <= 32 && a_pix > 0xF0)
@@ -105,8 +103,6 @@ namespace Peano
 		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(c1, c2);
 
 		int errLength = denoise ? error.length() - 1 : 0;
-		auto ditherMax = (m_hasAlpha || DITHER_MAX > 9) ? (BYTE) sqr(_sqrt(DITHER_MAX) + 2) : DITHER_MAX;
-
 		for (int j = 0; j < errLength; ++j) {
 			if (abs(error.p[j]) >= ditherMax) {
 				if (diffuse)
@@ -183,8 +179,10 @@ namespace Peano
 		m_ditherFn = ditherFn;
 		m_saliencies = saliencies;
 		m_getColorIndexFn = getColorIndexFn;
+		auto hasAlpha = weight < 0;
+		weight = abs(weight);
 		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE) 25 : 16 : 9;
-		m_hasAlpha = false;
+		ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE) sqr(_sqrt(DITHER_MAX) + 2) : DITHER_MAX;
 		auto pWeights = make_unique<float[]>(DITHER_MAX);
 		m_weights = pWeights.get();
 		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);
