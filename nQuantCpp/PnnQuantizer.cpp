@@ -268,15 +268,14 @@ namespace PnnQuant
 		if (nMaxColors > 2 && m_transparentPixelIndex >= 0 && c.GetA() > alphaThreshold)
 			k = 1;
 		
-		auto pr = PR, pg = PG, pb = PB;
-		if(BlueNoise::RAW_BLUE_NOISE[pos & 4095] > -88) {
-			pr = coeffs[0][0]; pg = coeffs[0][1]; pb = coeffs[0][2];
-		}
+		auto pr = PR, pg = PG, pb = PB, pa = PA;
+		if(nMaxColors < 3 || BlueNoise::RAW_BLUE_NOISE[pos & 4095] > -88)
+			pr = pg = pb = pa = 1;
 
 		double mindist = INT_MAX;		
 		for (UINT i = k; i < nMaxColors; ++i) {
 			Color c2(pPalette->Entries[i]);
-			double curdist = PA * sqr(c2.GetA() - c.GetA());
+			double curdist = pa * sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
 
@@ -312,10 +311,9 @@ namespace PnnQuant
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;
 
-			auto pr = PR, pg = PG, pb = PB;
-			if(BlueNoise::RAW_BLUE_NOISE[pos & 4095] > -88) {
-				pr = coeffs[0][0]; pg = coeffs[0][1]; pb = coeffs[0][2];
-			}
+			auto pr = PR, pg = PG, pb = PB, pa = PA;
+			if(nMaxColors < 3 || BlueNoise::RAW_BLUE_NOISE[pos & 4095] > -88)
+				pr = pg = pb = pa = 1;
 
 			for (; k < nMaxColors; ++k) {
 				Color c2(pPalette->Entries[k]);
@@ -332,7 +330,7 @@ namespace PnnQuant
 					break;
 
 				if (hasSemiTransparency)
-					err += PA * sqr(c2.GetA() - c.GetA());
+					err += pa * sqr(c2.GetA() - c.GetA());
 
 				if (err < closest[2]) {
 					closest[1] = closest[0];
