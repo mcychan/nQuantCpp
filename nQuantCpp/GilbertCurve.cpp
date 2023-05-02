@@ -99,15 +99,14 @@ namespace Peano
 
 		auto denoise = m_pPalette->Count > 2;
 		auto diffuse = BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88;
-		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(c1, c2);
 
-		int errLength = denoise ? error.length() - 1 : 0;		
+		int errLength = denoise ? error.length() - 1 : 0;
 		for (int j = 0; j < errLength; ++j) {
 			if (abs(error.p[j]) >= ditherMax) {
 				if (diffuse)
-					error[j] = (float) tanh(error.p[j] / maxErr * 8) * (ditherMax - 1);
+					error[j] = (float)tanh(error.p[j] / maxErr * 8) * (ditherMax - 1);
 				else
-					error[j] = (float) (error.p[j] / maxErr * yDiff) * (ditherMax - 1);
+					error[j] = (float)(error.p[j] / _sqrt(ditherMax));					
 			}
 		}
 
