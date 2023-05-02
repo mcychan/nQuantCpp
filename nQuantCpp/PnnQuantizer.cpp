@@ -269,7 +269,7 @@ namespace PnnQuant
 			k = 1;
 		
 		auto pr = PR, pg = PG, pb = PB, pa = PA;
-		if(nMaxColors < 3 || BlueNoise::RAW_BLUE_NOISE[pos & 4095] > -88)
+		if(nMaxColors < 3)
 			pr = pg = pb = pa = 1;
 
 		double mindist = INT_MAX;		
@@ -312,7 +312,7 @@ namespace PnnQuant
 			closest[2] = closest[3] = USHRT_MAX;
 
 			auto pr = PR, pg = PG, pb = PB, pa = PA;
-			if(nMaxColors < 3 || BlueNoise::RAW_BLUE_NOISE[pos & 4095] > -88)
+			if(nMaxColors < 3)
 				pr = pg = pb = pa = 1;
 
 			for (; k < nMaxColors; ++k) {
