@@ -154,9 +154,7 @@ namespace PnnQuant
 		if (nMaxColors < 16)
 			quan_rt = -1;
 
-		weight = nMaxColors * 1.0 / maxbins;
-		if (weight > .003 && weight < .005)
-			quan_rt = 0;
+		weight = min(0.9, nMaxColors * 1.0 / maxbins);
 		if (weight < .04 && PG < 1 && PG >= coeffs[0][1]) {
 			PR = PG = PB = PA = 1;
 			if (nMaxColors >= 64)
