@@ -12,7 +12,7 @@ Copyright (c) 2021 - 2023 Miller Cy Chan
 #include <deque>
 
 namespace Peano
-{	
+{
 	struct ErrorBox
 	{
 		float p[4] = { 0 };
@@ -46,12 +46,12 @@ namespace Peano
 	float* m_weights;
 	short* m_lookup;
 	static BYTE DITHER_MAX = 9, ditherMax;
-	static const float BLOCK_SIZE = 343.0f; 
-	
+	static const float BLOCK_SIZE = 343.0f;
+
 	template <typename T> int sign(T val) {
 		return (T(0) < val) - (val < T(0));
 	}
-	
+
 	void ditherPixel(int x, int y)
 	{
 		int bidx = x + y * m_width;
@@ -60,9 +60,9 @@ namespace Peano
 		int i = 0;
 		auto maxErr = DITHER_MAX - 1;
 		for (auto& eb : errorq) {
-			for(int j = 0; j < eb.length(); ++j) {
-			error[j] += eb[j] * m_weights[i];
-				if(error[j] > maxErr)
+			for (int j = 0; j < eb.length(); ++j) {
+				error[j] += eb[j] * m_weights[i];
+				if (error[j] > maxErr)
 					maxErr = error[j];
 			}
 			++i;
@@ -72,7 +72,7 @@ namespace Peano
 		auto g_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[1], 0)));
 		auto b_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[2], 0)));
 		auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
-		
+
 		Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		if (m_pPalette->Count <= 32 && a_pix > 0xF0)
 		{
@@ -80,8 +80,8 @@ namespace Peano
 			if (!m_lookup[offset])
 				m_lookup[offset] = m_ditherFn(m_pPalette, c2.GetValue(), bidx) + 1;
 			m_qPixels[bidx] = m_lookup[offset] - 1;
-			
-			if(m_saliencies != nullptr && m_saliencies[bidx] > .65f && m_saliencies[bidx] < .7f) {
+
+			if (m_saliencies != nullptr && m_saliencies[bidx] > .65f && m_saliencies[bidx] < .7f) {
 				auto strength = 1 / 3.0f;
 				c2 = BlueNoise::diffuse(pixel, m_pPalette->Entries[m_qPixels[bidx]], 1.0f / m_saliencies[bidx], strength, x, y);
 				m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
@@ -99,20 +99,26 @@ namespace Peano
 
 		auto denoise = m_pPalette->Count > 2;
 		auto diffuse = BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88;
+		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(c1, c2);
 
 		int errLength = denoise ? error.length() - 1 : 0;
 		for (int j = 0; j < errLength; ++j) {
 			if (abs(error.p[j]) >= ditherMax) {
 				if (diffuse)
 					error[j] = (float)tanh(error.p[j] / maxErr * 8) * (ditherMax - 1);
-				else
-					error[j] = (float)(error.p[j] / _sqrt(ditherMax));					
+				else {
+					auto illusion = BlueNoise::RAW_BLUE_NOISE[(int)(yDiff * 4096)] > -88;
+					if (illusion)
+						error[j] /= (float)(1 + _sqrt(ditherMax));
+					else
+						error[j] = (float)(error.p[j] / maxErr * yDiff) * (ditherMax - 1);
+				}
 			}
 		}
 
 		errorq.emplace_back(error);
 	}
-	
+
 	void generate2d(int x, int y, int ax, int ay, int bx, int by) {
 		int w = abs(ax + ay);
 		int h = abs(bx + by);
@@ -122,7 +128,7 @@ namespace Peano
 		int dby = sign(by);
 
 		if (h == 1) {
-			for (int i = 0; i < w; ++i){
+			for (int i = 0; i < w; ++i) {
 				ditherPixel(x, y);
 				x += dax;
 				y += day;
@@ -131,7 +137,7 @@ namespace Peano
 		}
 
 		if (w == 1) {
-			for (int i = 0; i < h; ++i){
+			for (int i = 0; i < h; ++i) {
 				ditherPixel(x, y);
 				x += dbx;
 				y += dby;
@@ -156,17 +162,17 @@ namespace Peano
 			generate2d(x + ax2, y + ay2, ax - ax2, ay - ay2, bx, by);
 			return;
 		}
-		
+
 		if ((h2 % 2) != 0 && h > 2) {
 			bx2 += dbx;
 			by2 += dby;
 		}
-		
+
 		generate2d(x, y, bx2, by2, ax2, ay2);
 		generate2d(x + bx2, y + by2, ax, ay, bx - bx2, by - by2);
 		generate2d(x + (ax - dax) + (bx2 - dbx), y + (ay - day) + (by2 - dby), -bx2, -by2, -(ax - ax2), -(ay - ay2));
 	}
-	
+
 	void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, float* saliencies, double weight)
 	{
 		m_width = width;
@@ -179,9 +185,9 @@ namespace Peano
 		m_getColorIndexFn = getColorIndexFn;
 		auto hasAlpha = weight < 0;
 		weight = abs(weight);
-		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE) 25 : 16 : 9;
+		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		auto edge = hasAlpha ? 1 : exp(weight) + .25;
-		ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE) sqr(_sqrt(DITHER_MAX) + edge) : DITHER_MAX;
+		ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge) : DITHER_MAX;
 		auto pWeights = make_unique<float[]>(DITHER_MAX);
 		m_weights = pWeights.get();
 		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);
@@ -205,7 +211,7 @@ namespace Peano
 		for (int c = 0; c < DITHER_MAX; ++c)
 			weight += (m_weights[c] /= sumweight);
 		m_weights[0] += 1.0f - weight;
-		
+
 		if (width >= height)
 			generate2d(0, 0, width, 0, 0, height);
 		else
