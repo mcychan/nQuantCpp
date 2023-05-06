@@ -100,7 +100,7 @@ namespace Peano
 		auto denoise = m_pPalette->Count > 2;
 		auto diffuse = BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88;
 		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(pixel, c2);
-		auto illusion = diffuse ? false : BlueNoise::RAW_BLUE_NOISE[(int)(yDiff * 4096)] > -88;
+		auto illusion = !diffuse && BlueNoise::RAW_BLUE_NOISE[(int)(yDiff * 4096)] > -88;
 
 		int errLength = denoise ? error.length() - 1 : 0;
 		for (int j = 0; j < errLength; ++j) {
