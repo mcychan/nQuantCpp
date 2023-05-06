@@ -91,23 +91,23 @@ namespace Peano
 			m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
 
 		errorq.pop_front();
-		Color c1 = m_pPalette->Entries[m_qPixels[bidx]];
-		error[0] = r_pix - c1.GetR();
-		error[1] = g_pix - c1.GetG();
-		error[2] = b_pix - c1.GetB();
-		error[3] = a_pix - c1.GetA();
+		c2 = m_pPalette->Entries[m_qPixels[bidx]];
+		error[0] = r_pix - c2.GetR();
+		error[1] = g_pix - c2.GetG();
+		error[2] = b_pix - c2.GetB();
+		error[3] = a_pix - c2.GetA();
 
 		auto denoise = m_pPalette->Count > 2;
 		auto diffuse = BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88;
-		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(c1, c2);
+		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(pixel, c2);
+		auto illusion = diffuse ? false : BlueNoise::RAW_BLUE_NOISE[(int)(yDiff * 4096)] > -88;
 
 		int errLength = denoise ? error.length() - 1 : 0;
 		for (int j = 0; j < errLength; ++j) {
 			if (abs(error.p[j]) >= ditherMax) {
 				if (diffuse)
 					error[j] = (float)tanh(error.p[j] / maxErr * 8) * (ditherMax - 1);
-				else {
-					auto illusion = BlueNoise::RAW_BLUE_NOISE[(int)(yDiff * 4096)] > -88;
+				else {					
 					if (illusion)
 						error[j] /= (float)(1 + _sqrt(ditherMax));
 					else
