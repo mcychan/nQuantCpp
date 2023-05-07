@@ -46,6 +46,7 @@ namespace Peano
 	float* m_weights;
 	short* m_lookup;
 	static BYTE DITHER_MAX = 9, ditherMax;
+	static int thresold;
 	static const float BLOCK_SIZE = 343.0f;
 
 	template <typename T> int sign(T val) {
@@ -98,9 +99,9 @@ namespace Peano
 		error[3] = a_pix - c2.GetA();
 
 		auto denoise = m_pPalette->Count > 2;
-		auto diffuse = BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > -88;
+		auto diffuse = BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > thresold;
 		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(pixel, c2);
-		auto illusion = !diffuse && BlueNoise::RAW_BLUE_NOISE[(int)(yDiff * 4096)] > -88;
+		auto illusion = !diffuse && BlueNoise::RAW_BLUE_NOISE[(int)(yDiff * 4096)] > thresold;
 
 		int errLength = denoise ? error.length() - 1 : 0;
 		for (int j = 0; j < errLength; ++j) {
@@ -188,6 +189,7 @@ namespace Peano
 		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		auto edge = hasAlpha ? 1 : exp(weight) + .25;
 		ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge) : DITHER_MAX;
+		thresold = DITHER_MAX > 9 ? -112 : -88;
 		auto pWeights = make_unique<float[]>(DITHER_MAX);
 		m_weights = pWeights.get();
 		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);
