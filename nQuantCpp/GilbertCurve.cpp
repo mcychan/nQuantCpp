@@ -190,7 +190,7 @@ namespace Peano
 		auto edge = hasAlpha ? 1 : exp(weight) + .25;
 		ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge) : DITHER_MAX;
 		if (pPalette->Count / weight > 5000 && weight > .01 && pPalette->Count >= 64)
-			ditherMax = (BYTE)sqr(5 + edge);
+			ditherMax = (BYTE)sqr(4.75);
 		thresold = DITHER_MAX > 9 ? -112 : -88;
 		auto pWeights = make_unique<float[]>(DITHER_MAX);
 		m_weights = pWeights.get();
