@@ -108,7 +108,7 @@ namespace Peano
 			if (abs(error.p[j]) >= ditherMax) {
 				if (diffuse)
 					error[j] = (float)tanh(error.p[j] / maxErr * 8) * (ditherMax - 1);
-				else {					
+				else {
 					if (illusion)
 						error[j] /= (float)(1 + _sqrt(ditherMax));
 					else
@@ -189,6 +189,8 @@ namespace Peano
 		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		auto edge = hasAlpha ? 1 : exp(weight) + .25;
 		ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge) : DITHER_MAX;
+		if (pPalette->Count / weight > 5000 && weight > .01 && pPalette->Count >= 64)
+			ditherMax = (BYTE)sqr(5 + edge);
 		thresold = DITHER_MAX > 9 ? -112 : -88;
 		auto pWeights = make_unique<float[]>(DITHER_MAX);
 		m_weights = pWeights.get();
