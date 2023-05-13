@@ -5,7 +5,6 @@
 
 #define IDS_APP_TITLE			103
 
-// 下一個新增物件的預設值
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
