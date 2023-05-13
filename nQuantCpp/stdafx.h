@@ -2,9 +2,10 @@
 
 #pragma once
 
+#define COM_NO_WINDOWS_H
 #define GDIPVER 0x0110 //Use more advanced GDI+ features
 #pragma comment(lib, "gdiplus.lib")
-#include "unknwn.h"				// Needed for non-MFC/ATL use
+#include <unknwn.h>				// Needed for non-MFC/ATL use
 #include <gdiplus.h>
 using namespace Gdiplus;
 #ifdef _WIN64
