@@ -569,16 +569,13 @@ namespace PnnLABQuant
 		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get(), saliencies.get(), weight);
 
 		if (nMaxColors > 256) {
-			auto qHPixels = make_unique<ARGB[]>(pixels.size());
-			for (int i = 0; i < pixels.size(); ++i) {
-				Color c(pPalette->Entries[qPixels[i]]);
-				qHPixels[i] = hasSemiTransparency ? c.GetValue() : GetARGBIndex(c, false, m_transparentPixelIndex >= 0);
-			}
+			auto qPixels = make_unique<ARGB[]>(bitmapWidth * bitmapHeight);
+			dithering_image(pixels.data(), pPalette, closestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
 
 			pixelMap.clear();
 			closestMap.clear();
 			nearestMap.clear();
-			return ProcessImagePixels(pDest, qHPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
+			return ProcessImagePixels(pDest, qPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
 		}
 
 		if (!dither) {
