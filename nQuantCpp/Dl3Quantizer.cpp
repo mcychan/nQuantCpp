@@ -1,5 +1,4 @@
-﻿#pragma once
-/*
+﻿/*
  * DL3 Quantization
  * ================
  *

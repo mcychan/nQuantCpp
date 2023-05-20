@@ -1,6 +1,4 @@
-﻿#pragma once
-
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "NeuQuantizer.h"
 #include "bitmapUtilities.h"
 #include "CIELABConvertor.h"

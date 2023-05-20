@@ -1,4 +1,3 @@
-#pragma once
 /* Generalized Hilbert ("gilbert") space-filling curve for rectangular domains of arbitrary (non-power of two) sizes.
 Copyright (c) 2021 - 2023 Miller Cy Chan
 * A general rectangle with a known orientation is split into three regions ("up", "right", "down"), for which the function calls itself recursively, until a trivial path can be produced. */

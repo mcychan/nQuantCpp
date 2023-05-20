@@ -1,5 +1,4 @@
-﻿#pragma once
-/* Multiobjective Image Color Quantization Algorithm Based on Self-Adaptive Hybrid Differential Evolution
+﻿/* Multiobjective Image Color Quantization Algorithm Based on Self-Adaptive Hybrid Differential Evolution
 Copyright (C) 2014-2016 Zhongbo Hu, Qinghua Su, Xuewen Xia
 Copyright (c) 2018 - 2021 Miller Cy Chan
 * Adaptive algorithm k-means idea-accelerated differential evolution algorithm: each individual is a set of cluster centers, according to the probability K_probability

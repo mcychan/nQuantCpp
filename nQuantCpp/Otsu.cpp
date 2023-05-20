@@ -1,5 +1,4 @@
-﻿#pragma once
-/* Otsu's Image Segmentation Method
+﻿/* Otsu's Image Segmentation Method
   Copyright (C) 2009 Tolga Birdal
   Copyright (c) 2018 - 2021 Miller Cy Chan
 */

@@ -1,5 +1,4 @@
-﻿#pragma once
-/*
+﻿/*
  
  Copyright (c) 2015, M. Emre Celebi
  Copyright (c) 2019-2021 Miller Cy Chan

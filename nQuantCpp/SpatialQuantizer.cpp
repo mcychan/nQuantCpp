@@ -1,5 +1,4 @@
-﻿#pragma once
-/* Copyright (c) 2006 Derrick Coetzee
+﻿/* Copyright (c) 2006 Derrick Coetzee
 Copyright (c) 2018-2021 Miller Cy Chan
 
 Permission is hereby granted, free of charge, to any person obtaining
