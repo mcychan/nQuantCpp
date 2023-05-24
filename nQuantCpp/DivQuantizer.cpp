@@ -1,7 +1,7 @@
 ﻿/*
  
  Copyright (c) 2015, M. Emre Celebi
- Copyright (c) 2019-2021 Miller Cy Chan
+ Copyright (c) 2019-2023 Miller Cy Chan
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -131,12 +131,10 @@ namespace DivQuant
 		return weights;
 	}
 
-	double get_double_scale(const UINT numPixels)
+	double get_double_scale(const UINT numPixels, const int numRows)
 	{
-		const int numRows = 1;
-		const int dec_factor = 1;
-
-		return 1.0 / (ceil(numRows / (double) dec_factor) * ceil(numPixels / (double) dec_factor));
+		const auto dec_factor = 1.0;
+		return 1.0 / (ceil(numRows / dec_factor) * ceil(numPixels / dec_factor));
 	}
 
 	static inline bool asc_weighted_pixel(const Pixel<int>& a, const Pixel<int>& b) {
@@ -896,7 +894,7 @@ namespace DivQuant
 	  
 		if (allPixelsUnique && num_bits == 8 && dec_factor == 1) {
 			// No duplicate pixels and no decimation or bit shifting
-			weightUniform = get_double_scale(numPixels);
+			weightUniform = get_double_scale(numPixels, numRows);
 			std::copy(inPixels, inPixels + numPixels, inputPixels.get());
 		}
 		else if (!allPixelsUnique && num_bits == 8) {
