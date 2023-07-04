@@ -282,7 +282,7 @@ int main(int argc, char** argv)
 
 	#ifdef _DEBUG
 			auto sourcePath = fs::canonical(fs::path(sourceFile));
-			sourceFile = sourcePath.string();
+			sourceFile = sourcePath;
 	#endif
 
 			sourceFile = (sourceFile[sourceFile.length() - 1] != L'/' && sourceFile[sourceFile.length() - 1] != L'\\') ? sourceFile : sourceFile.substr(0, sourceFile.find_last_of(L"\\/"));
