@@ -63,20 +63,26 @@
     <ClInclude Include="MedianCut.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
-    <ClInclude Include="HilbertCurve.h">
-      <Filter>標頭檔</Filter>
-    </ClInclude>
     <ClInclude Include="BlueNoise.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
     <ClInclude Include="GilbertCurve.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
+    <ClInclude Include="Otsu.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="PnnLABGAQuantizer.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="APNsgaIII.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="NsgaIII.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>原始程式檔</Filter>
-    </ClCompile>
     <ClCompile Include="nQuantCpp.cpp">
       <Filter>原始程式檔</Filter>
     </ClCompile>
@@ -116,13 +122,25 @@
     <ClCompile Include="MedianCut.cpp">
       <Filter>原始程式檔</Filter>
     </ClCompile>
-    <ClCompile Include="HilbertCurve.cpp">
-      <Filter>原始程式檔</Filter>
-    </ClCompile>
     <ClCompile Include="BlueNoise.cpp">
       <Filter>原始程式檔</Filter>
     </ClCompile>
     <ClCompile Include="GilbertCurve.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="Otsu.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="PnnLABGAQuantizer.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="APNsgaIII.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="NsgaIII.cpp">
       <Filter>原始程式檔</Filter>
     </ClCompile>
   </ItemGroup>

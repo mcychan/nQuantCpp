@@ -619,7 +619,7 @@ namespace EdgeAwareSQuant
 		if (c.GetA() <= alphaThreshold)
 			c = m_transparentColor;
 
-		double mindist = SHORT_MAX;
+		double mindist = SHRT_MAX;
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 

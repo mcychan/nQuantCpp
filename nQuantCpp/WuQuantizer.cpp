@@ -462,7 +462,6 @@ namespace nQuant
 		volatile auto result = 0.0f;
 		volatile BYTE cutPoint = 0;
 
-#pragma omp parallel for
 		for (int position = first; position < last; ++position)
 		{
 			auto halfAlpha = bottomAlpha + Top(cube, direction, position, data.momentsAlpha.get());
@@ -652,7 +651,7 @@ namespace nQuant
 		vector<unsigned short> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
-			closest[2] = closest[3] = SHORT_MAX;
+			closest[2] = closest[3] = SHRT_MAX;
 
 			for (; k < nMaxColors; k++) {
 				Color c2(pPalette->Entries[k]);
@@ -669,7 +668,7 @@ namespace nQuant
 				}
 			}
 
-			if (closest[3] == SHORT_MAX)
+			if (closest[3] == SHRT_MAX)
 				closest[2] = 0;
 		}
 		else
@@ -693,7 +692,7 @@ namespace nQuant
 
 		auto got = nearestMap.find(argb);
 		if (got == nearestMap.end()) {
-			double mindist = SHORT_MAX;
+			double mindist = SHRT_MAX;
 			for (UINT i = 0; i < pPalette->Count; i++) {
 				Color c2(pPalette->Entries[i]);
 				double curdist = sqr(c2.GetA() - c.GetA());

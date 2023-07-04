@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -58,9 +59,9 @@ BOOL FixBitmapHeight(PVOID pDib, ULONG nSize, BOOL bTopDown);
 
 BOOL FillBitmapFileHeader(LPCVOID pDib, PBITMAPFILEHEADER pbmfh);
 
-typedef unsigned short (*DitherFn)(const ColorPalette*, ARGB argb, const UINT pos);
+using DitherFn = function<unsigned short(const ColorPalette*, ARGB, const UINT)>;
 
-typedef int (*GetColorIndexFn)(const Color&);
+using GetColorIndexFn = function<int(const Color&)>;
 
 void CalcDitherPixel(int* pDitherPixel, const Color& c, const BYTE* clamp, const short* rowerr, int cursor, const bool noBias);
 

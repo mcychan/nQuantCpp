@@ -3,10 +3,14 @@
 
 #include "stdafx.h"
 #include <algorithm>
+#ifndef _WIN32
+#include <clocale>
+#endif
 #include <io.h>
 #include <iostream>
 #include <fcntl.h>
 #include <filesystem>
+#include <limits>
 namespace fs = std::filesystem;
 
 #include "nQuantCpp.h"
@@ -14,7 +18,9 @@ namespace fs = std::filesystem;
 #include "PnnQuantizer.h"
 #include "NeuQuantizer.h"
 #include "WuQuantizer.h"
+#include "APNsgaIII.h"
 #include "PnnLABQuantizer.h"
+#include "PnnLABGAQuantizer.h"
 #include "EdgeAwareSQuantizer.h"
 #include "SpatialQuantizer.h"
 #include "DivQuantizer.h"
@@ -28,31 +34,31 @@ namespace fs = std::filesystem;
 #endif
 
 #ifdef UNICODE
-wostream& tcout = wcout;
+	auto& tcout = std::wcout;
 #else
-ostream& tcout = cout;
+	auto& tcout = std::cout;
 #endif
 
 GdiplusStartupInput  m_gdiplusStartupInput;
 ULONG_PTR m_gdiplusToken;
 
-wstring algs[] = { L"PNN", L"PNNLAB", L"NEU", L"WU", L"EAS", L"SPA", L"DIV", L"DL3", L"MMC", L"OTSU" };
+wstring algs[] = { L"PNN", L"PNNLAB", L"PNNLAB+", L"NEU", L"WU", L"EAS", L"SPA", L"DIV", L"DL3", L"MMC", L"OTSU" };
 unordered_map<LPCTSTR, CLSID> extensionMap;
 
 void PrintUsage()
 {
-    tcout << endl;
-    tcout << "usage: nQuantCpp <input image path> [options]" << endl;
-    tcout << endl;
-    tcout << "Valid options:" << endl;
+	tcout << endl;
+	tcout << "usage: nQuantCpp <input image path> [options]" << endl;
+	tcout << endl;
+	tcout << "Valid options:" << endl;
 	tcout << "  /a : Algorithm used - Choose one of them, otherwise give you the defaults from [";
 	int i = 0;	
 	for(; i<sizeof(algs)/sizeof(string) - 1; ++i)
 		tcout << algs[i] << ", ";
 	tcout << algs[i] << "] ." << endl;
-    tcout << "  /m : Max Colors (pixel-depth) - Maximum number of colors for the output format to support. The default is 256 (8-bit)." << endl;
+	tcout << "  /m : Max Colors (pixel-depth) - Maximum number of colors for the output format to support. The default is 256 (8-bit)." << endl;
 	tcout << "  /d : Dithering or not? y or n." << endl;
-    tcout << "  /o : Output image file dir. The default is <source image path directory>" << endl;
+	tcout << "  /o : Output image file dir. The default is <source image path directory>" << endl;
 }
 
 bool isdigit(const TCHAR* string) {
@@ -147,6 +153,15 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
 		bSucceeded = pnnLABQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
 	}
+	else if (algorithm == L"PNNLAB+") {
+		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
+		PnnLABQuant::PnnLABGAQuantizer pnnLABGAQuantizer(pnnLABQuantizer, pSource, nMaxColors);
+		nQuantGA::APNsgaIII<PnnLABQuant::PnnLABGAQuantizer> alg(pnnLABGAQuantizer);
+		alg.run(9999, -numeric_limits<double>::epsilon());
+		auto pGAq = alg.getResult();
+		tcout << L"\n" << pGAq->getResult().c_str() << endl;
+		bSucceeded = pGAq->QuantizeImage(pDest.get(), dither);
+	}
 	else if (algorithm == L"NEU") {
 		NeuralNet::NeuQuantizer neuQuantizer;
 		bSucceeded = neuQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
@@ -216,9 +231,18 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 	return status == Status::Ok;
 }
 
+#ifdef _WIN32
 int wmain(int argc, wchar_t** argv)
 {
 	_setmode(_fileno(stdout), _O_U16TEXT);
+#else
+int main(int argc, char** argv)
+{
+	ios::sync_with_stdio(false); // Linux gcc
+	tcout.imbue(locale(""));
+	setlocale(LC_CTYPE, "");
+#endif
+
 	if (argc <= 1) {
 #ifndef _DEBUG
 		PrintUsage();
@@ -233,30 +257,35 @@ int wmain(int argc, wchar_t** argv)
 	wstring algo = L"";
 	wstring targetDir = L"";
 #ifdef _DEBUG
-	wstring sourcePath = szDir + L"/../ImgV64.gif";
+	wstring sourceFile = szDir + L"/../ImgV64.gif";
 	nMaxColors = 1024;
 #else
 	if (!ProcessArgs(argc, algo, nMaxColors, dither, targetDir, argv))
 		return 0;
 
-	wstring sourcePath(argv[1], argv[1] + wcslen(argv[1]));
-	if (!fileExists(sourcePath) && sourcePath.find_first_of(L"\\/") != wstring::npos)
-		sourcePath = szDir + L"/" + sourcePath;
+	wstring sourceFile(argv[1], argv[1] + wcslen(argv[1]));
+	if (!fileExists(sourceFile) && sourceFile.find_first_of(L"\\/") != wstring::npos)
+		sourceFile = szDir + L"/" + sourceFile;
 #endif	
 	
-	if(!fileExists(sourcePath)) {
+	if(!fileExists(sourceFile)) {
 		tcout << "The source file you specified does not exist." << endl;
 		return 0;
 	}		
 
 	if(GdiplusStartup(&m_gdiplusToken, &m_gdiplusStartupInput, NULL) == Ok) {
-		auto pSource = unique_ptr<Bitmap>(Bitmap::FromFile(sourcePath.c_str()));
+		auto pSource = unique_ptr<Bitmap>(Bitmap::FromFile(sourceFile.c_str()));
 		auto status = pSource->GetLastStatus();
 		if (status == Ok) {
 			if (!fileExists(targetDir))
-				targetDir = fs::path(sourcePath).parent_path().wstring();
+				targetDir = fs::path(sourceFile).parent_path().wstring();
 
-			auto sourceFile = (sourcePath[sourcePath.length() - 1] != L'/' && sourcePath[sourcePath.length() - 1] != L'\\') ? sourcePath : sourcePath.substr(0, sourcePath.find_last_of(L"\\/"));
+	#ifdef _DEBUG
+			auto sourcePath = fs::canonical(fs::path(sourceFile));
+			sourceFile = sourcePath.string();
+	#endif
+
+			sourceFile = (sourceFile[sourceFile.length() - 1] != L'/' && sourceFile[sourceFile.length() - 1] != L'\\') ? sourceFile : sourceFile.substr(0, sourceFile.find_last_of(L"\\/"));
 			if (algo == L"") {
 				//QuantizeImage(L"MMC", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
 				QuantizeImage(L"DIV", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
@@ -275,8 +304,8 @@ int wmain(int argc, wchar_t** argv)
 				QuantizeImage(algo, sourceFile, targetDir, pSource.get(), nMaxColors, dither);
 		}
 		else
-			tcout << "Failed to read image in '" << sourcePath.c_str() << "' file";
+			tcout << "Failed to read image in '" << sourceFile.c_str() << "' file";
 	}
 	GdiplusShutdown(m_gdiplusToken);
-    return 0;
+	return 0;
 }

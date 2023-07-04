@@ -253,7 +253,7 @@ namespace Dl3Quant
 		vector<unsigned short> closest(5);
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
-			closest[2] = closest[3] = SHORT_MAX;
+			closest[2] = closest[3] = SHRT_MAX;
 
 			for (; k < nMaxColors; k++) {
 				Color c2(pPalette->Entries[k]);
@@ -270,7 +270,7 @@ namespace Dl3Quant
 				}
 			}
 
-			if (closest[3] == SHORT_MAX)
+			if (closest[3] == SHRT_MAX)
 				closest[2] = 0;
 		}
 		else

@@ -1,43 +1,42 @@
 ﻿/* Fast pairwise nearest neighbor based algorithm for multilevel thresholding
 Copyright (C) 2004-2016 Mark Tyler and Dmitry Groshev
-Copyright (c) 2018-2021 Miller Cy Chan
+Copyright (c) 2018-2023 Miller Cy Chan
 * error measure; time used is proportional to number of bins squared - WJ */
 
 #include "stdafx.h"
 #include "PnnLABQuantizer.h"
 #include "bitmapUtilities.h"
-#include "CIELABConvertor.h"
 #include "BlueNoise.h"
 #include "GilbertCurve.h"
 #include <ctime>
-#include <unordered_map>
 
 namespace PnnLABQuant
 {
 	double PR = 0.299, PG = 0.587, PB = 0.114, PA = .3333;
 	BYTE alphaThreshold = 0xF;
-	bool hasSemiTransparency = false;
-	int m_transparentPixelIndex = -1;
-	double ratio = 1.0, weight = 1.0;
-	unique_ptr<float[]> saliencies;
+	double weight = 1.0;
+
 	ARGB m_transparentColor = Color::Transparent;
-	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
-	unordered_map<ARGB, vector<unsigned short> > closestMap;
-	unordered_map<ARGB, unsigned short> nearestMap;
 
 	static const float coeffs[3][3] = {
 		{0.299f, 0.587f, 0.114f},
 		{-0.14713f, -0.28886f, 0.436f},
 		{0.615f, -0.51499f, -0.10001f}
 	};
+	
+	PnnLABQuantizer::PnnLABQuantizer() {
+	}
 
-	struct pnnbin {
-		float ac = 0, Lc = 0, Ac = 0, Bc = 0, err = 0;
-		float cnt = 0;
-		int nn = 0, fw = 0, bk = 0, tm = 0, mtm = 0;
-	};
+	PnnLABQuantizer::PnnLABQuantizer(const PnnLABQuantizer& quantizer) {
+		hasSemiTransparency = quantizer.hasSemiTransparency;
+		m_transparentPixelIndex = quantizer.m_transparentPixelIndex;
+		saliencies = quantizer.saliencies;
+		pixelMap.insert(quantizer.pixelMap.begin(), quantizer.pixelMap.end());
+		isGA = true;
+		proportional = quantizer.proportional;
+	}
 
-	void getLab(const Color& c, CIELABConvertor::Lab& lab1)
+	void PnnLABQuantizer::getLab(const Color& c, CIELABConvertor::Lab& lab1)
 	{
 		auto got = pixelMap.find(c.GetValue());
 		if (got == pixelMap.end()) {
@@ -48,7 +47,7 @@ namespace PnnLABQuant
 			lab1 = got->second;
 	}
 
-	void find_nn(pnnbin* bins, int idx, bool texicab)
+	void PnnLABQuantizer::find_nn(pnnbin* bins, int idx, bool texicab)
 	{
 		int nn = 0;
 		double err = 1e100;
@@ -140,7 +139,7 @@ namespace PnnLABQuant
 	{
 		short quan_rt = 1;
 		vector<pnnbin> bins(USHRT_MAX + 1);
-		saliencies = make_unique<float[]>(pixels.size());
+		saliencies.resize(pixels.size());
 		auto saliencyBase = .1f;
 
 		/* Build histogram */
@@ -180,7 +179,7 @@ namespace PnnLABQuant
 			bins[maxbins++] = bins[i];
 		}
 
-		auto proportional = sqr(nMaxColors) / maxbins;
+		proportional = sqr(nMaxColors) / maxbins;
 		if ((m_transparentPixelIndex >= 0 || hasSemiTransparency) && nMaxColors < 32)
 			quan_rt = -1;
 
@@ -224,29 +223,31 @@ namespace PnnLABQuant
 
 		const bool texicab = proportional > .025;
 		
-		if (hasSemiTransparency)
-			ratio = .5;
-		else if (quan_rt != 0 && nMaxColors < 64) {
-			if (proportional > .018 && proportional < .022)
-				ratio = min(1.0, proportional + weight * exp(3.872));
-			else if (proportional > .1)
-				ratio = min(1.0, 1.0 - weight);
-			else if (proportional > .04)
-				ratio = min(1.0, weight * exp(2.28));
-			else if (proportional > .03)
-				ratio = min(1.0, weight * exp(3.275));
-			else {
-				auto beta = (maxbins % 2 == 0) ? -1 : 1;
-				ratio = min(1.0, proportional + beta * weight * exp(1.997));
+		if(!isGA) {
+			if (hasSemiTransparency)
+				ratio = .5;
+			else if (quan_rt != 0 && nMaxColors < 64) {
+				if (proportional > .018 && proportional < .022)
+					ratio = min(1.0, proportional + weight * exp(3.872));
+				else if (proportional > .1)
+					ratio = min(1.0, 1.0 - weight);
+				else if (proportional > .04)
+					ratio = min(1.0, weight * exp(2.28));
+				else if (proportional > .03)
+					ratio = min(1.0, weight * exp(3.275));
+				else {
+					auto beta = (maxbins % 2 == 0) ? -1 : 1;
+					ratio = min(1.0, proportional + beta * weight * exp(1.997));
+				}
 			}
+			else if (nMaxColors > 256)
+				ratio = min(1.0, 1 - 1.0 / proportional);
+			else
+				ratio = min(1.0, max(.98, 1 - weight * .7));
+	
+			if (!hasSemiTransparency && quan_rt < 0)
+				ratio = min(1.0, weight * exp(1.997));
 		}
-		else if (nMaxColors > 256)
-			ratio = min(1.0, 1 - 1.0 / proportional);
-		else
-			ratio = min(1.0, max(.98, 1 - weight * .7));
-
-		if (!hasSemiTransparency && quan_rt < 0)
-			ratio = min(1.0, weight * exp(1.997));
 
 		int h, l, l2;
 		/* Initialize nearest neighbors and build heap of them */
@@ -264,8 +265,10 @@ namespace PnnLABQuant
 			heap[l] = i;
 		}
 
-		if (quan_rt > 0 && nMaxColors < 64 && (proportional < .023 || proportional > .05) && proportional < .1)
+		if (!isGA && quan_rt > 0 && nMaxColors < 64 && (proportional < .023 || proportional > .05) && proportional < .1)
 			ratio = min(1.0, proportional - weight * exp(2.347));
+		else if (isGA)
+			ratio = ratioY;
 
 		/* Merge bins which increase error the least */
 		int extbins = maxbins - nMaxColors;
@@ -332,7 +335,7 @@ namespace PnnLABQuant
 			pPalette->Count = nMaxColors = k + 1;
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
+	unsigned short PnnLABQuantizer::nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -344,7 +347,7 @@ namespace PnnLABQuant
 			c = m_transparentColor;
 
 		const auto nMaxColors = pPalette->Count;
-		if (nMaxColors > 2 && m_transparentPixelIndex >= 0 && c.GetA() > alphaThreshold)
+		if (nMaxColors > 2 && hasAlpha() && c.GetA() > alphaThreshold)
 			k = 1;
 
 		double mindist = INT_MAX;
@@ -422,7 +425,7 @@ namespace PnnLABQuant
 		return k;
 	}
 
-	unsigned short closestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
+	unsigned short PnnLABQuantizer::closestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
 	{
 		UINT k = 0;
 		Color c(argb);
@@ -501,19 +504,51 @@ namespace PnnLABQuant
 		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3])
 			idx = 0;
 
-		if (closest[idx + 2] >= MAX_ERR || (m_transparentPixelIndex >= 0 && closest[idx] == 0))
+		if (closest[idx + 2] >= MAX_ERR || (hasAlpha() && closest[idx] == 0))
 			return nearestColorIndex(pPalette, argb, pos);
 		return closest[idx];
 	}
 
-	inline int GetColorIndex(const Color& c)
+	void PnnLABQuantizer::clear()
 	{
-		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
+		saliencies.clear();
+		closestMap.clear();
+		nearestMap.clear();
 	}
 
-	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
+	bool PnnLABQuantizer::IsGA() const {
+		return isGA;
+	}
+
+	bool PnnLABQuantizer::hasAlpha() const {
+		return m_transparentPixelIndex >= 0;
+	}
+	
+	void PnnLABQuantizer::setRatio(double ratioX, double ratioY) {
+		ratio = min(1.0, ratioX);
+		this->ratioY = min(1.0, ratioY);
+		clear();
+	}
+
+	void PnnLABQuantizer::grabPixels(Bitmap* srcImg, vector<ARGB>& pixels, UINT& nMaxColors, bool& hasSemiTransparency)
 	{
-		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 64) ? nearestColorIndex : closestColorIndex;
+		int semiTransCount = 0;
+		GrabPixels(srcImg, pixels, semiTransCount, m_transparentPixelIndex, m_transparentColor, alphaThreshold, nMaxColors);
+		this->hasSemiTransparency = hasSemiTransparency = semiTransCount > 0;
+	}
+	
+	bool PnnLABQuantizer::quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
+	{
+		DitherFn ditherFn;
+		if (hasAlpha() || nMaxColors < 64)
+			ditherFn = [&](const ColorPalette* pPalette, ARGB argb, const UINT pos) -> unsigned short {
+				return nearestColorIndex(pPalette, argb, pos);
+		};
+		else
+			ditherFn = [&](const ColorPalette* pPalette, ARGB argb, const UINT pos) -> unsigned short {
+			return closestColorIndex(pPalette, argb, pos);
+		};
+		
 		if (dither)
 			return dither_image(pixels, pPalette, ditherFn, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
 
@@ -525,25 +560,15 @@ namespace PnnLABQuant
 		return true;
 	}
 
-	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
+	bool PnnLABQuantizer::QuantizeImage(const vector<ARGB>& pixels, const UINT bitmapWidth, ColorPalette* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
-		const auto bitmapWidth = pSource->GetWidth();
-		const auto bitmapHeight = pSource->GetHeight();
-
-		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
-		int semiTransCount = 0;
-		GrabPixels(pSource, pixels, semiTransCount, m_transparentPixelIndex, m_transparentColor, alphaThreshold, nMaxColors);
-		hasSemiTransparency = semiTransCount > 0;
-
-		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
-		auto pPalette = (ColorPalette*)pPaletteBytes.get();
-		pPalette->Count = nMaxColors;
-
 		if (nMaxColors <= 32)
 			PR = PG = PB = PA = 1;
 		else {
 			PR = coeffs[0][0]; PG = coeffs[0][1]; PB = coeffs[0][2];
 		}
+
+		const auto bitmapHeight = pixels.size() / bitmapWidth;
 
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors);
@@ -557,30 +582,39 @@ namespace PnnLABQuant
 				pPalette->Entries[1] = Color::White;
 			}
 		}
-
-		if (nMaxColors <= 32)
-			PR = PG = PB = PA = 1;
-
-		auto qPixels = make_unique<unsigned short[]>(pixels.size());
+		
 		if (hasSemiTransparency)
 			weight *= -1;
 
-		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get(), saliencies.get(), weight);
+		auto GetColorIndex = [&](const Color& c) -> int {
+			return GetARGBIndex(c, hasSemiTransparency, hasAlpha());
+		};
+		DitherFn ditherFn;
+		if (hasAlpha() || nMaxColors < 64)
+			ditherFn = [&](const ColorPalette* pPalette, ARGB argb, const UINT pos) -> unsigned short {
+			return nearestColorIndex(pPalette, argb, pos);
+		};
+		else
+			ditherFn = [&](const ColorPalette* pPalette, ARGB argb, const UINT pos) -> unsigned short {
+			return closestColorIndex(pPalette, argb, pos);
+		};
+		
+		auto qPixels = make_unique<unsigned short[]>(pixels.size());
+		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), saliencies.data(), weight);
 
 		if (nMaxColors > 256) {
-			auto qPixels = make_unique<ARGB[]>(bitmapWidth * bitmapHeight);
-			dithering_image(pixels.data(), pPalette, closestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
+			auto qPixels = make_unique<ARGB[]>(pixels.size());
+			dithering_image(pixels.data(), pPalette, ditherFn, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
 
 			pixelMap.clear();
-			closestMap.clear();
-			nearestMap.clear();
+			clear();
 			return ProcessImagePixels(pDest, qPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
 		}
 
 		if (!dither) {
 			const auto delta = sqr(nMaxColors) / pixelMap.size();
 			auto weight = delta > 0.023 ? 1.0f : (float)(36.921 * delta + 0.906);
-			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, closestColorIndex, GetColorIndex, qPixels.get(), weight);
+			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), weight);
 		}
 
 		if (m_transparentPixelIndex >= 0) {
@@ -591,10 +625,25 @@ namespace PnnLABQuant
 				swap(pPalette->Entries[0], pPalette->Entries[1]);
 		}
 		pixelMap.clear();
-		closestMap.clear();
-		nearestMap.clear();
+		clear();
 
 		return ProcessImagePixels(pDest, pPalette, qPixels.get(), m_transparentPixelIndex >= 0);
+	}
+
+	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
+	{
+		const auto bitmapWidth = pSource->GetWidth();
+		const auto bitmapHeight = pSource->GetHeight();
+		
+		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
+		int semiTransCount = 0;
+		grabPixels(pSource, pixels, nMaxColors, hasSemiTransparency);
+		
+		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPalette = (ColorPalette*)pPaletteBytes.get();
+		pPalette->Count = nMaxColors;
+
+		return QuantizeImage(pixels, bitmapWidth, pPalette, pDest, nMaxColors, dither);
 	}
 
 }

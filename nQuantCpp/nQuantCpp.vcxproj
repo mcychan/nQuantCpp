@@ -142,6 +142,7 @@
       <SDLCheck>true</SDLCheck>
       <OpenMPSupport>true</OpenMPSupport>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -154,6 +155,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="APNsgaIII.h" />
     <ClInclude Include="bitmapUtilities.h" />
     <ClInclude Include="BlueNoise.h" />
     <ClInclude Include="CIELABConvertor.h" />
@@ -161,12 +163,13 @@
     <ClInclude Include="Dl3Quantizer.h" />
     <ClInclude Include="EdgeAwareSQuantizer.h" />
     <ClInclude Include="GilbertCurve.h" />
-    <ClInclude Include="HilbertCurve.h" />
     <ClInclude Include="MedianCut.h" />
     <ClInclude Include="MoDEQuantizer.h" />
     <ClInclude Include="NeuQuantizer.h" />
     <ClInclude Include="nQuantCpp.h" />
+    <ClInclude Include="NsgaIII.h" />
     <ClInclude Include="Otsu.h" />
+    <ClInclude Include="PnnLABGAQuantizer.h" />
     <ClInclude Include="PnnLABQuantizer.h" />
     <ClInclude Include="PnnQuantizer.h" />
     <ClInclude Include="Resource.h" />
@@ -175,6 +178,7 @@
     <ClInclude Include="WuQuantizer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="APNsgaIII.cpp" />
     <ClCompile Include="bitmapUtilities.cpp" />
     <ClCompile Include="BlueNoise.cpp" />
     <ClCompile Include="CIELABConvertor.cpp" />
@@ -182,12 +186,13 @@
     <ClCompile Include="Dl3Quantizer.cpp" />
     <ClCompile Include="EdgeAwareSQuantizer.cpp" />
     <ClCompile Include="GilbertCurve.cpp" />
-    <ClCompile Include="HilbertCurve.cpp" />
     <ClCompile Include="MedianCut.cpp" />
     <ClCompile Include="MoDEQuantizer.cpp" />
     <ClCompile Include="NeuQuantizer.cpp" />
     <ClCompile Include="nQuantCpp.cpp" />
+    <ClCompile Include="NsgaIII.cpp" />
     <ClCompile Include="Otsu.cpp" />
+    <ClCompile Include="PnnLABGAQuantizer.cpp" />
     <ClCompile Include="PnnLABQuantizer.cpp" />
     <ClCompile Include="PnnQuantizer.cpp" />
     <ClCompile Include="SpatialQuantizer.cpp" />
