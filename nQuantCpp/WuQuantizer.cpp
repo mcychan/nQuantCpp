@@ -405,12 +405,12 @@ namespace nQuant
 				float area2[SIDESIZE] = { 0 };
 
 				for (BYTE greenIndex = 1; greenIndex <= MAXSIDEINDEX; ++greenIndex) {
-					volatile UINT line = 0;
-					volatile UINT lineAlpha = 0;
-					volatile UINT lineRed = 0;
-					volatile UINT lineGreen = 0;
-					volatile UINT lineBlue = 0;
-					volatile float line2 = 0.0f;
+					UINT line = 0;
+					UINT lineAlpha = 0;
+					UINT lineRed = 0;
+					UINT lineGreen = 0;
+					UINT lineBlue = 0;
+					float line2 = 0.0f;
 
 					for (BYTE blueIndex = 1; blueIndex <= MAXSIDEINDEX; ++blueIndex) {
 						const UINT index = Index(alphaIndex, redIndex, greenIndex, blueIndex);
@@ -618,7 +618,7 @@ namespace nQuant
 
 	void BuildLookups(ColorPalette* pPalette, vector<Box>& cubes, const ColorData& data)
 	{
-		volatile UINT lookupsCount = 0;
+		UINT lookupsCount = 0;
 		if (m_transparentPixelIndex >= 0)
 			pPalette->Entries[lookupsCount++] = m_transparentColor;
 			

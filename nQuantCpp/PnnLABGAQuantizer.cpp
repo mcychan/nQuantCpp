@@ -7,7 +7,7 @@
 #include "BlueNoise.h"
 
 #define _USE_MATH_DEFINES
-#include <cmath>
+#include <math.h>
 
 #include <iomanip>
 #include <numeric>
