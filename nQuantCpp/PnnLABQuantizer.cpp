@@ -525,8 +525,14 @@ namespace PnnLABQuant
 	}
 	
 	void PnnLABQuantizer::setRatio(double ratioX, double ratioY) {
-		ratio = min(1.0, ratioX);
-		this->ratioY = min(1.0, ratioY);
+		if(ratioX < ratioY) {
+			ratio = min(1.0, ratioY);
+			this->ratioY = min(1.0, ratioX);
+		}
+		else {
+			ratio = min(1.0, ratioX);
+			this->ratioY = min(1.0, ratioY);
+		}
 		clear();
 	}
 

@@ -6,6 +6,9 @@
 #include "CIELABConvertor.h"
 #include "BlueNoise.h"
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 #include <iomanip>
 #include <numeric>
 #include <random>
@@ -62,7 +65,7 @@ namespace PnnLABQuant
 		if (difference <= 0.0000001)
 			return ss.str();
 
-		ss << ";" << std::setprecision(6) << (_ratioY * _dp);
+		ss << ";" << (int)(_ratioY * (_dp + 2));
 		return ss.str();
 	}
 
@@ -150,6 +153,9 @@ namespace PnnLABQuant
 	
 	void PnnLABGAQuantizer::setRatio(double ratioX, double ratioY)
 	{
+		auto difference = abs(ratioX - ratioY);
+		if (difference <= minRatio)
+			ratioY = ratioX;
 		_ratioX = min(max(ratioX, minRatio), maxRatio);
 		_ratioY = min(max(ratioY, minRatio), maxRatio);
 	}
@@ -158,17 +164,41 @@ namespace PnnLABQuant
 		return _fitness;
 	}
 
+	static double rotateRight(double u, double v);
+
+	static double rotateLeft(double u, double v) {
+		auto theta = M_PI * randrange(minRatio, maxRatio);
+		auto result = u * sin(theta) + v * cos(theta);
+		if(result <= minRatio || result >= maxRatio)
+			result = rotateRight(u, v);
+		return result;
+	}
+	
+	static double rotateRight(double u, double v) {
+		auto theta = M_PI * randrange(minRatio, maxRatio);
+		auto result = u * cos(theta) - v * sin(theta);
+		if(result <= minRatio || result >= maxRatio)
+			result = rotateLeft(u, v);
+		return result;
+	}
+
 	shared_ptr<PnnLABGAQuantizer> PnnLABGAQuantizer::crossover(const PnnLABGAQuantizer& mother, int numberOfCrossoverPoints, float crossoverProbability)
 	{
 		auto child = makeNewFromPrototype();
 		if ((rand() % 100) <= crossoverProbability)
 			return child;
-		
-		auto ratioX = sqrt(_ratioX * mother._ratioY);
-		auto ratioY = sqrt(_ratioY * mother._ratioX);
+
+		auto ratioX = rotateRight(_ratioX, mother._ratioY);
+		auto ratioY = rotateLeft(_ratioY, mother._ratioX);
 		child->setRatio(ratioX, ratioY);
 		child->calculateFitness();
 		return child;
+	}
+
+	static double boxMuller() {
+		auto r1 = randrange(minRatio, maxRatio);
+		auto r2 = randrange(minRatio, maxRatio);
+		return sqrt(-2 * log(r1)) * cos(2 * M_PI * r2);
 	}
 
 	bool PnnLABGAQuantizer::dominates(const PnnLABGAQuantizer* right) {
@@ -191,9 +221,9 @@ namespace PnnLABQuant
 		auto ratioX = _ratioX;
 		auto ratioY = _ratioY;
 		if(randrange(.0, 1.0) > .5)
-			ratioX = .5 * (ratioX + randrange(minRatio, maxRatio));
+			ratioX = .5 * (ratioX + boxMuller());
 		else
-			ratioY = .5 * (ratioY + randrange(minRatio, maxRatio));
+			ratioY = .5 * (ratioY + boxMuller());
 
 		setRatio(ratioX, ratioY);
 		calculateFitness();

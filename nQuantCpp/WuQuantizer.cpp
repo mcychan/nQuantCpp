@@ -458,9 +458,9 @@ namespace nQuant
 		auto bottomBlue = Bottom(cube, direction, data.momentsBlue.get());
 		auto bottomWeight = Bottom(cube, direction, data.weights.get());
 
-		volatile bool valid = false;
-		volatile auto result = 0.0f;
-		volatile BYTE cutPoint = 0;
+		bool valid = false;
+		auto result = 0.0f;
+		BYTE cutPoint = 0;
 
 		for (int position = first; position < last; ++position)
 		{

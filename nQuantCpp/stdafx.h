@@ -2,21 +2,22 @@
 
 #pragma once
 
-#define COM_NO_WINDOWS_H
-#define GDIPVER 0x0110 //Use more advanced GDI+ features
-#pragma comment(lib, "gdiplus.lib")
 #ifdef _WIN32
-	#include <unknwn.h>				// Needed for non-MFC/ATL use
-#endif
-#include <gdiplus.h>
-using namespace Gdiplus;
-#ifdef _WIN64
-	#pragma comment(linker, "\"/manifestdependency:type='Win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
-#else
-	#pragma comment(linker, "\"/manifestdependency:type='Win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='X86' publicKeyToken='6595b64144ccf1df' language='*'\"")
-#endif
+	#define COM_NO_WINDOWS_H
+	#define GDIPVER 0x0110 //Use more advanced GDI+ features
+	#pragma comment(lib, "gdiplus.lib")
 
-#ifndef _WIN32
+	#include <unknwn.h>				// Needed for non-MFC/ATL use
+	#include <gdiplus.h>
+	using namespace Gdiplus;
+	#ifdef _WIN64
+		#pragma comment(linker, "\"/manifestdependency:type='Win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+	#else
+		#pragma comment(linker, "\"/manifestdependency:type='Win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='X86' publicKeyToken='6595b64144ccf1df' language='*'\"")
+	#endif
+#else
+	#include <GdiPlusFlat.h>
+	using Bitmap = GpBitmap;
 	#ifndef BYTE
 		typedef unsigned char BYTE
 	#endif
@@ -24,6 +25,7 @@ using namespace Gdiplus;
 		typedef unsigned int UINT
 	#endif
 #endif
+
 
 #ifndef BYTE_MAX
 	#include <climits>
