@@ -3,10 +3,11 @@
 
 #include "stdafx.h"
 #include <algorithm>
-#ifndef _WIN32
-#include <clocale>
+#ifdef _WIN32
+	#include <io.h>
+#else
+	#include <clocale>
 #endif
-#include <io.h>
 #include <iostream>
 #include <fcntl.h>
 #include <filesystem>

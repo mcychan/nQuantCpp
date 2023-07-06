@@ -16,13 +16,11 @@
 		#pragma comment(linker, "\"/manifestdependency:type='Win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='X86' publicKeyToken='6595b64144ccf1df' language='*'\"")
 	#endif
 #else
-	#include <GdiPlusFlat.h>
-	using Bitmap = GpBitmap;
 	#ifndef BYTE
-		typedef unsigned char BYTE
+		typedef unsigned char BYTE;
 	#endif
 	#ifndef UINT
-		typedef unsigned int UINT
+		typedef unsigned int UINT;
 	#endif
 #endif
 
@@ -39,11 +37,11 @@ inline double sqr(double value)
 
 #ifdef _WIN64
 #define _sqrt sqrt
-#else
+#elif defined(_WIN32)
 inline double __declspec (naked) __fastcall _sqrt(double n)
 {
 	_asm fld qword ptr[esp + 4]
 		_asm fsqrt
 	_asm ret 8
 }
-#endif // _WIN64
+#endif
