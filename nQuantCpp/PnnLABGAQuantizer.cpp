@@ -65,7 +65,7 @@ namespace PnnLABQuant
 		if (difference <= 0.0000001)
 			return ss.str();
 
-		ss << ";" << (int)(_ratioY * (_dp + 2));
+		ss << ";" << (int)(_ratioY * _dp * 100);
 		return ss.str();
 	}
 
