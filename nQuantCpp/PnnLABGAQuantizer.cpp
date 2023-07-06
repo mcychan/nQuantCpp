@@ -195,10 +195,9 @@ namespace PnnLABQuant
 		return child;
 	}
 
-	static double boxMuller() {
+	static double boxMuller(double value) {
 		auto r1 = randrange(minRatio, maxRatio);
-		auto r2 = randrange(minRatio, maxRatio);
-		return sqrt(-2 * log(r1)) * cos(2 * M_PI * r2);
+		return sqrt(-2 * log(value)) * cos(2 * M_PI * r1);
 	}
 
 	bool PnnLABGAQuantizer::dominates(const PnnLABGAQuantizer* right) {
@@ -221,9 +220,9 @@ namespace PnnLABQuant
 		auto ratioX = _ratioX;
 		auto ratioY = _ratioY;
 		if(randrange(.0, 1.0) > .5)
-			ratioX = .5 * (ratioX + boxMuller());
+			ratioX = boxMuller(ratioX);
 		else
-			ratioY = .5 * (ratioY + boxMuller());
+			ratioY = boxMuller(ratioY);
 
 		setRatio(ratioX, ratioY);
 		calculateFitness();
