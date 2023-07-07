@@ -5,8 +5,11 @@
 #include <algorithm>
 #ifdef _WIN32
 	#include <io.h>
+	#define tcslen wcslen
 #else
 	#include <clocale>
+	#include <cstring>
+	#define tcslen strlen
 #endif
 #include <iostream>
 #include <fcntl.h>
@@ -62,10 +65,10 @@ void PrintUsage()
 	tcout << "  /o : Output image file dir. The default is <source image path directory>" << endl;
 }
 
-bool isdigit(const TCHAR* string) {
-	const int string_len = wcslen(string);
+bool isdigit(const wchar_t* chars) {
+	const int string_len = wcslen(chars);
 	for (int i = 0; i < string_len; ++i) {
-		if (!isdigit(string[i]))
+		if (!isdigit(chars[i]))
 			return false;
 	}
 	return true;
@@ -79,10 +82,10 @@ bool isAlgo(const wstring& alg) {
 	return false;
 }
 
-bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstring& targetPath, TCHAR** argv)
+bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstring& targetPath, wstring* argv)
 {
 	for (int index = 1; index < argc; ++index) {
-		wstring currentArg(argv[index]);
+		auto currentArg = argv[index];
 		transform(currentArg.begin(), currentArg.end(), currentArg.begin(), ::toupper);
 
 		auto currentCmd = currentArg[0];
@@ -94,7 +97,7 @@ bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstrin
 			}
 
 			if (currentArg[1] == L'A') {
-				wstring strAlgo = argv[index + 1];
+				auto strAlgo = argv[index + 1];
 				transform(strAlgo.begin(), strAlgo.end(), strAlgo.begin(), ::toupper);
 				if (!isAlgo(strAlgo)) {
 					PrintUsage();
@@ -103,18 +106,18 @@ bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstrin
 				algo = strAlgo;
 			}
 			else if (currentArg[1] == L'M') {
-				if (!isdigit(argv[index + 1])) {
+				if (!isdigit(argv[index + 1].c_str())) {
 					PrintUsage();
 					return false;
 				}
-				nMaxColors = _wtoi(argv[index + 1]);
+				nMaxColors = _wtoi(argv[index + 1].c_str());
 				if (nMaxColors < 2)
 					nMaxColors = 2;
 				else if (nMaxColors > 65536)
 					nMaxColors = 65536;
 			}
 			else if (currentArg[1] == L'D') {
-				wstring strDither = argv[index + 1];
+				auto strDither = argv[index + 1];
 				transform(strDither.begin(), strDither.end(), strDither.begin(), ::toupper);
 				if (!(strDither == L"Y" || strDither == L"N")) {
 					PrintUsage();
@@ -123,7 +126,8 @@ bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstrin
 				dither = strDither == L"Y";
 			}
 			else if (currentArg[1] == L'O') {
-				wstring tmpPath(argv[index + 1], argv[index + 1] + wcslen(argv[index + 1]));
+				auto szPath = argv[index + 1].c_str();
+				wstring tmpPath(szPath, szPath + tcslen(szPath));
 				targetPath = tmpPath;
 			}
 			else {
@@ -204,7 +208,7 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 	auto fileName = sourcePath.filename().wstring();
 	fileName = fileName.substr(0, fileName.find_last_of(L'.'));
 
-	targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();	
+	targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();
 	auto destPath = targetDir + L"/" + fileName + L"-";
 	wstring algo(algorithm.begin(), algorithm.end());
 	destPath += algo + L"quant";	
@@ -235,7 +239,7 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 #ifdef _WIN32
 int wmain(int argc, wchar_t** argv)
 {
-	_setmode(_fileno(stdout), _O_U16TEXT);
+	_setmode(_fileno(stdout), _O_U16TEXT);	
 #else
 int main(int argc, char** argv)
 {
@@ -257,14 +261,19 @@ int main(int argc, char** argv)
 	UINT nMaxColors = 256;
 	wstring algo = L"";
 	wstring targetDir = L"";
+
+	vector<wstring> argList(argc);
+	for (int i = 1; i < argc; ++i)
+		argList[i] = wstring(argv[i], argv[i] + tcslen(argv[i]));
+
 #ifdef _DEBUG
 	wstring sourceFile = szDir + L"/../ImgV64.gif";
 	nMaxColors = 1024;
 #else
-	if (!ProcessArgs(argc, algo, nMaxColors, dither, targetDir, argv))
+	if (!ProcessArgs(argc, algo, nMaxColors, dither, targetDir, argList.data()))
 		return 0;
 
-	wstring sourceFile(argv[1], argv[1] + wcslen(argv[1]));
+	wstring sourceFile(argv[1], argv[1] + tcslen(argv[1]));
 	if (!fileExists(sourceFile) && sourceFile.find_first_of(L"\\/") != wstring::npos)
 		sourceFile = szDir + L"/" + sourceFile;
 #endif	
