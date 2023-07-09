@@ -110,7 +110,7 @@ bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstrin
 					PrintUsage();
 					return false;
 				}
-				nMaxColors = _wtoi(argv[index + 1].c_str());
+				nMaxColors = stoi(argv[index + 1].c_str());
 				if (nMaxColors < 2)
 					nMaxColors = 2;
 				else if (nMaxColors > 65536)
@@ -127,7 +127,7 @@ bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstrin
 			}
 			else if (currentArg[1] == L'O') {
 				auto szPath = argv[index + 1].c_str();
-				wstring tmpPath(szPath, szPath + tcslen(szPath));
+				wstring tmpPath(szPath, szPath + wcslen(szPath));
 				targetPath = tmpPath;
 			}
 			else {

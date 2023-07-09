@@ -4,18 +4,20 @@
 
 #define COM_NO_WINDOWS_H
 #define GDIPVER 0x0110 //Use more advanced GDI+ features
-#pragma comment(lib, "gdiplus")
 
-#include <unknwn.h>				// Needed for non-MFC/ATL use
-#include <gdiplus.h>
-using namespace Gdiplus;
-#ifdef _WIN64
-	#pragma comment(linker, "\"/manifestdependency:type='Win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#ifdef _WIN32
+	#pragma comment(lib, "gdiplus")
+
+	#include <unknwn.h>				// Needed for non-MFC/ATL use
+	#include <gdiplus.h>
+	using namespace Gdiplus;
+	#ifdef _WIN64
+		#pragma comment(linker, "\"/manifestdependency:type='Win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+	#else
+		#pragma comment(linker, "\"/manifestdependency:type='Win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='X86' publicKeyToken='6595b64144ccf1df' language='*'\"")
+	#endif
 #else
-	#pragma comment(linker, "\"/manifestdependency:type='Win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='X86' publicKeyToken='6595b64144ccf1df' language='*'\"")
-#endif
-
-#ifndef _WIN32
+	using namespace Gdiplus;
 	#ifndef BYTE
 		typedef unsigned char BYTE;
 	#endif
