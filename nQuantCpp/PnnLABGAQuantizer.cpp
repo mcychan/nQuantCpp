@@ -164,21 +164,21 @@ namespace PnnLABQuant
 		return _fitness;
 	}
 
-	static double rotateRight(double u, double v);
+	static double rotateRight(double u, double v, double delta);
 
-	static double rotateLeft(double u, double v) {
-		auto theta = M_PI * randrange(minRatio, maxRatio);
+	static double rotateLeft(double u, double v, double delta) {
+		auto theta = M_PI * randrange(minRatio, maxRatio) / exp(delta);
 		auto result = u * sin(theta) + v * cos(theta);
 		if(result <= minRatio || result >= maxRatio)
-			result = rotateRight(u, v);
+			result = rotateRight(u, v, delta);
 		return result;
 	}
 	
-	static double rotateRight(double u, double v) {
-		auto theta = M_PI * randrange(minRatio, maxRatio);
+	static double rotateRight(double u, double v, double delta) {
+		auto theta = M_PI * randrange(minRatio, maxRatio) / exp(delta);
 		auto result = u * cos(theta) - v * sin(theta);
 		if(result <= minRatio || result >= maxRatio)
-			result = rotateLeft(u, v);
+			result = rotateLeft(u, v, delta);
 		return result;
 	}
 
@@ -188,8 +188,8 @@ namespace PnnLABQuant
 		if ((rand() % 100) <= crossoverProbability)
 			return child;
 
-		auto ratioX = rotateRight(_ratioX, mother._ratioY);
-		auto ratioY = rotateLeft(_ratioY, mother._ratioX);
+		auto ratioX = rotateRight(_ratioX, mother._ratioY, 0.0);
+		auto ratioY = rotateLeft(_ratioY, mother._ratioX, 0.0);
 		child->setRatio(ratioX, ratioY);
 		child->calculateFitness();
 		return child;
