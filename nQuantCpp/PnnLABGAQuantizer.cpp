@@ -83,7 +83,9 @@ namespace PnnLABQuant
 		auto objectives = findByRatioKey(ratioKey);
 		if (!objectives.empty()) {
 			_objectives = objectives;
-			_fitness = -1.0f * (float) accumulate(_objectives.begin(), _objectives.end(), 0);
+			_fitness = -1.0 * accumulate(_objectives.begin(), _objectives.end(), 0);
+			if (_fitness < -1 * (int) m_pixels.size())
+				_fitness *= log(-_fitness);
 			return;
 		}
 
@@ -125,7 +127,9 @@ namespace PnnLABQuant
 			}
 		}
 		
-		_fitness = -1.0f * (float) accumulate(_objectives.begin(), _objectives.end(), 0);
+		_fitness = -1.0 * accumulate(_objectives.begin(), _objectives.end(), 0);
+		if (_fitness < -1 * (int) m_pixels.size())
+			_fitness *= log(-_fitness);
 		lock_guard<mutex> lock(_mutex);
 		_fitnessMap.insert({ ratioKey, _objectives });
 	}
@@ -161,7 +165,7 @@ namespace PnnLABQuant
 	}
 
 	float PnnLABGAQuantizer::getFitness() {
-		return _fitness;
+		return (float) _fitness;
 	}
 
 	static double rotateRight(double u, double v, double delta);

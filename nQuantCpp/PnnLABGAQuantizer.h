@@ -27,7 +27,7 @@ namespace PnnLABQuant
 			//Asserts floating point compatibility at compile time
 			static_assert(std::numeric_limits<float>::is_iec559, "IEEE 754 required");
 
-			float _fitness = -numeric_limits<float>::infinity();
+			double _fitness = -numeric_limits<double>::infinity();
 			double _ratioX = 0, _ratioY = 0;
 			vector<double> _convertedObjectives;
 			vector<double> _objectives;
