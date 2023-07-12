@@ -78,15 +78,30 @@ namespace PnnLABQuant
 		return vector<double>();
 	}
 
+	void PnnLABGAQuantizer::calculateError(vector<double>& errors) {
+		auto maxError = maxRatio < .1 ? 1.0 : .125;
+		auto fitness = 0.0;
+		for (int i = 0; i < errors.size(); ++i) {
+			errors[i] /= (double) m_pixels.size();
+			if (i == 0 && errors[i] > maxError)
+				errors[i] *= errors[i];
+			else if (errors[i] > (2 * maxError))
+				errors[i] *= errors[i];
+			fitness -= errors[i];
+		}
+
+		_objectives = errors;
+		_fitness = fitness;
+	}
+
 	void PnnLABGAQuantizer::calculateFitness() {
 		auto ratioKey = getRatioKey();
 		auto objectives = findByRatioKey(ratioKey);
 		if (!objectives.empty()) {
 			_objectives = objectives;
 			_fitness = -1.0 * accumulate(_objectives.begin(), _objectives.end(), 0);
-			if (_fitness < -1 * (int) m_pixels.size())
-				_fitness *= log(-_fitness);
-			return;
+			if(_fitness < -1)
+				return;
 		}
 
 		_objectives.resize(4);
@@ -97,7 +112,7 @@ namespace PnnLABQuant
 		pPalette->Count = _nMaxColors;
 		m_pq->pnnquan(m_pixels, pPalette, _nMaxColors);
 
-		auto& errors = _objectives;
+		auto errors = _objectives;
 		fill(errors.begin(), errors.end(), 0);
 
 		int threshold = maxRatio < .1 ? -64 : -112;
@@ -127,9 +142,7 @@ namespace PnnLABQuant
 			}
 		}
 		
-		_fitness = -1.0 * accumulate(_objectives.begin(), _objectives.end(), 0);
-		if (_fitness < -1 * (int) m_pixels.size())
-			_fitness *= log(-_fitness);
+		calculateError(errors);
 		lock_guard<mutex> lock(_mutex);
 		_fitnessMap.insert({ ratioKey, _objectives });
 	}
@@ -168,13 +181,11 @@ namespace PnnLABQuant
 		return (float) _fitness;
 	}
 
-	static double rotateRight(double u, double v, double delta);
-
 	static double rotateLeft(double u, double v, double delta) {
 		auto theta = M_PI * randrange(minRatio, maxRatio) / exp(delta);
 		auto result = u * sin(theta) + v * cos(theta);
 		if(result <= minRatio || result >= maxRatio)
-			result = rotateRight(u, v, delta + .5);
+			result = rotateLeft(u, v, delta + .5);
 		return result;
 	}
 	
@@ -182,7 +193,7 @@ namespace PnnLABQuant
 		auto theta = M_PI * randrange(minRatio, maxRatio) / exp(delta);
 		auto result = u * cos(theta) - v * sin(theta);
 		if(result <= minRatio || result >= maxRatio)
-			result = rotateLeft(u, v, delta + .5);
+			result = rotateRight(u, v, delta + .5);
 		return result;
 	}
 
