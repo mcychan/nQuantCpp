@@ -85,7 +85,7 @@ namespace PnnLABQuant
 			errors[i] /= (double) m_pixels.size();
 			if (i == 0 && errors[i] > maxError)
 				errors[i] *= errors[i];
-			else if (errors[i] > (2 * maxError))
+			else if (errors[i] > (2* maxError))
 				errors[i] *= errors[i];
 			fitness -= errors[i];
 		}
@@ -97,11 +97,9 @@ namespace PnnLABQuant
 	void PnnLABGAQuantizer::calculateFitness() {
 		auto ratioKey = getRatioKey();
 		auto objectives = findByRatioKey(ratioKey);
-		if (!objectives.empty()) {
-			_objectives = objectives;
-			_fitness = -1.0 * accumulate(_objectives.begin(), _objectives.end(), 0);
-			if(_fitness < -1)
-				return;
+		if (!objectives.empty()) {			
+			_fitness = -1.0 * accumulate(objectives.begin(), objectives.end(), 0);
+			return;
 		}
 
 		_objectives.resize(4);
