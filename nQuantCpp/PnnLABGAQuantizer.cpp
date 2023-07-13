@@ -82,10 +82,10 @@ namespace PnnLABQuant
 		auto maxError = maxRatio < .1 ? .5 : .0625;
 		auto fitness = 0.0;
 		for (int i = 0; i < errors.size(); ++i) {
-			errors[i] /= (double) m_pixels.size();
+			errors[i] /= maxError * m_pixels.size();
 			if (i == 0 && errors[i] > maxError)
 				errors[i] *= errors[i];
-			else if (errors[i] > (2* maxError))
+			else if (errors[i] > (2 * maxError))
 				errors[i] *= errors[i];
 			fitness -= errors[i];
 		}
