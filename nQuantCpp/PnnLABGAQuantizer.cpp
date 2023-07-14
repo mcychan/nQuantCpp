@@ -84,9 +84,9 @@ namespace PnnLABQuant
 		for (int i = 0; i < errors.size(); ++i) {
 			errors[i] /= maxError * m_pixels.size();
 			if (i == 0 && errors[i] > maxError)
-				errors[i] *= errors[i];
+				errors[i] *= exp(errors[i]);
 			else if (errors[i] > (2 * maxError))
-				errors[i] *= errors[i];
+				errors[i] *= exp(errors[i]);
 			fitness -= errors[i];
 		}
 

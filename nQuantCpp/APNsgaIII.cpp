@@ -133,9 +133,9 @@ namespace nQuantGA
 
 				ostringstream status;
 				if(bestNotEnhance >= _maxRepeat)
-					status << "\rFitness: " << best->getFitness() << "\t Generation: " << _currentGeneration << " ...";
+					status << "\rFitness: " << showpoint << best->getFitness() << "\t Generation: " << _currentGeneration << " ...";
 				else
-					status << "\rFitness: " << best->getFitness() << "\t Generation: " << _currentGeneration;
+					status << "\rFitness: " << showpoint << best->getFitness() << "\t Generation: " << _currentGeneration;
 				wcout << status.str().c_str();
 					
 				if (best->getFitness() > minFitness) 

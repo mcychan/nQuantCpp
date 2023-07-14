@@ -550,7 +550,7 @@ namespace nQuantGA
 			auto best = getResult();
 			if(currentGeneration > 0) {
 				ostringstream status;
-				status << "\rFitness: " << best->getFitness() << "\t Generation: " << currentGeneration;
+				status << "\rFitness: " << showpoint << best->getFitness() << "\t Generation: " << currentGeneration;
 				wcout << status.str().c_str();
 
 				// algorithm has reached criteria?
