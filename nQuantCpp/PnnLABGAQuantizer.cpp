@@ -41,7 +41,7 @@ namespace PnnLABQuant
 		bool hasSemiTransparency = false;
 		m_pixels.resize(_bitmapWidth * pSource->GetHeight()); 
 		m_pq->grabPixels(pSource, m_pixels, _nMaxColors, hasSemiTransparency);
-		minRatio = (hasSemiTransparency || nMaxColors < 64) ? .01 : .85;
+		minRatio = (hasSemiTransparency || nMaxColors < 64) ? .0111 : .85;
 		maxRatio = min(1.0, nMaxColors / ((nMaxColors < 64) ? 500.0 : 50.0));
 		_dp = maxRatio < .1 ? 10000 : 100;
 	}
@@ -78,15 +78,32 @@ namespace PnnLABQuant
 		return vector<double>();
 	}
 
+	using AmplifyFn = function<double(const bool)>;
+
 	void PnnLABGAQuantizer::calculateError(vector<double>& errors) {
 		auto maxError = maxRatio < .1 ? .5 : .0625;
+		if (m_pq->hasAlpha())
+			maxError = 1;
+
 		auto fitness = 0.0;
+		bool tooSmall = false; // any error < exp(1.0) concluded as too small
 		for (int i = 0; i < errors.size(); ++i) {
 			errors[i] /= maxError * m_pixels.size();
+			if(errors[i] < 3)
+				tooSmall = true;
+		}
+
+		AmplifyFn amplifyFn = [tooSmall](const double val) -> double {
+			if (tooSmall)
+				return exp(val);
+			return log(val);
+		};
+
+		for (int i = 0; i < errors.size(); ++i) {
 			if (i == 0 && errors[i] > maxError)
-				errors[i] *= exp(errors[i]);
+				errors[i] *= amplifyFn(errors[i]);
 			else if (errors[i] > (2 * maxError))
-				errors[i] *= exp(errors[i]);
+				errors[i] *= amplifyFn(errors[i]);
 			fitness -= errors[i];
 		}
 
@@ -97,7 +114,7 @@ namespace PnnLABQuant
 	void PnnLABGAQuantizer::calculateFitness() {
 		auto ratioKey = getRatioKey();
 		auto objectives = findByRatioKey(ratioKey);
-		if (!objectives.empty()) {			
+		if (!objectives.empty()) {
 			_fitness = -1.0 * accumulate(objectives.begin(), objectives.end(), 0);
 			_objectives = objectives;
 			return;
