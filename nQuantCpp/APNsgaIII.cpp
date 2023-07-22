@@ -116,6 +116,7 @@ namespace nQuantGA
 		int nMax = (int) (1.5 * this->_populationSize);
 
 		int bestNotEnhance = 0;
+		_currentGeneration = 0;
 		double lastBestFit = 0.0;
 
 		int cur = 0, next = 1;
