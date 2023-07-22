@@ -3,12 +3,13 @@
 
 #include "stdafx.h"
 #include <algorithm>
+#include <chrono>
 #ifdef _WIN32
 	#include <io.h>
 	#define tcslen wcslen
 #else
 	#include <clocale>
-	#include <cstring>
+	#include <string>
 	#define tcslen strlen
 #endif
 #include <iostream>
@@ -287,6 +288,7 @@ int main(int argc, char** argv)
 		auto pSource = unique_ptr<Bitmap>(Bitmap::FromFile(sourceFile.c_str()));
 		auto status = pSource->GetLastStatus();
 		if (status == Ok) {
+			auto start = chrono::steady_clock::now();
 			if (!fileExists(targetDir))
 				targetDir = fs::path(sourceFile).parent_path().wstring();
 
@@ -312,6 +314,9 @@ int main(int argc, char** argv)
 			}
 			else
 				QuantizeImage(algo, sourceFile, targetDir, pSource.get(), nMaxColors, dither);
+
+			auto dur = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;
+			tcout << "Completed in " << dur << " secs." << endl;
 		}
 		else
 			tcout << "Failed to read image in '" << sourceFile.c_str() << "' file";
