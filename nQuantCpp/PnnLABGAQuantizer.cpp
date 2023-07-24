@@ -42,7 +42,7 @@ namespace PnnLABQuant
 		m_pixels.resize(_bitmapWidth * pSource->GetHeight()); 
 		m_pq->grabPixels(pSource, m_pixels, _nMaxColors, hasSemiTransparency);
 		minRatio = (hasSemiTransparency || nMaxColors < 64) ? .0111 : .85;
-		maxRatio = min(1.0, nMaxColors / ((nMaxColors < 64) ? 500.0 : 50.0));
+		maxRatio = min(1.0, nMaxColors / ((nMaxColors < 64) ? 400.0 : 50.0));
 		_dp = maxRatio < .1 ? 10000 : 100;
 	}
 
@@ -95,8 +95,8 @@ namespace PnnLABQuant
 
 		AmplifyFn amplifyFn = [tooSmall](const double val) -> double {
 			if (tooSmall)
-				return exp(val);
-			return log(val);
+				return M_PI * val;
+			return .5 * M_PI * val;
 		};
 
 		for (int i = 0; i < errors.size(); ++i) {
