@@ -1,4 +1,4 @@
-/* Fast pairwise nearest neighbor based genetic algorithm with CIELAB color space genetic algorithm
+/* Fast pairwise nearest neighbor based genetic algorithm with CIELAB color space
 * Copyright (c) 2023 Miller Cy Chan */
 
 #include "stdafx.h"
@@ -132,17 +132,16 @@ namespace PnnLABQuant
 		fill(errors.begin(), errors.end(), 0);
 
 		int threshold = maxRatio < .1 ? -64 : -112;
-		int pixelIndex = 0;
-		for (int x = 0; x < m_pixels.size(); ++x, ++pixelIndex)
+		for (int i = 0; i < m_pixels.size(); ++i)
 		{
-			if(BlueNoise::RAW_BLUE_NOISE[pixelIndex & 4095] > threshold)
+			if(BlueNoise::RAW_BLUE_NOISE[i & 4095] > threshold)
 				continue;
 
-			auto argb = m_pixels[pixelIndex];
+			auto argb = m_pixels[i];
 			Color c(argb);
 			CIELABConvertor::Lab lab1, lab2;
 			m_pq->getLab(c, lab1);
-			auto qPixelIndex = m_pq->nearestColorIndex(pPalette, argb, pixelIndex);
+			auto qPixelIndex = m_pq->nearestColorIndex(pPalette, argb, i);
 			Color c2(pPalette->Entries[qPixelIndex]);
 			m_pq->getLab(c2, lab2);
 
@@ -198,17 +197,17 @@ namespace PnnLABQuant
 	}
 
 	static double rotateLeft(double u, double v, double delta) {
-		auto theta = M_PI * randrange(minRatio, maxRatio) / exp(delta);
+		auto theta = M_PI * randrange(minRatio, maxRatio);
 		auto result = u * sin(theta) + v * cos(theta);
-		if(result <= minRatio || result >= maxRatio)
+		if (result <= minRatio || result >= maxRatio)
 			result = rotateLeft(u, v, delta + .5);
 		return result;
 	}
 	
 	static double rotateRight(double u, double v, double delta) {
-		auto theta = M_PI * randrange(minRatio, maxRatio) / exp(delta);
+		auto theta = M_PI * randrange(minRatio, maxRatio);
 		auto result = u * cos(theta) - v * sin(theta);
-		if(result <= minRatio || result >= maxRatio)
+		if (result <= minRatio || result >= maxRatio)
 			result = rotateRight(u, v, delta + .5);
 		return result;
 	}
