@@ -121,10 +121,10 @@ namespace nQuantGA
 
 		int cur = 0, next = 1;
 		while(_currentGeneration < _max_iterations)
-		{
-			auto best = this->getResult();
+		{			
 			if(_currentGeneration > 0) {
-				double difference = abs(best->getFitness() - lastBestFit);
+				auto best = this->getResult();
+				auto difference = abs(best->getFitness() - lastBestFit);
 				if (difference <= 1e-6)
 					++bestNotEnhance;
 				else {
