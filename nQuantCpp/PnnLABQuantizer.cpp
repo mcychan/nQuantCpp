@@ -23,7 +23,7 @@ namespace PnnLABQuant
 		{-0.14713f, -0.28886f, 0.436f},
 		{0.615f, -0.51499f, -0.10001f}
 	};
-	
+
 	PnnLABQuantizer::PnnLABQuantizer() {
 	}
 

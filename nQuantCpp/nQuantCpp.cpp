@@ -145,67 +145,8 @@ inline bool fileExists(const wstring& path)
 	return fs::exists(fs::path(path));
 }
 
-bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring& targetDir, Bitmap* pSource, UINT nMaxColors, bool dither)
+bool OutputImage(const fs::path& sourcePath, const wstring& algorithm, const UINT& nMaxColors, wstring& targetDir, Bitmap* pDest)
 {
-	// Create 8 bpp indexed bitmap of the same size
-	auto pDest = make_unique<Bitmap>(pSource->GetWidth(), pSource->GetHeight(), (nMaxColors > 256) ? PixelFormat16bppARGB1555 : (nMaxColors > 16) ? PixelFormat8bppIndexed : (nMaxColors > 2) ? PixelFormat4bppIndexed : PixelFormat1bppIndexed);
-
-	bool bSucceeded = false;
-	if (algorithm == L"PNN") {
-		PnnQuant::PnnQuantizer pnnQuantizer;
-		bSucceeded = pnnQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
-	}
-	else if (algorithm == L"PNNLAB") {
-		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
-		bSucceeded = pnnLABQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
-	}
-	else if (algorithm == L"PNNLAB+") {
-		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
-		PnnLABQuant::PnnLABGAQuantizer pnnLABGAQuantizer(pnnLABQuantizer, pSource, nMaxColors);
-		nQuantGA::APNsgaIII<PnnLABQuant::PnnLABGAQuantizer> alg(pnnLABGAQuantizer);
-		alg.run(9999, -numeric_limits<double>::epsilon());
-		auto pGAq = alg.getResult();
-		tcout << L"\n" << pGAq->getResult().c_str() << endl;
-		bSucceeded = pGAq->QuantizeImage(pDest.get(), dither);
-	}
-	else if (algorithm == L"NEU") {
-		NeuralNet::NeuQuantizer neuQuantizer;
-		bSucceeded = neuQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
-	}
-	else if (algorithm == L"WU") {
-		nQuant::WuQuantizer wuQuantizer;
-		bSucceeded = wuQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
-	}
-	else if (algorithm == L"EAS") {
-		EdgeAwareSQuant::EdgeAwareSQuantizer easQuantizer;
-		bSucceeded = easQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
-	}
-	else if (algorithm == L"SPA") {
-		SpatialQuant::SpatialQuantizer spaQuantizer;
-		bSucceeded = spaQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
-	}
-	else if (algorithm == L"DIV") {
-		DivQuant::DivQuantizer divQuantizer;
-		bSucceeded = divQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
-	}
-	else if (algorithm == L"DL3") {
-		Dl3Quant::Dl3Quantizer dl3Quantizer;
-		bSucceeded = dl3Quantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
-	}
-	else if (algorithm == L"MMC") {
-		MedianCutQuant::MedianCut mmcQuantizer;
-		bSucceeded = mmcQuantizer.QuantizeImage(pSource, pDest.get(), nMaxColors, dither);
-	}
-	else if (algorithm == L"OTSU") {
-		nMaxColors = 2;
-		OtsuThreshold::Otsu otsu;
-		bSucceeded = otsu.ConvertGrayScaleToBinary(pSource, pDest.get());
-	}
-
-	if (!bSucceeded)
-		return bSucceeded;
-
-	auto sourcePath = fs::canonical(fs::path(sourceFile));
 	auto fileName = sourcePath.filename().wstring();
 	fileName = fileName.substr(0, fileName.find_last_of(L'.'));
 
@@ -235,6 +176,109 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 		tcout << "Failed to save image in '" << destPath << "' file" << endl;
 
 	return status == Status::Ok;
+}
+
+bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring& targetDir, shared_ptr<Bitmap> pSource, UINT nMaxColors, bool dither)
+{
+	// Create 8 bpp indexed bitmap of the same size
+	auto pDest = make_shared<Bitmap>(pSource->GetWidth(), pSource->GetHeight(), (nMaxColors > 256) ? PixelFormat16bppARGB1555 : (nMaxColors > 16) ? PixelFormat8bppIndexed : (nMaxColors > 2) ? PixelFormat4bppIndexed : PixelFormat1bppIndexed);
+
+	bool bSucceeded = false;
+	if (algorithm == L"PNN") {
+		PnnQuant::PnnQuantizer pnnQuantizer;
+		bSucceeded = pnnQuantizer.QuantizeImage(pSource.get(), pDest.get(), nMaxColors, dither);
+	}
+	else if (algorithm == L"PNNLAB") {
+		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
+		bSucceeded = pnnLABQuantizer.QuantizeImage(pSource.get(), pDest.get(), nMaxColors, dither);
+	}
+	else if (algorithm == L"PNNLAB+") {
+		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
+		vector<shared_ptr<Bitmap> > sources;
+		sources.emplace_back(pSource);
+		PnnLABQuant::PnnLABGAQuantizer pnnLABGAQuantizer(pnnLABQuantizer, sources, nMaxColors);
+		nQuantGA::APNsgaIII<PnnLABQuant::PnnLABGAQuantizer> alg(pnnLABGAQuantizer);
+		alg.run(9999, -numeric_limits<double>::epsilon());
+		auto pGAq = alg.getResult();
+		tcout << L"\n" << pGAq->getResult().c_str() << endl;
+		vector<shared_ptr<Bitmap> > dests;
+		dests.emplace_back(pDest);
+		bSucceeded = pGAq->QuantizeImage(dests, dither);
+	}
+	else if (algorithm == L"NEU") {
+		NeuralNet::NeuQuantizer neuQuantizer;
+		bSucceeded = neuQuantizer.QuantizeImage(pSource.get(), pDest.get(), nMaxColors, dither);
+	}
+	else if (algorithm == L"WU") {
+		nQuant::WuQuantizer wuQuantizer;
+		bSucceeded = wuQuantizer.QuantizeImage(pSource.get(), pDest.get(), nMaxColors, dither);
+	}
+	else if (algorithm == L"EAS") {
+		EdgeAwareSQuant::EdgeAwareSQuantizer easQuantizer;
+		bSucceeded = easQuantizer.QuantizeImage(pSource.get(), pDest.get(), nMaxColors, dither);
+	}
+	else if (algorithm == L"SPA") {
+		SpatialQuant::SpatialQuantizer spaQuantizer;
+		bSucceeded = spaQuantizer.QuantizeImage(pSource.get(), pDest.get(), nMaxColors, dither);
+	}
+	else if (algorithm == L"DIV") {
+		DivQuant::DivQuantizer divQuantizer;
+		bSucceeded = divQuantizer.QuantizeImage(pSource.get(), pDest.get(), nMaxColors, dither);
+	}
+	else if (algorithm == L"DL3") {
+		Dl3Quant::Dl3Quantizer dl3Quantizer;
+		bSucceeded = dl3Quantizer.QuantizeImage(pSource.get(), pDest.get(), nMaxColors, dither);
+	}
+	else if (algorithm == L"MMC") {
+		MedianCutQuant::MedianCut mmcQuantizer;
+		bSucceeded = mmcQuantizer.QuantizeImage(pSource.get(), pDest.get(), nMaxColors, dither);
+	}
+	else if (algorithm == L"OTSU") {
+		nMaxColors = 2;
+		OtsuThreshold::Otsu otsu;
+		bSucceeded = otsu.ConvertGrayScaleToBinary(pSource.get(), pDest.get());
+	}
+
+	if (!bSucceeded)
+		return bSucceeded;
+
+	auto sourcePath = fs::canonical(fs::path(sourceFile));
+	return OutputImage(sourcePath, algorithm, nMaxColors, targetDir, pDest.get());
+}
+
+void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMaxColors, const bool dither)
+{
+	auto start = chrono::steady_clock::now();
+
+	vector<fs::path> sourcePaths;
+	vector<shared_ptr<Bitmap> > pSources, pDests;
+	for (const auto& entry : fs::recursive_directory_iterator(sourceDir)) {
+		if (entry.is_regular_file() && !entry.is_symlink()) {
+			auto pSource = shared_ptr<Bitmap>(Bitmap::FromFile(entry.path().wstring().c_str()));
+			auto status = pSource->GetLastStatus();
+			if (status != Ok)
+				continue;
+			sourcePaths.emplace_back(entry.path());
+			pSources.emplace_back(pSource);
+			pDests.emplace_back(make_shared<Bitmap>(pSource->GetWidth(), pSource->GetHeight(), (nMaxColors > 256) ? PixelFormat16bppARGB1555
+			: (nMaxColors > 16) ? PixelFormat8bppIndexed : (nMaxColors > 2) ? PixelFormat4bppIndexed : PixelFormat1bppIndexed));
+		}
+	}
+
+	PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
+	PnnLABQuant::PnnLABGAQuantizer pnnLABGAQuantizer(pnnLABQuantizer, pSources, nMaxColors);
+	nQuantGA::APNsgaIII<PnnLABQuant::PnnLABGAQuantizer> alg(pnnLABGAQuantizer);
+	alg.run(9999, -numeric_limits<double>::epsilon());
+	auto pGAq = alg.getResult();
+	tcout << L"\n" << pGAq->getResult().c_str() << endl;
+	if(pGAq->QuantizeImage(pDests, dither)) {
+		int i = 0;
+		for(auto& sourcePath : sourcePaths)
+			OutputImage(sourcePath, L"PNNLAB+", nMaxColors, targetDir, pDests[i++].get());
+	}
+
+	auto dur = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;
+	tcout << "Completed in " << dur << " secs." << endl;
 }
 
 #ifdef _WIN32
@@ -285,7 +329,15 @@ int main(int argc, char** argv)
 	}		
 
 	if(GdiplusStartup(&m_gdiplusToken, &m_gdiplusStartupInput, NULL) == Ok) {
-		auto pSource = unique_ptr<Bitmap>(Bitmap::FromFile(sourceFile.c_str()));
+		if(fs::is_directory(fs::status(sourceFile.c_str())) ) {
+			if (!targetDir.empty() && !fileExists(targetDir))
+				fs::create_directories(targetDir);
+			OutputImages(sourceFile, targetDir, nMaxColors, dither);
+			GdiplusShutdown(m_gdiplusToken);
+			return 0;
+		}
+		
+		auto pSource = shared_ptr<Bitmap>(Bitmap::FromFile(sourceFile.c_str()));
 		auto status = pSource->GetLastStatus();
 		if (status == Ok) {
 			auto start = chrono::steady_clock::now();
@@ -299,21 +351,21 @@ int main(int argc, char** argv)
 
 			sourceFile = (sourceFile[sourceFile.length() - 1] != L'/' && sourceFile[sourceFile.length() - 1] != L'\\') ? sourceFile : sourceFile.substr(0, sourceFile.find_last_of(L"\\/"));
 			if (algo == L"") {
-				//QuantizeImage(L"MMC", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
-				QuantizeImage(L"DIV", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
+				//QuantizeImage(L"MMC", sourceFile, targetDir, pSource, nMaxColors, dither);
+				QuantizeImage(L"DIV", sourceFile, targetDir, pSource, nMaxColors, dither);
 				if (nMaxColors > 32) {
-					QuantizeImage(L"PNN", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
-					QuantizeImage(L"WU", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
-					QuantizeImage(L"NEU", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
+					QuantizeImage(L"PNN", sourceFile, targetDir, pSource, nMaxColors, dither);
+					QuantizeImage(L"WU", sourceFile, targetDir, pSource, nMaxColors, dither);
+					QuantizeImage(L"NEU", sourceFile, targetDir, pSource, nMaxColors, dither);
 				}
 				else {
-					QuantizeImage(L"PNNLAB", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
-					QuantizeImage(L"EAS", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
-					QuantizeImage(L"SPA", sourceFile, targetDir, pSource.get(), nMaxColors, dither);
+					QuantizeImage(L"PNNLAB", sourceFile, targetDir, pSource, nMaxColors, dither);
+					QuantizeImage(L"EAS", sourceFile, targetDir, pSource, nMaxColors, dither);
+					QuantizeImage(L"SPA", sourceFile, targetDir, pSource, nMaxColors, dither);
 				}
 			}
 			else
-				QuantizeImage(algo, sourceFile, targetDir, pSource.get(), nMaxColors, dither);
+				QuantizeImage(algo, sourceFile, targetDir, pSource, nMaxColors, dither);
 
 			auto dur = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;
 			tcout << "Completed in " << dur << " secs." << endl;

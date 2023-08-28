@@ -31,7 +31,7 @@ namespace PnnLABQuant
 			double _ratioX = 0, _ratioY = 0;
 			vector<double> _convertedObjectives;
 			vector<double> _objectives;
-			vector<ARGB> m_pixels;
+			vector<vector<ARGB> > m_pixelsList;
 			unique_ptr<PnnLABQuantizer> m_pq;
 
 			void calculateError(vector<double>& errors);
@@ -41,8 +41,8 @@ namespace PnnLABQuant
 			void clear();
 
 		public:
-			PnnLABGAQuantizer(PnnLABQuantizer& pq, Bitmap* pSource, UINT nMaxColors);
-			PnnLABGAQuantizer(PnnLABQuantizer& pq, const vector<ARGB>& pixels, const UINT bitmapWidth, UINT nMaxColors);
+			PnnLABGAQuantizer(PnnLABQuantizer& pq, const vector<shared_ptr<Bitmap> >& pSources, UINT nMaxColors);
+			PnnLABGAQuantizer(PnnLABQuantizer& pq, const vector<vector<ARGB> >& pixelsList, const vector<UINT>& bitmapWidths, UINT nMaxColors);
 			
 			float getFitness();
 			shared_ptr<PnnLABGAQuantizer> crossover(const PnnLABGAQuantizer& mother, int numberOfCrossoverPoints, float crossoverProbability);
@@ -56,6 +56,6 @@ namespace PnnLABQuant
 			UINT getMaxColors() const;
 			string getResult() const;
 			void setRatio(double ratioX, double ratioY);
-			bool QuantizeImage(Bitmap* pDest, bool dither = true);
+			bool QuantizeImage(vector<shared_ptr<Bitmap> >& pBitmaps, bool dither = true);
 	};
 }
