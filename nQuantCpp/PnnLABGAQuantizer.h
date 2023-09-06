@@ -55,6 +55,9 @@ namespace PnnLABQuant
 
 			UINT getMaxColors() const;
 			string getResult() const;
+			bool hasAlpha() const {
+				return m_pq->hasAlpha();
+			}
 			void setRatio(double ratioX, double ratioY);
 			bool QuantizeImage(vector<shared_ptr<Bitmap> >& pBitmaps, bool dither = true);
 	};

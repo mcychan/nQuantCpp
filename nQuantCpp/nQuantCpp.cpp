@@ -32,6 +32,7 @@ namespace fs = std::filesystem;
 #include "Dl3Quantizer.h"
 #include "MedianCut.h"
 #include "Otsu.h"
+#include "GifWriter.h"
 #include <unordered_map>
 
 #ifdef _DEBUG
@@ -153,7 +154,7 @@ bool OutputImage(const fs::path& sourcePath, const wstring& algorithm, const UIN
 	targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();
 	auto destPath = targetDir + L"/" + fileName + L"-";
 	wstring algo(algorithm.begin(), algorithm.end());
-	destPath += algo + L"quant";	
+	destPath += algo + L"quant";
 	
 	// image/bmp  : {557cf400-1a04-11d3-9a73-0000f81ef32e}
 	const CLSID bmpEncoderClsId = { 0x557cf400, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };
@@ -171,9 +172,9 @@ bool OutputImage(const fs::path& sourcePath, const wstring& algorithm, const UIN
 	destPath += std::to_wstring(nMaxColors) + targetExtension;
 	auto status = pDest->Save(destPath.c_str(), &extensionMap[targetExtension]);
 	if (status == Status::Ok)
-		tcout << "Converted image: " << destPath << endl;
+		tcout << L"Converted image: " << destPath << endl;
 	else
-		tcout << "Failed to save image in '" << destPath << "' file" << endl;
+		tcout << L"Failed to save image in '" << destPath << L"' file" << endl;
 
 	return status == Status::Ok;
 }
@@ -271,10 +272,26 @@ void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMa
 	alg.run(9999, -numeric_limits<double>::epsilon());
 	auto pGAq = alg.getResult();
 	tcout << L"\n" << pGAq->getResult().c_str() << endl;
-	if(pGAq->QuantizeImage(pDests, dither)) {
-		int i = 0;
-		for(auto& sourcePath : sourcePaths)
-			OutputImage(sourcePath, L"PNNLAB+", nMaxColors, targetDir, pDests[i++].get());
+	if(pGAq->QuantizeImage(pDests, dither)) {		
+		if(nMaxColors > 256) {
+			int i = 0;
+			for(auto& sourcePath : sourcePaths)
+				OutputImage(sourcePath, L"PNNLAB+", nMaxColors, targetDir, pDests[i++].get());
+		}
+		else {
+			auto fileName = sourcePaths[0].filename().wstring();
+			fileName = fileName.substr(0, fileName.find_last_of(L'.'));
+
+			targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();
+			auto destPath = targetDir + L"/" + fileName + L"-";
+			destPath += L"PNNLAB+quant.gif";
+			GifEncode::GifWriter gifWriter(destPath, pGAq->hasAlpha());
+			auto status = gifWriter.AddImages(pDests);
+			if (status == Status::Ok)
+				tcout << L"Converted image: " << destPath << endl;
+			else
+				tcout << L"Failed to save image in '" << destPath << L"' file" << endl;
+		}
 	}
 
 	auto dur = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;

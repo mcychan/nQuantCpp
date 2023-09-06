@@ -81,6 +81,9 @@
     <ClInclude Include="NsgaIII.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
+    <ClInclude Include="GifWriter.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="nQuantCpp.cpp">
@@ -141,6 +144,9 @@
       <Filter>原始程式檔</Filter>
     </ClCompile>
     <ClCompile Include="NsgaIII.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="GifWriter.cpp">
       <Filter>原始程式檔</Filter>
     </ClCompile>
   </ItemGroup>
