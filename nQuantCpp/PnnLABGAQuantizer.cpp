@@ -129,7 +129,7 @@ namespace PnnLABQuant
 		for (auto& pixels : m_pixelsList) {
 			for (int i = 0; i < pixels.size(); ++i)
 			{
-				if (BlueNoise::RAW_BLUE_NOISE[i & 4095] > threshold)
+				if (BlueNoise::TELL_BLUE_NOISE[i & 4095] > threshold)
 					continue;
 
 				auto argb = pixels[i];

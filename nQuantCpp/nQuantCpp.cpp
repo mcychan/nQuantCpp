@@ -195,8 +195,7 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 	}
 	else if (algorithm == L"PNNLAB+") {
 		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
-		vector<shared_ptr<Bitmap> > sources;
-		sources.emplace_back(pSource);
+		vector<shared_ptr<Bitmap> > sources(1, pSource);
 		PnnLABQuant::PnnLABGAQuantizer pnnLABGAQuantizer(pnnLABQuantizer, sources, nMaxColors);
 		nQuantGA::APNsgaIII<PnnLABQuant::PnnLABGAQuantizer> alg(pnnLABGAQuantizer);
 		alg.run(9999, -numeric_limits<double>::epsilon());

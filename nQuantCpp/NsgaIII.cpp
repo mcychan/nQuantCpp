@@ -484,16 +484,15 @@ namespace nQuantGA
 	template <class T>
 	vector<shared_ptr<T> > NsgaIII<T>::crossing(vector<shared_ptr<T> >& population)
 	{
-		vector<shared_ptr<T> > offspring;
 		auto populationSize = population.size();
-		offspring.reserve(populationSize);
+		vector<shared_ptr<T> > offspring(populationSize);
 		#pragma omp parallel for
 		for (int i = 0; i < populationSize; ++i) {
 			if (i % 2 == 0) {
 				int father = rand() % populationSize, mother = rand() % populationSize;
-				offspring.emplace_back(population[father]->crossover(*(population[mother]), _numberOfCrossoverPoints, _crossoverProbability));
-				if((i + 1) < populationSize)
-					offspring.emplace_back(population[mother]->crossover(*(population[father]), _numberOfCrossoverPoints, _crossoverProbability));
+				offspring[i] = population[father]->crossover(*(population[mother]), _numberOfCrossoverPoints, _crossoverProbability);
+				if(i < populationSize - 1)
+					offspring[i + 1] = population[mother]->crossover(*(population[father]), _numberOfCrossoverPoints, _crossoverProbability);
 			}
 		}
 		return offspring;

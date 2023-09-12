@@ -3,7 +3,7 @@
 
 namespace BlueNoise
 {
-	extern const char RAW_BLUE_NOISE[];
+	extern const char TELL_BLUE_NOISE[];
 	
 	ARGB diffuse(const Color& pixel, const Color& qPixel, const float weight, const float strength, const int x, const int y);
 

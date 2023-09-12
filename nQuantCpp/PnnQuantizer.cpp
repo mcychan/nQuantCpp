@@ -46,7 +46,7 @@ namespace PnnQuant
 		auto wb = bin1.bc;
 
 		int start = 0;
-		if (BlueNoise::RAW_BLUE_NOISE[idx & 4095] > -88)
+		if (BlueNoise::TELL_BLUE_NOISE[idx & 4095] > -88)
 			start = (PG < coeffs[0][1]) ? 3 : 1;
 
 		for (int i = bin1.fw; i; i = bins[i].fw) {

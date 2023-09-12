@@ -439,7 +439,7 @@ namespace PnnLABQuant
 			closest[2] = closest[3] = USHRT_MAX;
 			
 			int start = 0;
-			if(BlueNoise::RAW_BLUE_NOISE[pos & 4095] > -88)
+			if(BlueNoise::TELL_BLUE_NOISE[pos & 4095] > -88)
 				start = 1;
 			
 			for (; k < nMaxColors; ++k) {
@@ -497,7 +497,7 @@ namespace PnnLABQuant
 			closest = got->second;
 
 		auto MAX_ERR = pPalette->Count;
-		if(PG < coeffs[0][1] && BlueNoise::RAW_BLUE_NOISE[pos & 4095] > -88)
+		if(PG < coeffs[0][1] && BlueNoise::TELL_BLUE_NOISE[pos & 4095] > -88)
 			return nearestColorIndex(pPalette, argb, pos);
 
 		int idx = 1;

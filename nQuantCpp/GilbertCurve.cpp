@@ -98,9 +98,9 @@ namespace Peano
 		error[3] = a_pix - c2.GetA();
 
 		auto denoise = m_pPalette->Count > 2;
-		auto diffuse = BlueNoise::RAW_BLUE_NOISE[bidx & 4095] > thresold;
+		auto diffuse = BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > thresold;
 		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(pixel, c2);
-		auto illusion = !diffuse && BlueNoise::RAW_BLUE_NOISE[(int)(yDiff * 4096)] > thresold;
+		auto illusion = !diffuse && BlueNoise::TELL_BLUE_NOISE[(int)(yDiff * 4096)] > thresold;
 
 		int errLength = denoise ? error.length() - 1 : 0;
 		for (int j = 0; j < errLength; ++j) {
