@@ -23,7 +23,6 @@ namespace fs = std::filesystem;
 #include "PnnQuantizer.h"
 #include "NeuQuantizer.h"
 #include "WuQuantizer.h"
-#include "APNsgaIII.h"
 #include "PnnLABQuantizer.h"
 #include "PnnLABGAQuantizer.h"
 #include "EdgeAwareSQuantizer.h"
@@ -197,7 +196,7 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
 		vector<shared_ptr<Bitmap> > sources(1, pSource);
 		PnnLABQuant::PnnLABGAQuantizer pnnLABGAQuantizer(pnnLABQuantizer, sources, nMaxColors);
-		nQuantGA::APNsgaIII<PnnLABQuant::PnnLABGAQuantizer> alg(pnnLABGAQuantizer);
+		nQuantGA::APNsgaIII alg(pnnLABGAQuantizer);
 		alg.run(9999, -numeric_limits<double>::epsilon());
 		auto pGAq = alg.getResult();
 		tcout << L"\n" << pGAq->getResult().c_str() << endl;
@@ -267,7 +266,7 @@ void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMa
 
 	PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
 	PnnLABQuant::PnnLABGAQuantizer pnnLABGAQuantizer(pnnLABQuantizer, pSources, nMaxColors);
-	nQuantGA::APNsgaIII<PnnLABQuant::PnnLABGAQuantizer> alg(pnnLABGAQuantizer);
+	nQuantGA::APNsgaIII alg(pnnLABGAQuantizer);
 	alg.run(9999, -numeric_limits<double>::epsilon());
 	auto pGAq = alg.getResult();
 	tcout << L"\n" << pGAq->getResult().c_str() << endl;

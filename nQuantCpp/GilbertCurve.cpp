@@ -100,7 +100,7 @@ namespace Peano
 		auto denoise = m_pPalette->Count > 2;
 		auto diffuse = BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > thresold;
 		auto yDiff = diffuse ? 1 : CIELABConvertor::Y_Diff(pixel, c2);
-		auto illusion = !diffuse && BlueNoise::TELL_BLUE_NOISE[(int)(yDiff * 4096)] > thresold;
+		auto illusion = !diffuse && BlueNoise::TELL_BLUE_NOISE[(int)(yDiff * 4096) & 4095] > thresold;
 
 		int errLength = denoise ? error.length() - 1 : 0;
 		for (int j = 0; j < errLength; ++j) {
@@ -109,9 +109,9 @@ namespace Peano
 					error[j] = (float)tanh(error.p[j] / maxErr * 8) * (ditherMax - 1);
 				else {
 					if (illusion)
-						error[j] /= (float)(1 + _sqrt(ditherMax));
+						error[j] = (float)(error.p[j] / maxErr * yDiff) * (ditherMax - 1);						
 					else
-						error[j] = (float)(error.p[j] / maxErr * yDiff) * (ditherMax - 1);
+						error[j] /= (float)(1 + _sqrt(ditherMax));
 				}
 			}
 		}
@@ -190,7 +190,7 @@ namespace Peano
 		ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge) : DITHER_MAX;
 		if (pPalette->Count / weight > 5000 && (weight > .045 || (weight > .01 && pPalette->Count <= 64)))
 			ditherMax = (BYTE)sqr(4.75);
-		thresold = DITHER_MAX > 9 ? -112 : -88;
+		thresold = DITHER_MAX > 9 ? -112 : -64;
 		auto pWeights = make_unique<float[]>(DITHER_MAX);
 		m_weights = pWeights.get();
 		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);

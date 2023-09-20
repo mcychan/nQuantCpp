@@ -4,6 +4,7 @@
 #define _USE_MATH_DEFINES
 #include <algorithm>
 #include <math.h>
+#include <iostream>
 
 using namespace std;
 
@@ -208,5 +209,5 @@ double CIELABConvertor::Y_Diff(const Color& c1, const Color& c2)
 		
 	auto y = color2Y(c1);
 	auto y2 = color2Y(c2);
-	return abs(y2 - y) / XYZ_WHITE_REFERENCE_Y;
+	return abs(y2 - y) * XYZ_WHITE_REFERENCE_Y;
 }
