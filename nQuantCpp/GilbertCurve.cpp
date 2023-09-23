@@ -189,9 +189,9 @@ namespace Peano
 		auto edge = hasAlpha ? 1 : exp(weight) + .25;
 		ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge) : DITHER_MAX;
 		if (pPalette->Count / weight > 5000 && (weight > .045 || (weight > .01 && pPalette->Count <= 64)))
-			ditherMax = (BYTE)sqr(5 + edge);
-		else if (pPalette->Count > 16 && pPalette->Count < 256)
-			ditherMax = (pPalette->Count / weight) < 3200 ? (BYTE) sqr(5 + edge) : (BYTE) sqr(3 + edge);
+			ditherMax = (BYTE) sqr(5 + edge);
+		else if (pPalette->Count / weight < 3200 && pPalette->Count > 16 && pPalette->Count < 256)
+			ditherMax = (BYTE) sqr(5 + edge);
 		thresold = DITHER_MAX > 9 ? -112 : -64;
 		auto pWeights = make_unique<float[]>(DITHER_MAX);
 		m_weights = pWeights.get();
