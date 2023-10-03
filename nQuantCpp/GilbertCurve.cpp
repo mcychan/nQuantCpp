@@ -88,7 +88,9 @@ namespace Peano
 
 	inline int compare(const ErrorBox& o1, const ErrorBox& o2)
 	{
-		return o1.yDiff - o2.yDiff;
+		if (o1.yDiff > o2.yDiff)
+			return -1;
+		return o1.yDiff < o2.yDiff ? 1 : 0;
 	}
 
 	void ditherPixel(int x, int y)
