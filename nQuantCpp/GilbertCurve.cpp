@@ -55,6 +55,16 @@ namespace Peano
 		return (T(0) < val) - (val < T(0));
 	}
 
+	template<typename T>
+	void insert_in_order(list<T>& items, T& element, int (*compareFn)(const T& a, const T& b)) {
+		auto begin = items.begin();
+		auto end = items.end();
+		while (begin != end && compareFn(*begin, element) < 0)
+			++begin;
+
+		items.insert(begin, element);
+	}
+
 	void initWeights(int size) {
 		/* Dithers all pixels of the image in sequence using
 		 * the Gilbert path, and distributes the error in
@@ -76,9 +86,9 @@ namespace Peano
 		m_weights[0] += 1.0f - weight;
 	}
 
-	inline bool compare(const ErrorBox& o1, const ErrorBox& o2)
+	inline int compare(const ErrorBox& o1, const ErrorBox& o2)
 	{
-		return o1.yDiff >= o2.yDiff; // descending order
+		return o1.yDiff - o2.yDiff;
 	}
 
 	void ditherPixel(int x, int y)
@@ -89,7 +99,7 @@ namespace Peano
 		int i = sortedByYDiff ? m_weights.size() - 1 : 0;
 		auto maxErr = DITHER_MAX - 1;
 		for (auto& eb : errorq) {
-			if(i < 0 || i >= m_weights.size())
+			if (i < 0 || i >= m_weights.size())
 				break;
 
 			for (int j = 0; j < eb.length(); ++j) {
@@ -122,9 +132,9 @@ namespace Peano
 		else
 			m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
 
-		if(errorq.size() >= DITHER_MAX)
+		if (errorq.size() >= DITHER_MAX)
 			errorq.pop_front();
-		else if(!errorq.empty())
+		else if (!errorq.empty())
 			initWeights(errorq.size());
 
 		c2 = m_pPalette->Entries[m_qPixels[bidx]];
@@ -150,9 +160,10 @@ namespace Peano
 			}
 		}
 
-		errorq.emplace_back(error);
 		if (sortedByYDiff)
-			errorq.sort(compare);
+			insert_in_order<ErrorBox>(errorq, error, &compare);
+		else
+			errorq.emplace_back(error);
 	}
 
 	void generate2d(int x, int y, int ax, int ay, int bx, int by) {
@@ -227,9 +238,9 @@ namespace Peano
 		auto edge = hasAlpha ? 1 : exp(weight) + .25;
 		ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge) : DITHER_MAX;
 		if (pPalette->Count / weight > 5000 && (weight > .045 || (weight > .01 && pPalette->Count <= 64)))
-			ditherMax = (BYTE) sqr(5 + edge);
+			ditherMax = (BYTE)sqr(5 + edge);
 		else if (pPalette->Count / weight < 3200 && pPalette->Count > 16 && pPalette->Count < 256)
-			ditherMax = (BYTE) sqr(5 + edge);
+			ditherMax = (BYTE)sqr(5 + edge);
 		thresold = DITHER_MAX > 9 ? -112 : -64;
 		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);
 		m_lookup = pLookup.get();
