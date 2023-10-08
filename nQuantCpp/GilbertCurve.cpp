@@ -233,9 +233,10 @@ namespace Peano
 		m_saliencies = saliencies;
 		m_getColorIndexFn = getColorIndexFn;
 		auto hasAlpha = weight < 0;
-		sortedByYDiff = !hasAlpha && pPalette->Count >= 128;
+
 		errorq.clear();
 		weight = abs(weight);
+		sortedByYDiff = !hasAlpha && pPalette->Count >= 128 && weight >= .04;
 		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		auto edge = hasAlpha ? 1 : exp(weight) + .25;
 		ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge) : DITHER_MAX;
@@ -247,7 +248,8 @@ namespace Peano
 		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);
 		m_lookup = pLookup.get();
 
-		initWeights(sortedByYDiff ? 1 : DITHER_MAX);
+		if (!sortedByYDiff)
+			initWeights(DITHER_MAX);
 
 		if (width >= height)
 			generate2d(0, 0, width, 0, 0, height);
