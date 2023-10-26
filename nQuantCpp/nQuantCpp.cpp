@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include "tchar.h"
 #include <algorithm>
 #include <chrono>
 #ifdef _WIN32
