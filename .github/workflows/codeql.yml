@@ -40,9 +40,9 @@ jobs:
       matrix:
         language: [ 'c-cpp' ]
         # CodeQL supports [ 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'swift' ]
-        # Use only 'java-kotlin' to analyze code written in Java, Kotlin or both
-        # Use only 'javascript-typescript' to analyze code written in JavaScript, TypeScript or both
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
+        build_type:
+          - Release
 
     steps:
     - name: Checkout repository
@@ -79,13 +79,12 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source 
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release
-
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
     - name: Build
       working-directory: ${{github.workspace}}/build
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config Release
+      run: cmake --build . --config ${{matrix.build_type}}
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
