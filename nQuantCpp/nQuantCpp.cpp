@@ -296,24 +296,22 @@ void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMa
 	tcout << "Completed in " << dur << " secs." << endl;
 }
 
-#ifdef _WIN32
-int wmain(int argc, wchar_t** argv)
+int _tmain(int argc, _TCHAR** argv)
 {
+#ifdef _WIN32
 	_setmode(_fileno(stdout), _O_U16TEXT);	
 #else
-int main(int argc, char** argv)
-{
 	ios::sync_with_stdio(false); // Linux gcc
 	tcout.imbue(locale(""));
 	setlocale(LC_CTYPE, "");
 #endif
 
-	if (argc <= 1) {
 #ifndef _DEBUG
+	if (argc <= 1) {
 		PrintUsage();
 		return 0;
-#endif
 	}
+#endif
 	
 	auto szDir = fs::current_path().wstring();
 	
