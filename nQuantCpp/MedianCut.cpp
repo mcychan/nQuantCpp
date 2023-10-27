@@ -1181,10 +1181,10 @@ namespace MedianCutQuant
 		//#pragma omp parallel for if (hist_size > 3000) \
 		//        schedule(static) default(none) shared(average_color,callback) reduction(+:total_diff)
 		for (int j = 0; j < hist_size; ++j) {
-			double diff = 0;
+			float diff = 0f;
 			UINT match = nearestSearch(n, achv[j].fcolor, achv[j].tmp.likely_colormap_index, diff);
 			achv[j].tmp.likely_colormap_index = match; // which centroid it belongs to
-			total_diff += diff * achv[j].perceptual_weight;
+			total_diff += (double) diff * achv[j].perceptual_weight;
 
 			viterUpdateColor(achv[j].fcolor, achv[j].perceptual_weight, map, match, average_color.get());
 

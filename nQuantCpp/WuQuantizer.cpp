@@ -884,7 +884,7 @@ namespace nQuant
 		if (nMaxColors <= 32)
 			PR = PG = PB = 1;
 
-		auto qPixels = make_unique<unsigned short[]>((area);
+		auto qPixels = make_unique<unsigned short[]>(area);
 		if (nMaxColors > 2) {
 			ColorData colorData(SIDESIZE, bitmapWidth, bitmapHeight);
 			BuildHistogram(colorData, pSource, nMaxColors, alphaThreshold, alphaFader);
