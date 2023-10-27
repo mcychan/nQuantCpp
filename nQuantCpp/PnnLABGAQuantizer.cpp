@@ -42,8 +42,7 @@ namespace PnnLABQuant
 		bool hasSemiTransparency = false;
 		for(auto& pSource : pSources) {
 			_bitmapWidths.emplace_back(pSource->GetWidth());
-			const auto area = (size_t) (pSource->GetWidth() * pSource->GetHeight());
-			vector<ARGB> pixels(area);
+			vector<ARGB> pixels(pSource->GetWidth() * pSource->GetHeight());			
 			m_pq->grabPixels(pSource.get(), pixels, _nMaxColors, hasSemiTransparency);
 			m_pixelsList.emplace_back(pixels);
 		}
