@@ -134,8 +134,9 @@ namespace EdgeAwareSQuant
 		{
 			width = rhs.get_width();
 			height = rhs.height;
-			data = make_unique<T[]>(width * height);
-			copy(rhs.data.get(), rhs.data.get() + (width * height), data.get());
+			const auto area = (size_t) (width * height);
+			data = make_unique<T[]>(area);
+			copy(rhs.data.get(), rhs.data.get() + area, data.get());
 		}
 
 		inline T& operator()(int col, int row)

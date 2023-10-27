@@ -357,7 +357,8 @@ namespace SpatialQuant
 	}
 
 	void random_permutation_2d(int width, int height, deque<pair<int, int> >& result) {
-		vector<int> perm1d(width * height);
+		const auto area = (size_t) (width * height);
+		vector<int> perm1d(area);
 		random_permutation(perm1d);
 		for (const auto& val : perm1d)
 			result.emplace_front(val % width, val / width);
