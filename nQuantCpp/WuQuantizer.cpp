@@ -749,7 +749,7 @@ namespace nQuant
 		}
 		nearestMap.clear();
 
-		short paletteIndex = (m_transparentPixelIndex < 0) ? 0 : 1;
+		UINT paletteIndex = (m_transparentPixelIndex < 0) ? 0 : 1;
 		for (; paletteIndex < colorCount; ++paletteIndex) {
 			if (sums[paletteIndex] > 0) {
 				alphas[paletteIndex] /= sums[paletteIndex];
@@ -875,6 +875,7 @@ namespace nQuant
 	{
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
+		const auto area = (size_t) (bitmapWidth * bitmapHeight);
 
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
@@ -883,7 +884,7 @@ namespace nQuant
 		if (nMaxColors <= 32)
 			PR = PG = PB = 1;
 
-		auto qPixels = make_unique<unsigned short[]>(bitmapWidth * bitmapHeight);
+		auto qPixels = make_unique<unsigned short[]>((area);
 		if (nMaxColors > 2) {
 			ColorData colorData(SIDESIZE, bitmapWidth, bitmapHeight);
 			BuildHistogram(colorData, pSource, nMaxColors, alphaThreshold, alphaFader);
@@ -900,14 +901,14 @@ namespace nQuant
 
 			GetQuantizedPalette(colorData, pPalette, nMaxColors, alphaThreshold);
 			if (nMaxColors > 256) {
-				auto qPixels = make_unique<ARGB[]>(bitmapWidth * bitmapHeight);
+				auto qPixels = make_unique<ARGB[]>(area);
 				dithering_image(colorData.GetPixels(), pPalette, closestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
 				return ProcessImagePixels(pDest, qPixels.get(), hasSemiTransparency, m_transparentPixelIndex);
 			}			
 			quantize_image(colorData.GetPixels(), pPalette, qPixels.get(), bitmapWidth, bitmapHeight, dither, alphaThreshold);
 		}
 		else {
-			vector<ARGB> pixels(bitmapWidth * bitmapHeight);
+			vector<ARGB> pixels(area);
 			GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, 0xF, nMaxColors);
 			if (m_transparentPixelIndex >= 0) {
 				pPalette->Entries[0] = m_transparentColor;

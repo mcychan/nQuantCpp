@@ -544,12 +544,13 @@ namespace NeuralNet
 	{
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
+		const auto area = (size_t) (bitmapWidth * bitmapHeight);
 
-		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
+		vector<ARGB> pixels(area);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, 0xF, nMaxColors);
 
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
-		auto pPalette = (ColorPalette*)pPaletteBytes.get();
+		auto pPalette = (ColorPalette*) pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
 
 		if (nMaxColors > 2) {

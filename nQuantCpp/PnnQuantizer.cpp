@@ -386,8 +386,9 @@ namespace PnnQuant
 	{
 		const auto bitmapWidth = pSource->GetWidth();
 		const auto bitmapHeight = pSource->GetHeight();
+		const auto area = (size_t) (bitmapWidth * bitmapHeight);
 
-		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
+		vector<ARGB> pixels(area);
 		int semiTransCount = 0;
 		GrabPixels(pSource, pixels, semiTransCount, m_transparentPixelIndex, m_transparentColor, alphaThreshold, nMaxColors);
 		hasSemiTransparency = semiTransCount > 0;
@@ -423,7 +424,7 @@ namespace PnnQuant
 		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), nullptr, weight);
 
 		if (nMaxColors > 256) {
-			auto qPixels = make_unique<ARGB[]>(bitmapWidth * bitmapHeight);
+			auto qPixels = make_unique<ARGB[]>(area);
 			dithering_image(pixels.data(), pPalette, closestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight);
 
 			closestMap.clear();

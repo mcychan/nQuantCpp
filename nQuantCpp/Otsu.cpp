@@ -41,9 +41,9 @@ namespace OtsuThreshold
 	static short findMax(float* vec, int n)
 	{
 		float maxVec = 0;
-		short idx= 0;
+		short idx = 0;
 
-		for (short i = 1; i < n - 1; ++i) {
+		for (int i = 1; i < n - 1; ++i) {
 			if (vec[i] > maxVec) {
 				maxVec = vec[i];
 				idx = i;
@@ -244,10 +244,11 @@ namespace OtsuThreshold
 
 	bool Otsu::ConvertGrayScaleToBinary(Bitmap* pSrcImg, Bitmap* pDest, bool isGrayscale)
 	{		
-		auto bitmapWidth = pSrcImg->GetWidth();
-		auto bitmapHeight = pSrcImg->GetHeight();
+		const auto bitmapWidth = pSrcImg->GetWidth();
+		const auto bitmapHeight = pSrcImg->GetHeight();
+		const auto area = (size_t) (bitmapWidth * bitmapHeight);
 
-		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
+		vector<ARGB> pixels(area);
 		GrabPixels(pSrcImg, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, alphaThreshold);
 
 		if (!isGrayscale)

@@ -172,7 +172,8 @@ namespace EdgeAwareSQuant
 		{
 			this->width = width;
 			this->height = height;
-			data = make_unique<T[]>(width * height);
+			const auto area = (size_t) (width * height);
+			data = make_unique<T[]>(area);
 		}
 
 		vector<T> operator*(const vector<T>& vec) {
@@ -264,7 +265,8 @@ namespace EdgeAwareSQuant
 		{
 			width = rhs.get_width();
 			height = rhs.height;
-			data = make_unique<T[]>(width * height);
+			const auto area = (size_t) (width * height);
+			data = make_unique<T[]>(area);
 			copy(rhs.data.get(), rhs.data.get() + (width * height), data.get());
 		}
 
@@ -325,7 +327,8 @@ namespace EdgeAwareSQuant
 		{
 			this->width = width;
 			this->height = height;
-			data = make_unique<T[]>(width * height);
+			const auto area = (size_t) (width * height);
+			data = make_unique<T[]>(area);
 		}
 
 	private:

@@ -173,14 +173,16 @@ namespace SpatialQuant
 		{
 			this->width = width;
 			this->height = height;
-			data = make_unique<T[]>(width * height);
+			const auto area = (size_t) (width * height);
+			data = make_unique<T[]>(area);
 		}
 
 		array2d(const array2d<T>& rhs)
 		{
 			width = rhs.width;
 			height = rhs.height;
-			data = make_unique<T[]>(width * height);
+			const auto area = (size_t) (width * height);
+			data = make_unique<T[]>(area);
 			copy(rhs.data.get(), rhs.data.get() + (width * height), data.get());
 		}
 
@@ -298,7 +300,8 @@ namespace SpatialQuant
 			this->width = width;
 			this->height = height;
 			this->depth = depth;
-			data = make_unique<T[]>(width * height * depth);
+			const auto volume = (size_t) (width * height * depth);
+			data = make_unique<T[]>(volume);
 		}
 
 		array3d(const array3d<T>& rhs)
@@ -969,10 +972,11 @@ namespace SpatialQuant
 		const auto bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
 		const auto bitmapWidth = pSource->GetWidth();
 		const auto bitmapHeight = pSource->GetHeight();
+		const auto area = (size_t) (bitmapWidth * bitmapHeight);
 
 		hasSemiTransparency = false;
 		m_transparentPixelIndex = -1;
-		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
+		vector<ARGB> pixels(area);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, 0xF, nMaxColors);
 
 		const int length = hasSemiTransparency ? 4 : 3;

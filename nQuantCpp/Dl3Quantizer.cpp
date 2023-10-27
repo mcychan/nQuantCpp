@@ -248,7 +248,7 @@ namespace Dl3Quant
 		if (c.GetA() <= 0xF)
 			c = m_transparentColor;
 
-		const auto nMaxColors = pPalette->Count;
+		const auto nMaxColors = (unsigned short) pPalette->Count;
 
 		vector<unsigned short> closest(5);
 		auto got = closestMap.find(argb);
@@ -323,8 +323,9 @@ namespace Dl3Quant
 	{
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
+		const auto area = (size_t) (bitmapWidth * bitmapHeight);
 
-		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
+		vector<ARGB> pixels(area);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, nMaxColors);
 
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));

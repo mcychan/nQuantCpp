@@ -634,8 +634,9 @@ namespace PnnLABQuant
 	{
 		const auto bitmapWidth = pSource->GetWidth();
 		const auto bitmapHeight = pSource->GetHeight();
-		
-		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
+		const auto area = (size_t) (bitmapWidth * bitmapHeight);
+
+		vector<ARGB> pixels(area);
 		int semiTransCount = 0;
 		grabPixels(pSource, pixels, nMaxColors, hasSemiTransparency);
 		
