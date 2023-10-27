@@ -1018,9 +1018,10 @@ namespace DivQuant
 	{
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
+		const auto area = (size_t) (bitmapWidth * bitmapHeight);
 
 		int pixelIndex = 0;
-		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
+		vector<ARGB> pixels(area);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, nMaxColors);
 
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));

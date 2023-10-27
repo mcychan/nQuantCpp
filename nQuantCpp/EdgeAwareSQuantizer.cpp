@@ -686,9 +686,10 @@ namespace EdgeAwareSQuant
 		const UINT bitDepth = GetPixelFormatSize(pSource->GetPixelFormat());
 		const UINT bitmapWidth = pSource->GetWidth();
 		const UINT bitmapHeight = pSource->GetHeight();
+		const auto area = (size_t) (bitmapWidth * bitmapHeight);
 
 		m_transparentPixelIndex = -1;
-		vector<ARGB> pixels(bitmapWidth * bitmapHeight);
+		vector<ARGB> pixels(area);
 		GrabPixels(pSource, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, 0xF, nMaxColors);
 
 		UINT pixelIndex = 0;
