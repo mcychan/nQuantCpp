@@ -4,7 +4,7 @@ on: [push]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Debug
+  BUILD_TYPE: Release
 
 jobs:
   build:
@@ -33,8 +33,7 @@ jobs:
       run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
     - name: Build
-      working-directory: ${{github.workspace}}/build
-      shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config $BUILD_TYPE
+      run: |
+          cmake --build ./build --config $BUILD_TYPE
 
