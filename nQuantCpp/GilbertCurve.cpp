@@ -125,7 +125,7 @@ namespace Peano
 				m_lookup[offset] = m_ditherFn(m_pPalette, c2.GetValue(), bidx) + 1;
 			m_qPixels[bidx] = m_lookup[offset] - 1;
 
-			if (m_saliencies != nullptr && CIELABConvertor::Y_Diff(pixel, c2) > m_pPalette->Count - 10) {
+			if (m_saliencies != nullptr && CIELABConvertor::Y_Diff(pixel, c2) > m_pPalette->Count - 7) {
 				auto strength = 1 / 3.0f;
 				c2 = BlueNoise::diffuse(pixel, m_pPalette->Entries[m_qPixels[bidx]], 1.0f / m_saliencies[bidx], strength, x, y);
 				m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
