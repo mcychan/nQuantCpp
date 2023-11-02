@@ -65,16 +65,6 @@ namespace Peano
 		items.insert(begin, element);
 	}
 
-	int log2(int v) {
-		int p = 0;
-		int v2 = v >> 1;
-		while (v2 > 0) {
-			v2 >>= 1;
-			++p;
-		}		
-		return p;
-	}
-
 	void initWeights(int size) {
 		/* Dithers all pixels of the image in sequence using
 		 * the Gilbert path, and distributes the error in
