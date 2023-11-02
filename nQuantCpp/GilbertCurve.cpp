@@ -48,7 +48,7 @@ namespace Peano
 	vector<float> m_weights;
 	short* m_lookup;
 	static BYTE DITHER_MAX = 9, ditherMax;
-	static int thresold;
+	static int margin, thresold;
 	static const float BLOCK_SIZE = 343.0f;
 
 	template <typename T> int sign(T val) {
@@ -63,6 +63,16 @@ namespace Peano
 			++begin;
 
 		items.insert(begin, element);
+	}
+
+	int log2(int v) {
+		int p = 0;
+		int v2 = v >> 1;
+		while (v2 > 0) {
+			v2 >>= 1;
+			++p;
+		}		
+		return p;
 	}
 
 	void initWeights(int size) {
@@ -125,7 +135,7 @@ namespace Peano
 				m_lookup[offset] = m_ditherFn(m_pPalette, c2.GetValue(), bidx) + 1;
 			m_qPixels[bidx] = m_lookup[offset] - 1;
 
-			if (m_saliencies != nullptr && CIELABConvertor::Y_Diff(pixel, c2) > m_pPalette->Count - 7) {
+			if (m_saliencies != nullptr && CIELABConvertor::Y_Diff(pixel, c2) > margin) {
 				auto strength = 1 / 3.0f;
 				c2 = BlueNoise::diffuse(pixel, m_pPalette->Entries[m_qPixels[bidx]], 1.0f / m_saliencies[bidx], strength, x, y);
 				m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
@@ -244,6 +254,7 @@ namespace Peano
 			ditherMax = (BYTE)sqr(5 + edge);
 		else if (pPalette->Count / weight < 3200 && pPalette->Count > 16 && pPalette->Count < 256)
 			ditherMax = (BYTE)sqr(5 + edge);
+		margin = (int) sqr(log2(pPalette->Count) - 1);
 		thresold = DITHER_MAX > 9 ? -112 : -64;
 		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);
 		m_lookup = pLookup.get();
