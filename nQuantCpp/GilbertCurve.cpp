@@ -243,7 +243,7 @@ namespace Peano
 		ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge) : DITHER_MAX;
 		if (pPalette->Count / weight > 5000 && (weight > .045 || (weight > .01 && pPalette->Count <= 64)))
 			ditherMax = (BYTE)sqr(5 + edge);
-		else if (pPalette->Count / weight < 3200 && pPalette->Count > 16 && pPalette->Count < 256)
+		else if (pPalette->Count / weight < 3200 && pPalette->Count >= 16 && pPalette->Count < 256)
 			ditherMax = (BYTE)sqr(5 + edge);
 		thresold = DITHER_MAX > 9 ? -112 : -64;
 		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);
