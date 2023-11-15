@@ -5,14 +5,8 @@
 #include <tchar.h>
 #include <algorithm>
 #include <chrono>
-#ifdef _WIN32
-	#include <io.h>
-	#define tcslen wcslen
-#else
-	#include <clocale>
-	#include <string>
-	#define tcslen strlen
-#endif
+#include <io.h>
+#define tcslen wcslen
 #include <iostream>
 #include <fcntl.h>
 #include <filesystem>
@@ -64,14 +58,15 @@ void PrintUsage()
 	tcout << algs[i] << "] ." << endl;
 	tcout << "  /m : Max Colors (pixel-depth) - Maximum number of colors for the output format to support. The default is 256 (8-bit)." << endl;
 	tcout << "  /d : Dithering or not? y or n." << endl;
+	tcout << "  /f : Frame delay in milliseconds for PNNLAB+ only." << endl;
 	tcout << "  /o : Output image file dir. The default is <source image path directory>" << endl;
 }
 
-bool isdigit(const wchar_t* chars) {
+bool isdigit(const wchar_t* chars, const bool positiveOnly = true) {
 	const int string_len = wcslen(chars);
 	for (int i = 0; i < string_len; ++i) {
 		if (!isdigit(chars[i]))
-			return false;
+			return positiveOnly ? false : (chars[0] == L'-');
 	}
 	return true;
 }
@@ -84,7 +79,7 @@ bool isAlgo(const wstring& alg) {
 	return false;
 }
 
-bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstring& targetPath, wstring* argv)
+bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstring& targetPath, wstring* argv, long& delay)
 {
 	for (int index = 1; index < argc; ++index) {
 		auto currentArg = argv[index];
@@ -92,7 +87,7 @@ bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstrin
 
 		auto currentCmd = currentArg[0];
 		if (currentArg.length() > 1 && 
-			(currentCmd == L'-' || currentCmd == L'–' || currentCmd == L'/')) {
+			(currentCmd == L'–' || currentCmd == L'/')) {
 			if (index >= argc - 1) {
 				PrintUsage();
 				return false;
@@ -127,6 +122,13 @@ bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstrin
 				}
 				dither = strDither == L"Y";
 			}
+			else if (currentArg[1] == L'F') {
+				if (!isdigit(argv[index + 1].c_str(), false)) {
+					PrintUsage();
+					return false;
+				}
+				delay = stol(argv[index + 1].c_str());
+			}
 			else if (currentArg[1] == L'O') {
 				auto szPath = argv[index + 1].c_str();
 				wstring tmpPath(szPath, szPath + wcslen(szPath));
@@ -146,7 +148,7 @@ inline bool fileExists(const wstring& path)
 	return fs::exists(fs::path(path));
 }
 
-bool OutputImage(const fs::path& sourcePath, const wstring& algorithm, const UINT& nMaxColors, wstring& targetDir, Bitmap* pDest)
+bool OutputImage(const fs::path& sourcePath, const wstring& algorithm, const UINT& nMaxColors, wstring& targetDir, Bitmap* pDest, LPCTSTR defaultExtension = L".png")
 {
 	auto fileName = sourcePath.filename().wstring();
 	fileName = fileName.substr(0, fileName.find_last_of(L'.'));
@@ -168,7 +170,7 @@ bool OutputImage(const fs::path& sourcePath, const wstring& algorithm, const UIN
 	const CLSID pngEncoderClsId = { 0x557cf406, 0x1a04, 0x11d3,{ 0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e } };
 	extensionMap.emplace(L".png", pngEncoderClsId);
 
-	auto targetExtension = (pDest->GetPixelFormat() < PixelFormat16bppARGB1555 && nMaxColors > 256) ? L".bmp" : L".png";
+	auto targetExtension = (pDest->GetPixelFormat() < PixelFormat16bppARGB1555 && nMaxColors > 256) ? L".bmp" : defaultExtension;
 	destPath += std::to_wstring(nMaxColors) + targetExtension;
 	auto status = pDest->Save(destPath.c_str(), &extensionMap[targetExtension]);
 	if (status == Status::Ok)
@@ -246,7 +248,7 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 	return OutputImage(sourcePath, algorithm, nMaxColors, targetDir, pDest.get());
 }
 
-void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMaxColors, const bool dither)
+void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMaxColors, const bool dither, const long& delay)
 {
 	auto start = chrono::steady_clock::now();
 
@@ -271,11 +273,11 @@ void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMa
 	alg.run(9999, -numeric_limits<double>::epsilon());
 	auto pGAq = alg.getResult();
 	tcout << L"\n" << pGAq->getResult().c_str() << endl;
-	if(pGAq->QuantizeImage(pDests, dither)) {		
-		if(nMaxColors > 256) {
+	if(pGAq->QuantizeImage(pDests, dither)) {
+		if(nMaxColors > 256 || delay < 0) {
 			int i = 0;
 			for(auto& sourcePath : sourcePaths)
-				OutputImage(sourcePath, L"PNNLAB+", nMaxColors, targetDir, pDests[i++].get());
+				OutputImage(sourcePath, L"PNNLAB+", nMaxColors, targetDir, pDests[i++].get(), nMaxColors > 256 || delay > -2 ? L".png" : L".gif");
 		}
 		else {
 			auto fileName = sourcePaths[0].filename().wstring();
@@ -284,7 +286,7 @@ void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMa
 			targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();
 			auto destPath = targetDir + L"/" + fileName + L"-";
 			destPath += L"PNNLAB+quant.gif";
-			GifEncode::GifWriter gifWriter(destPath, pGAq->hasAlpha());
+			GifEncode::GifWriter gifWriter(destPath, pGAq->hasAlpha(), 1, abs(delay));
 			auto status = gifWriter.AddImages(pDests);
 			if (status == Status::Ok)
 				tcout << L"Converted image: " << destPath << endl;
@@ -299,13 +301,7 @@ void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMa
 
 int _tmain(int argc, _TCHAR** argv)
 {
-#ifdef _WIN32
-	_setmode(_fileno(stdout), _O_U16TEXT);	
-#else
-	ios::sync_with_stdio(false); // Linux gcc
-	tcout.imbue(locale(""));
-	setlocale(LC_CTYPE, "");
-#endif
+	_setmode(_fileno(stdout), _O_U16TEXT);
 
 #ifndef _DEBUG
 	if (argc <= 1) {
@@ -318,6 +314,7 @@ int _tmain(int argc, _TCHAR** argv)
 	
 	bool dither = true;
 	UINT nMaxColors = 256;
+	long delay = -1;
 	wstring algo = L"";
 	wstring targetDir = L"";
 
@@ -329,13 +326,13 @@ int _tmain(int argc, _TCHAR** argv)
 	wstring sourceFile = szDir + L"/../ImgV64.gif";
 	nMaxColors = 1024;
 #else
-	if (!ProcessArgs(argc, algo, nMaxColors, dither, targetDir, argList.data()))
+	if (!ProcessArgs(argc, algo, nMaxColors, dither, targetDir, argList.data(), delay))
 		return 0;
 
 	wstring sourceFile(argv[1], argv[1] + tcslen(argv[1]));
 	if (!fileExists(sourceFile) && sourceFile.find_first_of(L"\\/") != wstring::npos)
 		sourceFile = szDir + L"/" + sourceFile;
-#endif	
+#endif
 	
 	if(!fileExists(sourceFile)) {
 		tcout << "The source file you specified does not exist." << endl;
@@ -346,7 +343,7 @@ int _tmain(int argc, _TCHAR** argv)
 		if(fs::is_directory(fs::status(sourceFile.c_str())) ) {
 			if (!targetDir.empty() && !fileExists(targetDir))
 				fs::create_directories(targetDir);
-			OutputImages(sourceFile, targetDir, nMaxColors, dither);
+			OutputImages(sourceFile, targetDir, nMaxColors, dither, delay);
 			GdiplusShutdown(m_gdiplusToken);
 			return 0;
 		}
