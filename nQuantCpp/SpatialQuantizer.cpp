@@ -1,5 +1,5 @@
 ﻿/* Copyright (c) 2006 Derrick Coetzee
-Copyright (c) 2018-2021 Miller Cy Chan
+Copyright (c) 2018-2024 Miller Cy Chan
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -25,7 +25,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SpatialQuantizer.h"
 #include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
-#include "BlueNoise.h"
+#include "GilbertCurve.h"
 
 #include <deque>
 #include <algorithm>
@@ -1055,7 +1055,7 @@ namespace SpatialQuant
 		}
 
 		if (!dither && nMaxColors > 2) {
-			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nearestColorIndex, GetColorIndex, qPixels.get(), 0.5f);
+			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nearestColorIndex, GetColorIndex, qPixels.get(), nullptr);
 			nearestMap.clear();
 		}
 		pixelMap.clear();
