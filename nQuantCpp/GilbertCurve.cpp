@@ -146,13 +146,16 @@ namespace Peano
 		error[3] = a_pix - c2.GetA();
 
 		auto denoise = m_pPalette->Count > 2;
-		auto diffuse = BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > thresold;
-		auto illusion = !diffuse && BlueNoise::TELL_BLUE_NOISE[(int)(error.yDiff * 4096) & 4095] > thresold;
+		auto diffuse = BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > thresold;		
 		error.yDiff = sortedByYDiff ? CIELABConvertor::Y_Diff(pixel, c2) : 1;
+		auto illusion = !diffuse && BlueNoise::TELL_BLUE_NOISE[(int)(error.yDiff * 4096) & 4095] > thresold;
+		auto yDiff = 1.0;
+		if (m_saliencies == nullptr && m_pPalette->Count < 32)
+			yDiff = CIELABConvertor::Y_Diff(pixel, c2);
 
 		int errLength = denoise ? error.length() - 1 : 0;
 		for (int j = 0; j < errLength; ++j) {
-			if (abs(error.p[j]) >= ditherMax) {
+			if (abs(error.p[j]) / yDiff >= ditherMax) {
 				if (diffuse)
 					error[j] = (float)tanh(error.p[j] / maxErr * 8) * (ditherMax - 1);
 				else if (illusion)
