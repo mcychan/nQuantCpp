@@ -421,7 +421,8 @@ namespace PnnQuant
 		if (hasSemiTransparency)
 			weight *= -1;
 
-		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), nullptr, weight);
+		vector<float> saliencies;
+		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, ditherFn, GetColorIndex, qPixels.get(), saliencies.data(), weight);
 
 		if (nMaxColors > 256) {
 			auto qPixels = make_unique<ARGB[]>(area);

@@ -150,7 +150,7 @@ namespace Peano
 		error.yDiff = sortedByYDiff ? CIELABConvertor::Y_Diff(pixel, c2) : 1;
 		auto illusion = !diffuse && BlueNoise::TELL_BLUE_NOISE[(int)(error.yDiff * 4096) & 4095] > thresold;
 		auto yDiff = 1.0;
-		if (m_saliencies == nullptr && m_pPalette->Count < 32)
+		if (m_saliencies == nullptr && DITHER_MAX > 9)
 			yDiff = CIELABConvertor::Y_Diff(pixel, c2);
 
 		int errLength = denoise ? error.length() - 1 : 0;
