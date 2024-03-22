@@ -286,7 +286,7 @@ void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMa
 			targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();
 			auto destPath = targetDir + L"/" + fileName + L"-";
 			destPath += L"PNNLAB+quant.gif";
-			GifEncode::GifWriter gifWriter(destPath, pGAq->hasAlpha(), 1, abs(delay));
+			GifEncode::GifWriter gifWriter(destPath, pGAq->hasAlpha(), abs(delay));
 			auto status = gifWriter.AddImages(pDests);
 			if (status == Status::Ok)
 				tcout << L"Converted image: " << destPath << endl;
