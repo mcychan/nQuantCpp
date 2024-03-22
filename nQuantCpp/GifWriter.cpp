@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "GifWriter.h"
 
-#include <memory>
-
 namespace GifEncode
 {
 	const int UintBytes = sizeof(long);
