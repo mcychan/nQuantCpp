@@ -242,7 +242,7 @@ namespace Dl3Quant
 
 	unsigned short closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
-		unsigned short k = 0;
+		UINT k = 0;
 		Color c(argb);
 		if (c.GetA() <= 0xF)
 			c = m_transparentColor;
@@ -279,7 +279,7 @@ namespace Dl3Quant
 			k = closest[1];
 
 		closestMap[argb] = closest;
-		return k;
+		return (unsigned short) k;
 	}
 
 	inline int GetColorIndex(const Color& c)
