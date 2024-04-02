@@ -1298,7 +1298,7 @@ namespace MedianCutQuant
 		return remapping_error / pixels.size();
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
+	unsigned short nearestColorIndex(const ARGB* pPalette, const unsigned short nMaxColors, ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -1313,9 +1313,8 @@ namespace MedianCutQuant
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 
-		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
-			Color c2(pPalette->Entries[i]);
+			Color c2(pPalette[i]);
 			double curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
@@ -1378,7 +1377,7 @@ namespace MedianCutQuant
 		return k;
 	}
 
-	unsigned short closestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
+	unsigned short closestColorIndex(const ARGB* pPalette, const unsigned short nMaxColors, ARGB argb, const UINT pos)
 	{
 		UINT k = 0;
 		Color c(argb);
@@ -1390,9 +1389,8 @@ namespace MedianCutQuant
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = SHRT_MAX;
 
-			const auto nMaxColors = pPalette->Count;
 			for (; k < nMaxColors; ++k) {
-				Color c2(pPalette->Entries[k]);
+				Color c2(pPalette[k]);
 				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
 				if (closest[4] < closest[2]) {
 					closest[1] = closest[0];
@@ -1429,16 +1427,16 @@ namespace MedianCutQuant
 	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
 		if (dither)
-			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
+			return dither_image(pixels, pPalette->Entries, nMaxColors, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height);
 
 		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
 		UINT pixelIndex = 0;
 		for (UINT j = 0; j < height; ++j) {
 			for (UINT i = 0; i < width; ++i)
-				qPixels[pixelIndex++] = ditherFn(pPalette, pixels[pixelIndex], i + j);
+				qPixels[pixelIndex++] = ditherFn(pPalette->Entries, nMaxColors, pixels[pixelIndex], i + j);
 		}
 
-		BlueNoise::dither(width, height, pixels, pPalette, ditherFn, GetColorIndex, qPixels);
+		BlueNoise::dither(width, height, pixels, pPalette->Entries, nMaxColors, ditherFn, GetColorIndex, qPixels);
 		return true;
 	}
 

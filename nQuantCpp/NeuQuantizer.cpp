@@ -436,7 +436,7 @@ namespace NeuralNet
 		}
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
+	unsigned short nearestColorIndex(const ARGB* pPalette, const unsigned short nMaxColors, ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -449,9 +449,8 @@ namespace NeuralNet
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 
-		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
-			Color c2(pPalette->Entries[i]);
+			Color c2(pPalette[i]);
 			double curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
@@ -517,12 +516,12 @@ namespace NeuralNet
 	bool quantize_image(const vector<ARGB>& pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
 		if (dither)
-			return dither_image(pixels.data(), pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);
+			return dither_image(pixels.data(), pPalette->Entries, nMaxColors, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height);
 
 		UINT pixelIndex = 0;
 		for (UINT j = 0; j < height; ++j) {
 			for (UINT i = 0; i < width; ++i)
-				qPixels[pixelIndex++] = nearestColorIndex(pPalette, pixels[pixelIndex], i + j);
+				qPixels[pixelIndex++] = nearestColorIndex(pPalette->Entries, nMaxColors, pixels[pixelIndex], i + j);
 		}
 
 		return true;

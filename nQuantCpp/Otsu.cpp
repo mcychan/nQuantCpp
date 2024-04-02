@@ -107,7 +107,7 @@ namespace OtsuThreshold
 		}
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, const ARGB argb, const UINT pos)
+	unsigned short nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, const ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -119,9 +119,8 @@ namespace OtsuThreshold
 			return k;
 
 		double mindist = INT_MAX;
-		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
-			Color c2(pPalette->Entries[i]);
+			Color c2(pPalette[i]);
 			double curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
@@ -270,7 +269,7 @@ namespace OtsuThreshold
 		}
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nearestColorIndex, GetColorIndex, qPixels.get(), nullptr, 3.0f);
+		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette->Entries, pPalette->Count, nearestColorIndex, GetColorIndex, qPixels.get(), nullptr, 3.0f);
 		if (m_transparentPixelIndex >= 0)
 		{
 			auto k = qPixels[m_transparentPixelIndex];

@@ -456,7 +456,7 @@ void CalcDitherPixel(int* pDitherPixel, const Color& c, const BYTE* clamp, const
 	}
 }
 
-bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height)
+bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels, const UINT width, const UINT height)
 {
 	UINT pixelIndex = 0;
 
@@ -510,13 +510,13 @@ bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn dit
 			if (noBias && a_pix > 0xF0) {
 				int offset = GetARGBIndex(c1, hasSemiTransparency, transparentPixelIndex >= 0);
 				if (!lookup[offset])
-					lookup[offset] = ditherFn(pPalette, argb, i + j) + 1;
+					lookup[offset] = ditherFn(pPalette, nMaxColors, argb, i + j) + 1;
 				qPixels[pixelIndex] = lookup[offset] - 1;
 			}
 			else
-				qPixels[pixelIndex] = ditherFn(pPalette, argb, i + j);
+				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, argb, i + j);
 
-			Color c2(pPalette->Entries[qPixels[pixelIndex]]);
+			Color c2(pPalette[qPixels[pixelIndex]]);
 
 			r_pix = limtb[c1.GetR() - c2.GetR() + BLOCK_SIZE];
 			g_pix = limtb[c1.GetG() - c2.GetG() + BLOCK_SIZE];
@@ -612,11 +612,11 @@ bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn 
 			if (nMaxColors < 64) {
 				int offset = GetARGBIndex(c1, hasSemiTransparency, transparentPixelIndex >= 0);
 				if (!lookup[offset])
-					lookup[offset] = ditherFn(pPalette, argb, i + j) + 1;
+					lookup[offset] = ditherFn(pPalette->Entries, pPalette->Count, argb, i + j) + 1;
 				qPixels[pixelIndex] = lookup[offset] - 1;
 			}
 			else
-				qPixels[pixelIndex] = ditherFn(pPalette, argb, i + j);
+				qPixels[pixelIndex] = ditherFn(pPalette->Entries, pPalette->Count, argb, i + j);
 
 			Color c2(pPalette->Entries[qPixels[pixelIndex]]);
 			qPixels[pixelIndex] = hasSemiTransparency ? c2.GetValue() : GetARGBIndex(c2, false, transparentPixelIndex >= 0);

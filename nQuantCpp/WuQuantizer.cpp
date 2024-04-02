@@ -639,14 +639,12 @@ namespace nQuant
 			pPalette->Count = lookupsCount;
 	}
 
-	unsigned short closestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
+	unsigned short closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
 		UINT k = 0;
 		Color c(argb);
 		if (c.GetA() <= 0xF)
 			c = m_transparentColor;
-
-		const auto nMaxColors = pPalette->Count;
 
 		vector<unsigned short> closest(5);
 		auto got = closestMap.find(argb);
@@ -654,7 +652,7 @@ namespace nQuant
 			closest[2] = closest[3] = SHRT_MAX;
 
 			for (; k < nMaxColors; k++) {
-				Color c2(pPalette->Entries[k]);
+				Color c2(pPalette[k]);
 				closest[4] = abs(c.GetA() - c2.GetA()) + abs(c.GetR() - c2.GetR()) + abs(c.GetG() - c2.GetG()) + abs(c.GetB() - c2.GetB());
 				if (closest[4] < closest[2]) {
 					closest[1] = closest[0];
@@ -864,10 +862,10 @@ namespace nQuant
 		UINT pixelIndex = 0;
 		for (int j = 0; j < height; ++j) {
 			for (int i = 0; i < width; ++i)
-				qPixels[pixelIndex++] = closestColorIndex(pPalette, pixels[pixelIndex], i + j);
+				qPixels[pixelIndex++] = closestColorIndex(pPalette->Entries, pPalette->Count, pixels[pixelIndex], i + j);
 		}
 
-		BlueNoise::dither(width, height, pixels, pPalette, closestColorIndex, GetColorIndex, qPixels);
+		BlueNoise::dither(width, height, pixels, pPalette->Entries, pPalette->Count, closestColorIndex, GetColorIndex, qPixels);
 		return true;
 	}
 	

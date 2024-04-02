@@ -1,5 +1,5 @@
 /* Generalized Hilbert ("gilbert") space-filling curve for rectangular domains of arbitrary (non-power of two) sizes.
-Copyright (c) 2021 - 2023 Miller Cy Chan
+Copyright (c) 2021 - 2024 Miller Cy Chan
 * A general rectangle with a known orientation is split into three regions ("up", "right", "down"), for which the function calls itself recursively, until a trivial path can be produced. */
 
 #include "stdafx.h"
@@ -36,11 +36,12 @@ namespace Peano
 		}
 	};
 
-	bool sortedByYDiff;
+	bool m_hasAlpha, sortedByYDiff;
+	unsigned short m_nMaxColor;
 	UINT m_width, m_height;
-	const ARGB* m_image;
-	const ColorPalette* m_pPalette;
+	const ARGB *m_image, *m_pPalette;
 	unsigned short* m_qPixels;
+	ARGB* m_qColorPixels;
 	DitherFn m_ditherFn;
 	float* m_saliencies;
 	GetColorIndexFn m_getColorIndexFn;
@@ -118,34 +119,44 @@ namespace Peano
 		auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
 
 		Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-		if (m_pPalette->Count <= 32 && a_pix > 0xF0)
+		unsigned short qPixelIndex = 0;
+		if (m_nMaxColor <= 32 && a_pix > 0xF0)
 		{
 			int offset = m_getColorIndexFn(c2);
 			if (!m_lookup[offset])
-				m_lookup[offset] = m_ditherFn(m_pPalette, c2.GetValue(), bidx) + 1;
-			m_qPixels[bidx] = m_lookup[offset] - 1;
+				m_lookup[offset] = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx) + 1;
+			qPixelIndex = m_lookup[offset] - 1;
 
-			if (m_saliencies != nullptr && CIELABConvertor::Y_Diff(pixel, c2) > m_pPalette->Count - margin) {
+			if (m_saliencies != nullptr && CIELABConvertor::Y_Diff(pixel, c2) > m_nMaxColor - margin) {
 				auto strength = 1 / 3.0f;
-				c2 = BlueNoise::diffuse(pixel, m_pPalette->Entries[m_qPixels[bidx]], 1.0f / m_saliencies[bidx], strength, x, y);
-				m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
+				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], 1.0f / m_saliencies[bidx], strength, x, y);
+				qPixelIndex = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx);
 			}
 		}
 		else
-			m_qPixels[bidx] = m_ditherFn(m_pPalette, c2.GetValue(), bidx);
+			qPixelIndex = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx);
 
 		if (errorq.size() >= DITHER_MAX)
 			errorq.pop_front();
 		else if (!errorq.empty())
 			initWeights(errorq.size());
 
-		c2 = m_pPalette->Entries[m_qPixels[bidx]];
+		c2 = m_pPalette[qPixelIndex];
+		if (m_qPixels)
+			m_qPixels[bidx] = qPixelIndex;
+		else if (m_hasAlpha)
+			m_qColorPixels[bidx] = c2.GetValue();
+		else {
+			Color c0 = m_pPalette[0];
+			m_qColorPixels[bidx] = GetARGBIndex(c2, false, c0.GetA() == 0);
+		}
+
 		error[0] = r_pix - c2.GetR();
 		error[1] = g_pix - c2.GetG();
 		error[2] = b_pix - c2.GetB();
 		error[3] = a_pix - c2.GetA();
 
-		auto denoise = m_pPalette->Count > 2;
+		auto denoise = m_nMaxColor > 2;
 		auto diffuse = BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > thresold;		
 		error.yDiff = sortedByYDiff ? CIELABConvertor::Y_Diff(pixel, c2) : 1;
 		auto illusion = !diffuse && BlueNoise::TELL_BLUE_NOISE[(int)(error.yDiff * 4096) & 4095] > thresold;
@@ -225,29 +236,30 @@ namespace Peano
 		generate2d(x + (ax - dax) + (bx2 - dbx), y + (ay - day) + (by2 - dby), -bx2, -by2, -(ax - ax2), -(ay - ay2));
 	}
 
-	void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, float* saliencies, double weight)
+	void doDither(const UINT width, const UINT height, const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColor, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, float* saliencies, double weight)
 	{
 		m_width = width;
 		m_height = height;
 		m_image = pixels;
 		m_pPalette = pPalette;
-		m_qPixels = qPixels;
+		m_nMaxColor = nMaxColor;
+		
 		m_ditherFn = ditherFn;
 		m_saliencies = saliencies;
 		m_getColorIndexFn = getColorIndexFn;
-		auto hasAlpha = weight < 0;
+		m_hasAlpha = weight < 0;
 
 		errorq.clear();
 		weight = abs(weight);
 		margin = weight < .0025 ? 12 : 6;
-		sortedByYDiff = !hasAlpha && m_saliencies && pPalette->Count >= 128 && weight >= .04;
+		sortedByYDiff = !m_hasAlpha && m_saliencies && m_nMaxColor >= 128 && weight >= .04;
 		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
-		auto edge = hasAlpha ? 1 : exp(weight) + .25;
-		ditherMax = (hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge) : DITHER_MAX;
-		int density = pPalette->Count > 16 ? 3200 : 1500;
-		if (pPalette->Count / weight > 5000 && (weight > .045 || (weight > .01 && pPalette->Count <= 64)))
+		auto edge = m_hasAlpha ? 1 : exp(weight) + .25;
+		ditherMax = (m_hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge) : DITHER_MAX;
+		int density = m_nMaxColor > 16 ? 3200 : 1500;
+		if (m_nMaxColor / weight > 5000 && (weight > .045 || (weight > .01 && m_nMaxColor <= 64)))
 			ditherMax = (BYTE)sqr(5 + edge);
-		else if (pPalette->Count / weight < density && pPalette->Count >= 16 && pPalette->Count < 256)
+		else if (m_nMaxColor / weight < density && m_nMaxColor >= 16 && m_nMaxColor < 256)
 			ditherMax = (BYTE)sqr(5 + edge);
 		thresold = DITHER_MAX > 9 ? -112 : -64;
 		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);
@@ -260,5 +272,17 @@ namespace Peano
 			generate2d(0, 0, width, 0, 0, height);
 		else
 			generate2d(0, 0, 0, height, width, 0);
+	}
+
+	void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColor, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, float* saliencies, double weight)
+	{
+		m_qPixels = qPixels;
+		doDither(width, height, pixels, pPalette, nMaxColor, ditherFn, getColorIndexFn, saliencies, weight);
+	}
+
+	void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColor, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, ARGB* qPixels, float* saliencies, double weight)
+	{
+		m_qColorPixels = qPixels;
+		doDither(width, height, pixels, pPalette, nMaxColor, ditherFn, getColorIndexFn, saliencies, weight);
 	}
 }

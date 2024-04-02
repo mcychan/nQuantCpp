@@ -915,7 +915,7 @@ namespace DivQuant
 			DivQuantCluster<UINT>(numPixels, inputPixels.get(), tmpPixels.get(), weightUniform, weightsPtr.get(), num_bits, max_iters, pPalette, nMaxColors);
 	}
 	
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
+	unsigned short nearestColorIndex(const ARGB* pPalette, const unsigned short nMaxColor, ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -930,15 +930,14 @@ namespace DivQuant
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 
-		const auto nMaxColors = pPalette->Count;
-		for (UINT i = 0; i < nMaxColors; ++i) {
-			Color c2(pPalette->Entries[i]);
+		for (auto i = 0; i < nMaxColor; ++i) {
+			Color c2(pPalette[i]);
 			double curdist = sqr(c2.GetA() - c.GetA());
 			if (curdist > mindist)
 				continue;
 
 			getLab(c2, lab2);
-			if (nMaxColors <= 4 || hasSemiTransparency) {
+			if (nMaxColor <= 4 || hasSemiTransparency) {
 				curdist += sqr(c2.GetR() - c.GetR());
 				if (curdist > mindist)
 					continue;
@@ -954,7 +953,7 @@ namespace DivQuant
 					curdist += sqr(c2.GetA() - c.GetA());
 				}
 			}
-			else if (nMaxColors > 32 || hasSemiTransparency) {
+			else if (nMaxColor > 32 || hasSemiTransparency) {
 				if (hasSemiTransparency)
 					curdist /= exp(0.75);
 
@@ -999,18 +998,18 @@ namespace DivQuant
 		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
 	}
 
-	bool quantize_image(const ARGB* pixels, ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
+	bool quantize_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
 		if (dither)
-			return dither_image(pixels, pPalette, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, nMaxColors, qPixels, width, height);		
+			return dither_image(pixels, pPalette, nMaxColors, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height);
 
 		UINT pixelIndex = 0;
 		for (UINT j = 0; j < height; ++j) {
 			for (UINT i = 0; i < width; ++i)
-				qPixels[pixelIndex++] = nearestColorIndex(pPalette, pixels[pixelIndex], i + j);
+				qPixels[pixelIndex++] = nearestColorIndex(pPalette, nMaxColors, pixels[pixelIndex], i + j);
 		}
 
-		BlueNoise::dither(width, height, pixels, pPalette, nearestColorIndex, GetColorIndex, qPixels);
+		BlueNoise::dither(width, height, pixels, pPalette, nMaxColors, nearestColorIndex, GetColorIndex, qPixels);
 		return true;
 	}
 
@@ -1055,7 +1054,7 @@ namespace DivQuant
 			PR = PG = PB = 1;
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		quantize_image(pixels.data(), pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+		quantize_image(pixels.data(), pPalette->Entries, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 
 		if (m_transparentPixelIndex >= 0) {
 			UINT k = qPixels[m_transparentPixelIndex];

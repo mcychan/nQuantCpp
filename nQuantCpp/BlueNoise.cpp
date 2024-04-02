@@ -197,7 +197,7 @@ namespace BlueNoise
 		return Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 	}
 	
-	void dither(const UINT width, const UINT height, const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, const float weight)
+	void dither(const UINT width, const UINT height, const ARGB* pixels, const ARGB* pPalette, const unsigned short nMaxColors, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, const float weight)
 	{
 		const float strength = 1 / 3.0f;  	
 		
@@ -205,10 +205,10 @@ namespace BlueNoise
 			for (UINT x = 0; x < width; ++x) {
 				UINT bidx = x + y * width;
 				Color pixel(pixels[bidx]);
-				Color c1 = pPalette->Entries[qPixels[bidx]];
+				Color c1 = pPalette[qPixels[bidx]];
 
 				c1 = diffuse(pixel, c1, weight, strength, x, y);
-				qPixels[bidx] = ditherFn(pPalette, c1.GetValue(), bidx);
+				qPixels[bidx] = ditherFn(pPalette, nMaxColors, c1.GetValue(), bidx);
 			}
 		}
     }

@@ -121,7 +121,7 @@ namespace PnnLABQuant
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + _nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = _nMaxColors;
-		m_pq->pnnquan(m_pixelsList[0], pPalette, _nMaxColors);
+		m_pq->pnnquan(m_pixelsList[0], pPalette->Entries, _nMaxColors);
 
 		auto errors = _objectives;
 		fill(errors.begin(), errors.end(), 0);
@@ -137,7 +137,7 @@ namespace PnnLABQuant
 				Color c(argb);
 				CIELABConvertor::Lab lab1, lab2;
 				m_pq->getLab(c, lab1);
-				auto qPixelIndex = m_pq->nearestColorIndex(pPalette, argb, i);
+				auto qPixelIndex = m_pq->nearestColorIndex(pPalette->Entries, _nMaxColors, argb, i);
 				Color c2(pPalette->Entries[qPixelIndex]);
 				m_pq->getLab(c2, lab2);
 
@@ -161,9 +161,8 @@ namespace PnnLABQuant
 	
 	bool PnnLABGAQuantizer::QuantizeImage(vector<shared_ptr<Bitmap> >& pBitmaps, bool dither) {
 		m_pq->setRatio(_ratioX, _ratioY);
-		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + _nMaxColors * sizeof(ARGB));
-		auto pPalette = (ColorPalette*)pPaletteBytes.get();
-		pPalette->Count = _nMaxColors;
+		auto pPalettes = make_unique<ARGB[]>(_nMaxColors);
+		auto pPalette = pPalettes.get();
 
 		m_pq->pnnquan(m_pixelsList[0], pPalette, _nMaxColors);
 		int i = 0;

@@ -59,13 +59,13 @@ BOOL FixBitmapHeight(PVOID pDib, ULONG nSize, BOOL bTopDown);
 
 BOOL FillBitmapFileHeader(LPCVOID pDib, PBITMAPFILEHEADER pbmfh);
 
-using DitherFn = function<unsigned short(const ColorPalette*, ARGB, const UINT)>;
+using DitherFn = function<unsigned short(const ARGB*, const UINT nMaxColor, ARGB, const UINT)>;
 
 using GetColorIndexFn = function<int(const Color&)>;
 
 void CalcDitherPixel(int* pDitherPixel, const Color& c, const BYTE* clamp, const short* rowerr, int cursor, const bool noBias);
 
-bool dither_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height);
+bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels, const UINT width, const UINT height);
 
 bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, ARGB* qPixels, const UINT width, const UINT height);
 

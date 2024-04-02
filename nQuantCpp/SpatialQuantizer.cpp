@@ -895,7 +895,7 @@ namespace SpatialQuant
 		return true;
 	}
 
-	unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos)
+	unsigned short nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
 		auto got = nearestMap.find(argb);
 		if (got != nearestMap.end())
@@ -910,9 +910,8 @@ namespace SpatialQuant
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 
-		const auto nMaxColors = pPalette->Count;
 		for (UINT i = 0; i < nMaxColors; ++i) {
-			Color c2(pPalette->Entries[i]);
+			Color c2(pPalette[i]);
 			auto curdist = sqr(c2.GetA() - c.GetA()) / exp(1.5);
 			if (curdist > mindist)
 				continue;
@@ -1055,7 +1054,7 @@ namespace SpatialQuant
 		}
 
 		if (!dither && nMaxColors > 2) {
-			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nearestColorIndex, GetColorIndex, qPixels.get(), nullptr);
+			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette->Entries, nMaxColors, nearestColorIndex, GetColorIndex, qPixels.get(), nullptr);
 			nearestMap.clear();
 		}
 		pixelMap.clear();

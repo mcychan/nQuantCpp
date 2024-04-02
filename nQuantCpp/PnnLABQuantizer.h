@@ -42,21 +42,21 @@ namespace PnnLABQuant
 			};
 
 			void find_nn(pnnbin* bins, int idx, bool texicab);
-			unsigned short closestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos);
-			bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither);
+			unsigned short closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos);
+			bool quantize_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither);
 
 		public:
 			PnnLABQuantizer();
 			PnnLABQuantizer(const PnnLABQuantizer& quantizer);
 			void clear();
-			void pnnquan(const vector<ARGB>& pixels, ColorPalette* pPalette, UINT& nMaxColors);
+			void pnnquan(const vector<ARGB>& pixels, ARGB* pPalette, UINT& nMaxColors);
 			bool IsGA() const;
 			void getLab(const Color& c, CIELABConvertor::Lab& lab1);
 			bool hasAlpha() const;
-			unsigned short nearestColorIndex(const ColorPalette* pPalette, ARGB argb, const UINT pos);
+			unsigned short nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos);
 			void setRatio(double ratioX, double ratioY);
 			void grabPixels(Bitmap* srcImg, vector<ARGB>& pixels, UINT& nMaxColors, bool& hasSemiTransparency);
-			bool QuantizeImage(const vector<ARGB>& pixels, const UINT bitmapWidth, ColorPalette* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
+			bool QuantizeImage(const vector<ARGB>& pixels, const UINT bitmapWidth, ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
 			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
 	};
 }
