@@ -772,7 +772,8 @@ namespace EdgeAwareSQuant
 		}
 
 		pixelMap.clear();
-		return ProcessImagePixels(pDest, pPalette, qPixels.get(), m_transparentPixelIndex >= 0);
+		pDest->SetPalette(pPalette);
+		return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex >= 0);
 	}
 
 }

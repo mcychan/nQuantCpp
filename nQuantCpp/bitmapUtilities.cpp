@@ -736,7 +736,7 @@ bool ProcessImagePixels(Bitmap* pDest, const ARGB* qPixels, const bool& hasSemiT
 	return pDest->GetLastStatus() == Ok;
 }
 
-bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsigned short* qPixels, const bool hasTransparent)
+bool ProcessImagePixels(Bitmap* pDest, const unsigned short* qPixels, const bool hasTransparent)
 {
 	if (hasTransparent) {
 		BYTE value = 0;
@@ -748,9 +748,7 @@ bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsig
 		pPropertyItem.get()->value = &value;
 
 		pDest->SetPropertyItem(pPropertyItem.get());
-	}
-
-	pDest->SetPalette(pPalette);
+	}	
 
 	BitmapData targetData;
 	UINT w = pDest->GetWidth();

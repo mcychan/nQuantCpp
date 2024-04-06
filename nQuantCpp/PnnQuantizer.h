@@ -24,6 +24,7 @@ namespace PnnQuant
 	class PnnQuantizer
 	{
 		public:
+			bool QuantizeImage(const vector<ARGB>& pixels, const UINT bitmapWidth, ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
 			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
 	};
 }

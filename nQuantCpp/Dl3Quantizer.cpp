@@ -372,7 +372,9 @@ namespace Dl3Quant
 			else if (pPalette->Entries[k] != m_transparentColor)
 				swap(pPalette->Entries[0], pPalette->Entries[1]);
 		}
-		return ProcessImagePixels(pDest, pPalette, qPixels.get(), m_transparentPixelIndex >= 0);
+
+		pDest->SetPalette(pPalette);
+		return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex >= 0);
 	}
 
 }

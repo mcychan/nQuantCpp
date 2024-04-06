@@ -71,7 +71,7 @@ bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn 
 
 bool ProcessImagePixels(Bitmap* pDest, const ARGB* qPixels, const bool& hasSemiTransparency, const int& transparentPixelIndex);
 
-bool ProcessImagePixels(Bitmap* pDest, const ColorPalette* pPalette, const unsigned short* qPixels, const bool hasTransparent);
+bool ProcessImagePixels(Bitmap* pDest, const unsigned short* qPixels, const bool hasTransparent);
 
 bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, int& semiTransCount, int& transparentPixelIndex, ARGB& transparentColor, const BYTE alphaThreshold, const UINT nMaxColors = 2);
 

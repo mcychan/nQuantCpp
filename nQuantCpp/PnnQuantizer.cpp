@@ -378,27 +378,17 @@ namespace PnnQuant
 
 		BlueNoise::dither(width, height, pixels, pPalette->Entries, nMaxColors, ditherFn, GetColorIndex, qPixels);
 		return true;
-	}	
+	}
 
-	bool PnnQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
+	bool PnnQuantizer::QuantizeImage(const vector<ARGB>& pixels, const UINT bitmapWidth, ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
-		const auto bitmapWidth = pSource->GetWidth();
-		const auto bitmapHeight = pSource->GetHeight();
-		const auto area = (size_t) (bitmapWidth * bitmapHeight);
-
-		vector<ARGB> pixels(area);
-		int semiTransCount = 0;
-		GrabPixels(pSource, pixels, semiTransCount, m_transparentPixelIndex, m_transparentColor, alphaThreshold, nMaxColors);
-		hasSemiTransparency = semiTransCount > 0;
-		
-		auto pPalettes = make_unique<ARGB[]>(nMaxColors);
-		auto pPalette = pPalettes.get();
-
 		if (nMaxColors <= 32)
 			PR = PG = PB = PA = 1;
 		else {
 			PR = coeffs[0][0]; PG = coeffs[0][1]; PB = coeffs[0][2];
 		}
+
+		const auto bitmapHeight = pixels.size() / bitmapWidth;
 
 		if (nMaxColors > 2)
 			pnnquan(pixels, pPalette, nMaxColors);
@@ -412,15 +402,15 @@ namespace PnnQuant
 				pPalette[1] = Color::White;
 			}
 		}
-		
+
 		DitherFn ditherFn = dither ? nearestColorIndex : closestColorIndex;
 		if (hasSemiTransparency)
 			weight *= -1;
 
-		vector<float> saliencies;		
+		vector<float> saliencies;
 
 		if (nMaxColors > 256) {
-			auto qPixels = make_unique<ARGB[]>(area);
+			auto qPixels = make_unique<ARGB[]>(pixels.size());
 			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nMaxColors, ditherFn, GetColorIndex, qPixels.get(), saliencies.data(), weight);
 
 			closestMap.clear();
@@ -431,7 +421,7 @@ namespace PnnQuant
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
 		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nMaxColors, ditherFn, GetColorIndex, qPixels.get(), saliencies.data(), weight);
 
-		if(!dither)
+		if (!dither)
 			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nMaxColors, ditherFn, GetColorIndex, qPixels.get());
 
 		if (m_transparentPixelIndex >= 0) {
@@ -444,12 +434,32 @@ namespace PnnQuant
 		closestMap.clear();
 		nearestMap.clear();
 
+		return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex >= 0);
+	}
+
+	bool PnnQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
+	{
+		const auto bitmapWidth = pSource->GetWidth();
+		const auto bitmapHeight = pSource->GetHeight();
+		const auto area = (size_t) (bitmapWidth * bitmapHeight);
+
+		vector<ARGB> pixels(area);
+		int semiTransCount = 0;
+		GrabPixels(pSource, pixels, semiTransCount, m_transparentPixelIndex, m_transparentColor, alphaThreshold, nMaxColors);
+		hasSemiTransparency = semiTransCount > 0;
+		
+		if (nMaxColors > 256) {
+			auto pPalettes = make_unique<ARGB[]>(nMaxColors);
+			auto pPalette = pPalettes.get();
+			return QuantizeImage(pixels, bitmapWidth, pPalette, pDest, nMaxColors, dither);
+		}
+
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
-		auto pPals = (ColorPalette*)pPaletteBytes.get();
-		pPals->Count = nMaxColors;
-		for (UINT k = 0; k < nMaxColors; ++k)
-			pPals->Entries[k] = pPalette[k];
-		return ProcessImagePixels(pDest, pPals, qPixels.get(), m_transparentPixelIndex >= 0);
+		auto pPalette = (ColorPalette*)pPaletteBytes.get();
+		pPalette->Count = nMaxColors;
+		auto result = QuantizeImage(pixels, bitmapWidth, pPalette->Entries, pDest, nMaxColors, dither);
+		pDest->SetPalette(pPalette);
+		return result;
 	}
 
 }

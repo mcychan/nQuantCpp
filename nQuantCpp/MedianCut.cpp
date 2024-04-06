@@ -1561,6 +1561,7 @@ namespace MedianCutQuant
 		closestMap.clear();
 		nearestMap.clear();
 
-		return ProcessImagePixels(pDest, pPalette, qPixels.get(), m_transparentPixelIndex >= 0);
+		pDest->SetPalette(pPalette);
+		return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex >= 0);
 	}
 }

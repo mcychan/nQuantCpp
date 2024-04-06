@@ -625,12 +625,7 @@ namespace PnnLABQuant
 		pixelMap.clear();
 		clear();
 
-		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
-		auto pPals = (ColorPalette*) pPaletteBytes.get();
-		pPals->Count = nMaxColors;
-		for (UINT k = 0; k < nMaxColors; ++k)
-			pPals->Entries[k] = pPalette[k];
-		return ProcessImagePixels(pDest, pPals, qPixels.get(), m_transparentPixelIndex >= 0);
+		return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex >= 0);
 	}
 
 	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)
@@ -643,10 +638,18 @@ namespace PnnLABQuant
 		int semiTransCount = 0;
 		grabPixels(pSource, pixels, nMaxColors, hasSemiTransparency);		
 		
-		auto pPalettes = make_unique<ARGB[]>(nMaxColors);
-		auto pPalette = pPalettes.get();
-
-		return QuantizeImage(pixels, bitmapWidth, pPalette, pDest, nMaxColors, dither);
+		if (nMaxColors > 256) {
+			auto pPalettes = make_unique<ARGB[]>(nMaxColors);
+			auto pPalette = pPalettes.get();
+			return QuantizeImage(pixels, bitmapWidth, pPalette, pDest, nMaxColors, dither);
+		}
+		
+		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
+		auto pPalette = (ColorPalette*)pPaletteBytes.get();
+		pPalette->Count = nMaxColors;		
+		auto result = QuantizeImage(pixels, bitmapWidth, pPalette->Entries, pDest, nMaxColors, dither);
+		pDest->SetPalette(pPalette);
+		return result;
 	}
 
 }
