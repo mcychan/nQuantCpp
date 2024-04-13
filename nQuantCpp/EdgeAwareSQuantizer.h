@@ -291,6 +291,11 @@ namespace EdgeAwareSQuant
 			return data[row * width + col];
 		}
 
+		inline T* get() const
+		{
+			return data.get();
+		}
+
 		inline int get_width() const { return width; }
 		inline int get_height() const { return height; }
 

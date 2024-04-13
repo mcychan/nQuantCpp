@@ -694,7 +694,6 @@ namespace EdgeAwareSQuant
 		UINT pixelIndex = 0;
 		// see equation (7) in the paper
 		Mat<float> saliencyMap(bitmapHeight, bitmapWidth);
-		vector<float> saliencies(pixels.size());
 		auto saliencyBase = 0.1f;
 		for (int y = 0; y < saliencyMap.get_height(); ++y) {
 			for (int x = 0; x < saliencyMap.get_width(); ++x, ++pixelIndex) {
@@ -703,8 +702,6 @@ namespace EdgeAwareSQuant
 				CIELABConvertor::Lab lab1;
 				getLab(c, lab1);
 				saliencyMap(y, x) = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f;
-				if (lab1.alpha > alphaThreshold && nMaxColors < 32)
-					saliencies[pixelIndex] = saliencyMap(y, x);
 			}
 		}
 
@@ -770,7 +767,10 @@ namespace EdgeAwareSQuant
 		}
 
 		if (!dither && nMaxColors > 2) {
-			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette->Entries, nMaxColors, nearestColorIndex, GetColorIndex, qPixels.get(), saliencies.data(), .25);
+			if(nMaxColors < 32)
+				Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette->Entries, nMaxColors, nearestColorIndex, GetColorIndex, qPixels.get(), saliencyMap.get(), .25);
+			else
+				Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette->Entries, nMaxColors, nearestColorIndex, GetColorIndex, qPixels.get(), nullptr, .25);
 			nearestMap.clear();
 		}
 
