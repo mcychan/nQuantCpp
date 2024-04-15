@@ -161,14 +161,27 @@ namespace PnnLABQuant
 	
 	bool PnnLABGAQuantizer::QuantizeImage(vector<shared_ptr<Bitmap> >& pBitmaps, bool dither) {
 		m_pq->setRatio(_ratioX, _ratioY);
-		auto pPalettes = make_unique<ARGB[]>(_nMaxColors);
-		auto pPalette = pPalettes.get();
+		if (_nMaxColors > 256) {
+			auto pPalettes = make_unique<ARGB[]>(_nMaxColors);
+			auto pPalette = pPalettes.get();
+			m_pq->pnnquan(m_pixelsList[0], pPalette, _nMaxColors);
+			int i = 0;
+			for (auto& pixels : m_pixelsList) {
+				m_pq->QuantizeImage(pixels, _bitmapWidths[i], pPalette, pBitmaps[i].get(), _nMaxColors, dither);
+				++i;
+			}
+			m_pq->clear();
+			return !pBitmaps.empty();
+		}
 
-		m_pq->pnnquan(m_pixelsList[0], pPalette, _nMaxColors);
+		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + _nMaxColors * sizeof(ARGB));
+		auto pPalette = (ColorPalette*)pPaletteBytes.get();
+		pPalette->Count = _nMaxColors;
+		m_pq->pnnquan(m_pixelsList[0], pPalette->Entries, _nMaxColors);
 		int i = 0;
 		for(auto& pixels : m_pixelsList) {
-			m_pq->QuantizeImage(pixels, _bitmapWidths[i], pPalette, pBitmaps[i].get(), _nMaxColors, dither);
-			++i;
+			m_pq->QuantizeImage(pixels, _bitmapWidths[i], pPalette->Entries, pBitmaps[i].get(), _nMaxColors, dither);
+			pBitmaps[i++]->SetPalette((ColorPalette*) pPalette);
 		}
 		m_pq->clear();
 		return !pBitmaps.empty();
