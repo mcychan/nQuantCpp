@@ -423,6 +423,7 @@ namespace EdgeAwareSQuant
 		auto paletteSize = palette.size() * 1.0f;
 		const auto maxDelta = hasSemiTransparency ? 4.0 : 1.0;
 		auto rate = 2.0 / log2(paletteSize);
+		int count = 0, idx = image.size() > 1000000 ? -1 : 20;
 
 		while (coarse_level >= 0) {
 			// calculate the distance between centroids
@@ -467,7 +468,13 @@ namespace EdgeAwareSQuant
 				int repeat_inner = 0;
 
 				while (repeat_inner++ == 0 || pixels_changed > 0.0001 * rate * total_pixels) {
-					rate += 0.001;
+					if (count++ % idx == 0)
+						rate += 0.001 * count;
+					else if(idx < 0)
+						rate += 10 * count;
+					else
+						rate += 0.001;
+
 					pixels_changed = 0;
 					pixels_visited = 0;
 
