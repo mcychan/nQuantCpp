@@ -193,7 +193,7 @@ namespace PnnLABQuant
 			if (nMaxColors >= 64)
 				quan_rt = 0;
 		}
-		if (nMaxColors < 64) {
+		if (nMaxColors > 16 && nMaxColors < 64) {
 			auto weightB = nMaxColors / 8000.0;
 			if (abs(weightB - weight) < .001)
 				quan_rt = 2;
