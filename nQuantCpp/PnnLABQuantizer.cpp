@@ -184,7 +184,7 @@ namespace PnnLABQuant
 			quan_rt = -1;
 
 		weight = min(0.9, nMaxColors * 1.0 / maxbins);
-		if (weight < .001 || (weight > .0015 && weight < .0022))
+		if (nMaxColors < 16 || (weight > .0015 && weight < .0022))
 			quan_rt = 2;
 		if (weight < .04 && PG < 1 && PG >= coeffs[0][1]) {
 			auto delta = exp(1.75) * weight;
@@ -192,6 +192,11 @@ namespace PnnLABQuant
 			PB += delta;
 			if (nMaxColors >= 64)
 				quan_rt = 0;
+		}
+		if (nMaxColors < 64) {
+			auto weightB = nMaxColors / 8000.0;
+			if (abs(weightB - weight) < .001)
+				quan_rt = 2;
 		}
 
 		if (pixelMap.size() <= nMaxColors) {
