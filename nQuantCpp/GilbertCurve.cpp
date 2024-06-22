@@ -89,9 +89,7 @@ namespace Peano
 
 	inline int compare(const ErrorBox& o1, const ErrorBox& o2)
 	{
-		if (o1.yDiff > o2.yDiff)
-			return -1;
-		return o1.yDiff < o2.yDiff ? 1 : 0;
+		return sign(o1.yDiff - o2.yDiff);
 	}
 
 	void ditherPixel(int x, int y)
@@ -252,7 +250,7 @@ namespace Peano
 		errorq.clear();
 		weight = abs(weight);
 		margin = weight < .0025 ? 12 : 6;
-		sortedByYDiff = !m_hasAlpha && m_saliencies && m_nMaxColor >= 128 && weight >= .04;
+		sortedByYDiff = !m_hasAlpha && m_saliencies && m_nMaxColor >= 128 && weight >= .042;
 		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		auto edge = m_hasAlpha ? 1 : exp(weight) + .25;
 		ditherMax = (m_hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge) : DITHER_MAX;
