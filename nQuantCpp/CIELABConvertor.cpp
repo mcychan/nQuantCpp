@@ -211,3 +211,14 @@ double CIELABConvertor::Y_Diff(const Color& c1, const Color& c2)
 	auto y2 = color2Y(c2);
 	return abs(y2 - y) * XYZ_WHITE_REFERENCE_Y;
 }
+
+double CIELABConvertor::U_Diff(const Color& c1, const Color& c2)
+{
+	auto color2U = [](const Color& c) -> double {
+		return -0.09991 * c.GetR() - 0.33609 * c.GetG() + 0.436 * c.GetB();
+	};
+
+	auto u = color2U(c1);
+	auto u2 = color2U(c2);
+	return abs(u2 - u);
+}

@@ -26,4 +26,5 @@ public:
 	static double CIEDE2000(const Lab& lab1, const Lab& lab2);
 	
 	static double Y_Diff(const Color& c1, const Color& c2);
+	static double U_Diff(const Color& c1, const Color& c2);
 };
