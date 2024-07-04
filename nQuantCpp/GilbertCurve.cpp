@@ -258,7 +258,7 @@ namespace Peano
 		int density = m_nMaxColor > 16 ? 3200 : 1500;
 		if (m_nMaxColor / weight > 5000 && (weight > .045 || (weight > .01 && m_nMaxColor <= 64)))
 			ditherMax = (BYTE)sqr(5 + edge);
-		else if (m_nMaxColor / weight < density && m_nMaxColor >= 16 && m_nMaxColor < 256)
+		else if (DITHER_MAX > 9 && m_nMaxColor / weight < density && m_nMaxColor >= 16 && m_nMaxColor < 256)
 			ditherMax = (BYTE)sqr(5 + edge);
 		thresold = DITHER_MAX > 9 ? -112 : -64;
 		auto pLookup = make_unique<short[]>(USHRT_MAX + 1);
