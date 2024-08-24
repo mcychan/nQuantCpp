@@ -248,7 +248,7 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 	return OutputImage(sourcePath, algorithm, nMaxColors, targetDir, pDest.get());
 }
 
-void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMaxColors, const bool dither, const long& delay)
+void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMaxColors, const bool dither, const bool samePalette, const long& delay)
 {
 	auto start = chrono::steady_clock::now();
 
@@ -267,17 +267,40 @@ void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMa
 		}
 	}
 
-	PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
-	PnnLABQuant::PnnLABGAQuantizer pnnLABGAQuantizer(pnnLABQuantizer, pSources, nMaxColors);
-	nQuantGA::APNsgaIII alg(pnnLABGAQuantizer);
-	alg.run(9999, -numeric_limits<double>::epsilon());
-	auto pGAq = alg.getResult();
-	tcout << L"\n" << pGAq->getResult().c_str() << endl;
-	if(pGAq->QuantizeImage(pDests, dither)) {
-		if(nMaxColors > 256 || delay < 0) {
+	if (samePalette) {
+		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
+		PnnLABQuant::PnnLABGAQuantizer pnnLABGAQuantizer(pnnLABQuantizer, pSources, nMaxColors);
+		nQuantGA::APNsgaIII alg(pnnLABGAQuantizer);
+		alg.run(9999, -numeric_limits<double>::epsilon());
+		auto pGAq = alg.getResult();
+		tcout << L"\n" << pGAq->getResult().c_str() << endl;
+		if (pGAq->QuantizeImage(pDests, dither)) {
+			if (nMaxColors > 256 || delay < 0) {
+				int i = 0;
+				for (auto& sourcePath : sourcePaths)
+					OutputImage(sourcePath, L"PNNLAB+", nMaxColors, targetDir, pDests[i++].get(), nMaxColors > 256 || delay > -2 ? L".png" : L".gif");
+			}
+			else {
+				auto fileName = sourcePaths[0].filename().wstring();
+				fileName = fileName.substr(0, fileName.find_last_of(L'.'));
+
+				targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();
+				auto destPath = targetDir + L"/" + fileName + L"-";
+				destPath += L"PNNLAB+quant.gif";
+				GifEncode::GifWriter gifWriter(destPath, pGAq->hasAlpha(), abs(delay));
+				auto status = gifWriter.AddImages(pDests);
+				if (status == Status::Ok)
+					tcout << L"Converted image: " << destPath << endl;
+				else
+					tcout << L"Failed to save image in '" << destPath << L"' file" << endl;
+			}
+		}
+	}
+	else {
+		if (nMaxColors > 256 || delay < 0) {
 			int i = 0;
-			for(auto& sourcePath : sourcePaths)
-				OutputImage(sourcePath, L"PNNLAB+", nMaxColors, targetDir, pDests[i++].get(), nMaxColors > 256 || delay > -2 ? L".png" : L".gif");
+			for (auto& sourcePath : sourcePaths)
+				OutputImage(sourcePath, L"PNN", nMaxColors, targetDir, pDests[i++].get(), nMaxColors > 256 || delay > -2 ? L".png" : L".gif");
 		}
 		else {
 			auto fileName = sourcePaths[0].filename().wstring();
@@ -285,8 +308,14 @@ void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMa
 
 			targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();
 			auto destPath = targetDir + L"/" + fileName + L"-";
-			destPath += L"PNNLAB+quant.gif";
-			GifEncode::GifWriter gifWriter(destPath, pGAq->hasAlpha(), abs(delay));
+			destPath += L"PNNquant.gif";
+
+			UINT maxColors = nMaxColors;			
+			for (int i = 0; i < pSources.size(); ++i) {
+				PnnQuant::PnnQuantizer pnnQuantizer;
+				pnnQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);
+			}
+			GifEncode::GifWriter gifWriter(destPath, false, abs(delay));
 			auto status = gifWriter.AddImages(pDests);
 			if (status == Status::Ok)
 				tcout << L"Converted image: " << destPath << endl;
@@ -343,7 +372,7 @@ int _tmain(int argc, _TCHAR** argv)
 		if(fs::is_directory(fs::status(sourceFile.c_str())) ) {
 			if (!targetDir.empty() && !fileExists(targetDir))
 				fs::create_directories(targetDir);
-			OutputImages(sourceFile, targetDir, nMaxColors, dither, delay);
+			OutputImages(sourceFile, targetDir, nMaxColors, dither, algo != _T("PNN"), delay);
 			GdiplusShutdown(m_gdiplusToken);
 			return 0;
 		}
