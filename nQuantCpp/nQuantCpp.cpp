@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <filesystem>
 #include <limits>
+#include <sstream>
 namespace fs = std::filesystem;
 
 #include "nQuantCpp.h"
@@ -248,7 +249,7 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 	return OutputImage(sourcePath, algorithm, nMaxColors, targetDir, pDest.get());
 }
 
-void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMaxColors, const bool dither, const bool samePalette, const long& delay)
+static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMaxColors, const bool dither, const wstring& algo, const long& delay)
 {
 	auto start = chrono::steady_clock::now();
 
@@ -267,7 +268,7 @@ void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMa
 		}
 	}
 
-	if (samePalette) {
+	if (algo == _T("PNNLAB+")) {
 		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
 		PnnLABQuant::PnnLABGAQuantizer pnnLABGAQuantizer(pnnLABQuantizer, pSources, nMaxColors);
 		nQuantGA::APNsgaIII alg(pnnLABGAQuantizer);
@@ -303,18 +304,38 @@ void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UINT& nMa
 				OutputImage(sourcePath, L"PNN", nMaxColors, targetDir, pDests[i++].get(), nMaxColors > 256 || delay > -2 ? L".png" : L".gif");
 		}
 		else {
+			ostringstream ss;
 			auto fileName = sourcePaths[0].filename().wstring();
 			fileName = fileName.substr(0, fileName.find_last_of(L'.'));
 
 			targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();
 			auto destPath = targetDir + L"/" + fileName + L"-";
-			destPath += L"PNNquant.gif";
+			if (algo == _T("PNNLAB")) {
+				destPath += L"PNNLABquant.gif";
 
-			UINT maxColors = nMaxColors;			
-			for (int i = 0; i < pSources.size(); ++i) {
-				PnnQuant::PnnQuantizer pnnQuantizer;
-				pnnQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);
+				UINT maxColors = nMaxColors;
+				for (int i = 0; i < pSources.size(); ++i) {
+					ss << "\r" << i << " of " << pSources.size() << " completed." << showpoint;
+					tcout << ss.str().c_str();
+
+					PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
+					pnnLABQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);					
+				}				
 			}
+			else {
+				destPath += L"PNNquant.gif";
+
+				UINT maxColors = nMaxColors;
+				for (int i = 0; i < pSources.size(); ++i) {
+					ss << "\r" << i << " of " << pSources.size() << " completed." << showpoint;
+					tcout << ss.str().c_str();
+
+					PnnQuant::PnnQuantizer pnnQuantizer;
+					pnnQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);
+				}
+			}
+			tcout << L"\rWell done!!!                             " << endl;
+
 			GifEncode::GifWriter gifWriter(destPath, false, abs(delay));
 			auto status = gifWriter.AddImages(pDests);
 			if (status == Status::Ok)
@@ -372,7 +393,7 @@ int _tmain(int argc, _TCHAR** argv)
 		if(fs::is_directory(fs::status(sourceFile.c_str())) ) {
 			if (!targetDir.empty() && !fileExists(targetDir))
 				fs::create_directories(targetDir);
-			OutputImages(sourceFile, targetDir, nMaxColors, dither, algo != _T("PNN"), delay);
+			OutputImages(sourceFile, targetDir, nMaxColors, dither, algo, delay);
 			GdiplusShutdown(m_gdiplusToken);
 			return 0;
 		}
