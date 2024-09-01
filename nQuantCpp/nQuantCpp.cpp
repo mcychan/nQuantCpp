@@ -279,7 +279,7 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 			if (nMaxColors > 256 || delay < 0) {
 				int i = 0;
 				for (auto& sourcePath : sourcePaths)
-					OutputImage(sourcePath, L"PNNLAB+", nMaxColors, targetDir, pDests[i++].get(), nMaxColors > 256 || delay > -2 ? L".png" : L".gif");
+					OutputImage(sourcePath, algo, nMaxColors, targetDir, pDests[i++].get(), nMaxColors > 256 || delay > -2 ? L".png" : L".gif");
 			}
 			else {
 				auto fileName = sourcePaths[0].filename().wstring();
@@ -300,8 +300,18 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 	else {
 		if (nMaxColors > 256 || delay < 0) {
 			int i = 0;
-			for (auto& sourcePath : sourcePaths)
-				OutputImage(sourcePath, L"PNN", nMaxColors, targetDir, pDests[i++].get(), nMaxColors > 256 || delay > -2 ? L".png" : L".gif");
+			UINT maxColors = nMaxColors;
+			for (auto& sourcePath : sourcePaths) {
+				if (algo == _T("PNNLAB")) {
+					PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
+					pnnLABQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);
+				}
+				else {
+					PnnQuant::PnnQuantizer pnnQuantizer;
+					pnnQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);
+				}
+				OutputImage(sourcePath, algo, nMaxColors, targetDir, pDests[i++].get(), nMaxColors > 256 || delay > -2 ? L".png" : L".gif");
+			}
 		}
 		else {
 			ostringstream ss;
