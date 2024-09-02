@@ -586,7 +586,7 @@ namespace PnnLABQuant
 			}
 		}
 		
-		if (hasSemiTransparency)
+		if (hasSemiTransparency || isGA)
 			weight *= -1;
 
 		auto GetColorIndex = [&](const Color& c) -> int {

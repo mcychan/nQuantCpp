@@ -249,9 +249,9 @@ namespace Peano
 		m_hasAlpha = weight < 0;
 
 		errorq.clear();
-		weight = abs(weight);
-		margin = weight < .0025 ? 12 : 6;
 		sortedByYDiff = !m_hasAlpha && m_saliencies && m_nMaxColor >= 128 && weight >= .052;
+		weight = abs(weight);
+		margin = weight < .0025 ? 12 : 6;		
 		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		auto edge = m_hasAlpha ? 1 : exp(weight) + .25;
 		auto deviation = weight > .002 ? .25 : 1;

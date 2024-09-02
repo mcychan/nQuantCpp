@@ -268,7 +268,55 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 		}
 	}
 
-	if (algo == _T("PNNLAB+")) {
+	if (algo == _T("PNN")) {
+		if (nMaxColors > 256 || delay < 0) {
+			int i = 0;
+			for (auto& sourcePath : sourcePaths)
+				QuantizeImage(algo, sourcePath, targetDir, pSources[i], nMaxColors, dither);
+		}
+		else {
+			auto fileName = sourcePaths[0].filename().wstring();
+			fileName = fileName.substr(0, fileName.find_last_of(L'.'));
+
+			targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();
+			auto destPath = targetDir + L"/" + fileName + L"-";
+			if (algo == _T("PNNLAB")) {
+				destPath += L"PNNLABquant.gif";
+
+				UINT maxColors = nMaxColors;
+				for (int i = 0; i < pSources.size(); ++i) {
+					ostringstream ss;
+					ss << "\r" << i << " of " << pSources.size() << " completed." << showpoint;
+					tcout << ss.str().c_str();
+
+					PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
+					pnnLABQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);
+				}
+			}
+			else {
+				destPath += L"PNNquant.gif";
+
+				UINT maxColors = nMaxColors;
+				for (int i = 0; i < pSources.size(); ++i) {
+					ostringstream ss;
+					ss << "\r" << i << " of " << pSources.size() << " completed." << showpoint;
+					tcout << ss.str().c_str();
+
+					PnnQuant::PnnQuantizer pnnQuantizer;
+					pnnQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);
+				}
+			}
+			tcout << L"\rWell done!!!                             " << endl;
+
+			GifEncode::GifWriter gifWriter(destPath, false, abs(delay));
+			auto status = gifWriter.AddImages(pDests);
+			if (status == Status::Ok)
+				tcout << L"Converted image: " << destPath << endl;
+			else
+				tcout << L"Failed to save image in '" << destPath << L"' file" << endl;
+		}
+	}
+	else {
 		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
 		PnnLABQuant::PnnLABGAQuantizer pnnLABGAQuantizer(pnnLABQuantizer, pSources, nMaxColors);
 		nQuantGA::APNsgaIII alg(pnnLABGAQuantizer);
@@ -296,55 +344,7 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 					tcout << L"Failed to save image in '" << destPath << L"' file" << endl;
 			}
 		}
-	}
-	else {
-		if (nMaxColors > 256 || delay < 0) {
-			int i = 0;
-			for (auto& sourcePath : sourcePaths)
-				QuantizeImage(algo, sourcePath, targetDir, pSources[i], nMaxColors, dither);
-		}
-		else {			
-			auto fileName = sourcePaths[0].filename().wstring();
-			fileName = fileName.substr(0, fileName.find_last_of(L'.'));
-
-			targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();
-			auto destPath = targetDir + L"/" + fileName + L"-";
-			if (algo == _T("PNNLAB")) {
-				destPath += L"PNNLABquant.gif";
-
-				UINT maxColors = nMaxColors;
-				for (int i = 0; i < pSources.size(); ++i) {
-					ostringstream ss;
-					ss << "\r" << i << " of " << pSources.size() << " completed." << showpoint;
-					tcout << ss.str().c_str();
-
-					PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
-					pnnLABQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);					
-				}				
-			}
-			else {
-				destPath += L"PNNquant.gif";
-
-				UINT maxColors = nMaxColors;
-				for (int i = 0; i < pSources.size(); ++i) {
-					ostringstream ss;
-					ss << "\r" << i << " of " << pSources.size() << " completed." << showpoint;
-					tcout << ss.str().c_str();
-
-					PnnQuant::PnnQuantizer pnnQuantizer;
-					pnnQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);
-				}
-			}
-			tcout << L"\rWell done!!!                             " << endl;
-
-			GifEncode::GifWriter gifWriter(destPath, false, abs(delay));
-			auto status = gifWriter.AddImages(pDests);
-			if (status == Status::Ok)
-				tcout << L"Converted image: " << destPath << endl;
-			else
-				tcout << L"Failed to save image in '" << destPath << L"' file" << endl;
-		}
-	}
+	}	
 
 	auto dur = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;
 	tcout << "Completed in " << dur << " secs." << endl;
