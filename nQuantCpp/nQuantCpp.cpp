@@ -300,21 +300,10 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 	else {
 		if (nMaxColors > 256 || delay < 0) {
 			int i = 0;
-			UINT maxColors = nMaxColors;
-			for (auto& sourcePath : sourcePaths) {
-				if (algo == _T("PNNLAB")) {
-					PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
-					pnnLABQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);
-				}
-				else {
-					PnnQuant::PnnQuantizer pnnQuantizer;
-					pnnQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);
-				}
-				OutputImage(sourcePath, algo, nMaxColors, targetDir, pDests[i++].get(), nMaxColors > 256 || delay > -2 ? L".png" : L".gif");
-			}
+			for (auto& sourcePath : sourcePaths)
+				QuantizeImage(algo, sourcePath, targetDir, pSources[i], nMaxColors, dither);
 		}
-		else {
-			ostringstream ss;
+		else {			
 			auto fileName = sourcePaths[0].filename().wstring();
 			fileName = fileName.substr(0, fileName.find_last_of(L'.'));
 
@@ -325,6 +314,7 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 
 				UINT maxColors = nMaxColors;
 				for (int i = 0; i < pSources.size(); ++i) {
+					ostringstream ss;
 					ss << "\r" << i << " of " << pSources.size() << " completed." << showpoint;
 					tcout << ss.str().c_str();
 
@@ -337,6 +327,7 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 
 				UINT maxColors = nMaxColors;
 				for (int i = 0; i < pSources.size(); ++i) {
+					ostringstream ss;
 					ss << "\r" << i << " of " << pSources.size() << " completed." << showpoint;
 					tcout << ss.str().c_str();
 
