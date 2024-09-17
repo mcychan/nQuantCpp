@@ -56,6 +56,7 @@ namespace PnnLABQuant
 			unsigned short nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos);
 			void setRatio(double ratioX, double ratioY);
 			void grabPixels(Bitmap* srcImg, vector<ARGB>& pixels, UINT& nMaxColors, bool& hasSemiTransparency);
+			bool QuantizeImageByPal(const vector<ARGB>& pixels, const UINT bitmapWidth, const ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
 			bool QuantizeImage(const vector<ARGB>& pixels, const UINT bitmapWidth, ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
 			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
 	};

@@ -167,7 +167,7 @@ namespace PnnLABQuant
 			m_pq->pnnquan(m_pixelsList[0], pPalette, _nMaxColors);
 			int i = 0;
 			for (auto& pixels : m_pixelsList) {
-				m_pq->QuantizeImage(pixels, _bitmapWidths[i], pPalette, pBitmaps[i].get(), _nMaxColors, dither);
+				m_pq->QuantizeImageByPal(pixels, _bitmapWidths[i], pPalette, pBitmaps[i].get(), _nMaxColors, dither);
 				++i;
 			}
 			m_pq->clear();
@@ -178,6 +178,7 @@ namespace PnnLABQuant
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = _nMaxColors;
 		m_pq->pnnquan(m_pixelsList[0], pPalette->Entries, _nMaxColors);
+
 		int i = 0;
 		for(auto& pixels : m_pixelsList) {
 			m_pq->QuantizeImage(pixels, _bitmapWidths[i], pPalette->Entries, pBitmaps[i].get(), _nMaxColors, dither);
