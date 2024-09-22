@@ -397,11 +397,10 @@ namespace OtsuThreshold
 		if (!isGrayscale)
 			convertToGrayScale(pixels, pixelsGray);
 
-		auto oldPixels = pixels;
-		auto otsuThreshold = getOtsuThreshold(pixels);
+		auto otsuThreshold = getOtsuThreshold(pixelsGray);
 		auto lowerThreshold = 0.03, higherThreshold = 0.1;
 		pixels = cannyFilter(bitmapWidth, pixelsGray, lowerThreshold, higherThreshold);
-		threshold(oldPixels, pixels, otsuThreshold);
+		threshold(pixelsGray, pixels, otsuThreshold);
 
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + 2 * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
