@@ -1,12 +1,14 @@
 ﻿/* Otsu's Image Segmentation Method
   Copyright (C) 2009 Tolga Birdal
-  Copyright (c) 2018 - 2021 Miller Cy Chan
+  Copyright (c) 2018 - 2024 Miller Cy Chan
 */
 
 #include "stdafx.h"
 #include "Otsu.h"
 #include "bitmapUtilities.h"
 #include "GilbertCurve.h"
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <unordered_map>
 
 namespace OtsuThreshold
@@ -68,7 +70,7 @@ namespace OtsuThreshold
 		
 	short getOtsuThreshold(const vector<ARGB>& pixels)
 	{
-	    float vet[256] = { 0 };
+		float vet[256] = { 0 };
 		int hist[256] = { 0 };
 		
 		getHistogram(pixels, hist);
@@ -87,7 +89,7 @@ namespace OtsuThreshold
 		return findMax(vet, 256);
 	}
 	
-	void threshold(vector<ARGB>& pixels, short thresh, float weight = 1.0f)
+	void threshold(const vector<ARGB>& pixels, vector<ARGB>& dest, short thresh, float weight = 1.0f)
 	{
 		auto maxThresh = (BYTE)thresh;
 		if (thresh >= 200)
@@ -97,14 +99,154 @@ namespace OtsuThreshold
 			thresh = 200;
 		}
 
-		auto minThresh = (BYTE)(thresh * weight);		
+		auto minThresh = (BYTE)(thresh * weight);
 		for (int i = 0; i < pixels.size(); ++i) {
 			Color c(pixels[i]);
-			if (c.GetR() + c.GetG() + c.GetB() > maxThresh * 3)
-				pixels[i] = Color::MakeARGB(c.GetA(), BYTE_MAX, BYTE_MAX, BYTE_MAX);
+			if (m_transparentPixelIndex >= 0 && c.GetR() + c.GetG() + c.GetB() > maxThresh * 3)
+				dest[i] = Color::MakeARGB(c.GetA(), BYTE_MAX, BYTE_MAX, BYTE_MAX);
 			else if (m_transparentPixelIndex >= 0 || c.GetR() + c.GetG() + c.GetB() < minThresh * 3)
-				pixels[i] = Color::MakeARGB(c.GetA(), 0, 0, 0);
+				dest[i] = Color::MakeARGB(c.GetA(), 0, 0, 0);
 		}
+	}
+
+	vector<ARGB> cannyFilter(const UINT width, const vector<ARGB>& pixelsGray, double lowerThreshold, double higherThreshold) {
+		const auto height = pixelsGray.size() / width;
+		const auto area = (size_t)(width * height);
+
+		vector<ARGB> pixelsCanny(area, Color::White);
+
+		int gx[3][3] = {{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}};
+		int gy[3][3] = {{-1, -2, -1}, {0, 0, 0}, {1, 2, 1}};
+		auto G = make_unique<double[]>(area);
+		vector<int> theta(area);
+		auto largestG = 0.0;
+
+		// perform canny edge detection on everything but the edges
+		for (int i = 1; i < height - 1; ++i) {
+			for (int j = 1; j < width - 1; ++j) {
+				// find gx and gy for each pixel
+				auto gxValue = 0.0;
+				auto gyValue = 0.0;
+				for (int x = -1; x <= 1; ++x) {
+					for (int y = -1; y <= 1; ++y) {
+						const Color c = pixelsGray[(i + x) * width +  j + y];
+						gxValue += gx[1 - x][1 - y] * c.GetG();
+						gyValue += gy[1 - x][1 - y] * c.GetG();
+					}
+				}
+
+				const int center = i * width + j;
+				// calculate G and theta
+				G[center] = sqrt(pow(gxValue, 2) + pow(gyValue, 2));
+				auto atanResult = atan2(gyValue, gxValue) * 180.0 / M_PI;
+				theta[center] = (int)(180.0 + atanResult);
+
+				if (G[center] > largestG)
+					largestG = G[center];
+
+				// setting the edges
+				if (i == 1) {
+					G[center - 1] = G[center];
+					theta[center - 1] = theta[center];
+				}
+				else if (j == 1) {
+					G[center - width] = G[center];
+					theta[center - width] = theta[center];
+				}
+				else if (i == height - 1) {
+					G[center + 1] = G[center];
+					theta[center + 1] = theta[center];
+				}
+				else if (j == width - 1) {
+					G[center + width] = G[center];
+					theta[center + width] = theta[center];
+				}
+
+				// setting the corners
+				if (i == 1 && j == 1) {
+					G[center - width - 1] = G[center];
+					theta[center - width - 1] = theta[center];
+				}
+				else if (i == 1 && j == width - 1) {
+					G[center - width + 1] = G[center];
+					theta[center - width + 1] = theta[center];
+				}
+				else if (i == height - 1 && j == 1) {
+					G[center + width - 1] = G[center];
+					theta[center + width - 1] = theta[center];
+				}
+				else if (i == height - 1 && j == width - 1) {
+					G[center + width + 1] = G[center];
+					theta[center + width + 1] = theta[center];
+				}
+
+				// to the nearest 45 degrees
+				theta[center] = rint(theta[center] / 45) * 45;
+			}
+		}
+
+		largestG *= .5;
+
+		// non-maximum suppression
+		for (int i = 1; i < height - 1; ++i) {
+			for (int j = 1; j < width - 1; ++j) {
+				const int center = i * width + j;
+				if (theta[center] == 0 || theta[center] == 180) {
+					if (G[center] < G[center - 1] || G[center] < G[center + 1])
+						G[center] = 0;
+				}
+				else if (theta[center] == 45 || theta[center] == 225) {
+					if (G[center] < G[center + width + 1] || G[center] < G[center - width - 1])
+						G[center] = 0;
+				}
+				else if (theta[center] == 90 || theta[center] == 270) {
+					if (G[center] < G[center + width] || G[center] < G[center - width])
+						G[center] = 0;
+				}
+				else {
+					if (G[center] < G[center + width - 1] || G[center] < G[center - width + 1])
+						G[center] = 0;
+				}
+
+				auto grey = ~(BYTE)(G[center] * (255.0 / largestG));
+				Color c(pixelsGray[center]);
+				pixelsCanny[center] = Color::MakeARGB(c.GetA(), grey, grey, grey);
+			}
+		}
+
+		int k = 0;
+		auto minThreshold = lowerThreshold * largestG, maxThreshold = higherThreshold * largestG;
+		do {
+			for (int i = 1; i < height - 1; ++i) {
+				for (int j = 1; j < width - 1; ++j) {
+					const int center = i * width + j;
+					if (G[center] < minThreshold)
+						G[center] = 0;
+					else if (G[center] >= maxThreshold)
+						continue;
+					else if (G[center] < maxThreshold) {
+						G[center] = 0;
+						for (int x = -1; x <= 1; ++x) {
+							for (int y = -1; y <= 1; y++) {
+								if (x == 0 && y == 0)
+									continue;
+								if (G[center + x * width + y] >= maxThreshold) {
+									G[center] = higherThreshold * largestG;
+									k = 0;
+									x = 2;
+									break;
+								}
+							}
+						}
+					}
+					
+					auto grey = ~(BYTE)(G[center] * 255.0 / largestG);
+					Color c(pixelsGray[center]);
+					pixelsCanny[center] = Color::MakeARGB(c.GetA(), grey, grey, grey);
+				}
+			}
+		} while (k++ < 100);
+		return pixelsCanny;
 	}
 
 	unsigned short nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, const ARGB argb, const UINT pos)
@@ -149,7 +291,7 @@ namespace OtsuThreshold
 		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
 	}
 
-	void convertToGrayScale(vector<ARGB>& pixels)
+	void convertToGrayScale(const vector<ARGB>& pixels, vector<ARGB>& dest)
 	{
 		float min1 = BYTE_MAX;
 		float max1 = .0f;
@@ -176,7 +318,7 @@ namespace OtsuThreshold
 
 			int green = (pixels[i] >> 8) & 0xff;
 			auto grey = (int)((green - min1) * (BYTE_MAX / (max1 - min1)));
-			pixels[i] = Color::MakeARGB(alfa, grey, grey, grey);
+			dest[i] = Color::MakeARGB(alfa, grey, grey, grey);
 		}
 	}
 
@@ -239,7 +381,8 @@ namespace OtsuThreshold
 
 		pSourceImg->UnlockBits(&data);
 		return pSourceImg;
-	}	
+	}
+
 
 	bool Otsu::ConvertGrayScaleToBinary(Bitmap* pSrcImg, Bitmap* pDest, bool isGrayscale)
 	{		
@@ -250,11 +393,15 @@ namespace OtsuThreshold
 		vector<ARGB> pixels(area);
 		GrabPixels(pSrcImg, pixels, hasSemiTransparency, m_transparentPixelIndex, m_transparentColor, alphaThreshold);
 
+		auto pixelsGray = pixels;
 		if (!isGrayscale)
-			convertToGrayScale(pixels);
+			convertToGrayScale(pixels, pixelsGray);
 
+		auto oldPixels = pixels;
 		auto otsuThreshold = getOtsuThreshold(pixels);
-		threshold(pixels, otsuThreshold);
+		auto lowerThreshold = 0.03, higherThreshold = 0.1;
+		pixels = cannyFilter(bitmapWidth, pixelsGray, lowerThreshold, higherThreshold);
+		threshold(oldPixels, pixels, otsuThreshold);
 
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + 2 * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
