@@ -99,12 +99,12 @@ namespace OtsuThreshold
 			thresh = 200;
 		}
 
-		auto minThresh = (BYTE)(thresh * weight);
+		auto minThresh = (BYTE)(thresh * (m_transparentPixelIndex >= 0 ? .9f : weight));
 		for (int i = 0; i < pixels.size(); ++i) {
 			Color c(pixels[i]);
-			if (m_transparentPixelIndex >= 0 && c.GetR() + c.GetG() + c.GetB() > maxThresh * 3)
+			if (c.GetA() < alphaThreshold && c.GetR() + c.GetG() + c.GetB() > maxThresh * 3)
 				dest[i] = Color::MakeARGB(c.GetA(), BYTE_MAX, BYTE_MAX, BYTE_MAX);
-			else if (m_transparentPixelIndex >= 0 || c.GetR() + c.GetG() + c.GetB() < minThresh * 3)
+			else if (c.GetR() + c.GetG() + c.GetB() < minThresh * 3)
 				dest[i] = Color::MakeARGB(c.GetA(), 0, 0, 0);
 		}
 	}
