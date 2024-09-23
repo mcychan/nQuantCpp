@@ -100,11 +100,12 @@ namespace OtsuThreshold
 		}
 
 		auto minThresh = (BYTE)(thresh * (m_transparentPixelIndex >= 0 ? .9f : weight));
+		const auto shadow = m_transparentPixelIndex >= 0 ? 3.5 : 3;
 		for (int i = 0; i < pixels.size(); ++i) {
 			Color c(pixels[i]);
 			if (c.GetA() < alphaThreshold && c.GetR() + c.GetG() + c.GetB() > maxThresh * 3)
 				dest[i] = Color::MakeARGB(c.GetA(), BYTE_MAX, BYTE_MAX, BYTE_MAX);
-			else if (c.GetR() + c.GetG() + c.GetB() < minThresh * 3)
+			else if (c.GetR() + c.GetG() + c.GetB() < minThresh * shadow)
 				dest[i] = Color::MakeARGB(c.GetA(), 0, 0, 0);
 		}
 	}
@@ -373,7 +374,8 @@ namespace OtsuThreshold
 		{
 			for (int j = 0; j < iWidth; ++j)
 			{
-				ptr[0] = ptr[1] = ptr[2] = (BYTE)((ptr[1] - min1) * (BYTE_MAX / (max1 - min1)));
+				auto grey = (BYTE)((ptr[1] - min1) * (BYTE_MAX / (max1 - min1)));
+				ptr[0] = ptr[1] = ptr[2] = grey;
 				ptr += DJ;
 			}
 			ptr += remain;
