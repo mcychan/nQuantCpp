@@ -216,7 +216,7 @@ namespace PnnLABQuant
 	static double rotateLeft(double u, double v, double delta) {
 		auto theta = M_PI * randrange(minRatio, maxRatio) / exp(delta);
 		auto result = u * sin(theta) + v * cos(theta);
-		if (result <= minRatio || result >= maxRatio)
+		if (delta < 50 && (result <= minRatio || result >= maxRatio))
 			result = rotateLeft(u, v, delta + .5);
 		return result;
 	}
@@ -224,7 +224,7 @@ namespace PnnLABQuant
 	static double rotateRight(double u, double v, double delta) {
 		auto theta = M_PI * randrange(minRatio, maxRatio) / exp(delta);
 		auto result = u * cos(theta) - v * sin(theta);
-		if (result <= minRatio || result >= maxRatio)
+		if (delta < 50 && (result <= minRatio || result >= maxRatio))
 			result = rotateRight(u, v, delta + .5);
 		return result;
 	}
