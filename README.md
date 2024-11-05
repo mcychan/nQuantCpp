@@ -38,7 +38,7 @@ All in all, the top 3 color quantization algorithms for 256 colors are:
 </ol>
 The top 3 color quantization algorithms for 32 colors or less are:
 <ol>
-<li>Fast pairwise nearest neighbor based algorithm with CIELAB color space advanced version</li>
+<li>Fast pairwise nearest neighbor based algorithm with CIELAB color space <b>Plus (parallel quantum inspired Genetic Algorithm)</b></li>
 <li>Efficient, Edge-Aware, Combined Color Quantization and Dithering algorithm with CIELAB color space</li>
 <li>Spatial color quantization algorithm with CIELAB color space</li>
 </ol>
