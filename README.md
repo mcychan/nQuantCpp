@@ -13,6 +13,7 @@ Let's climb up the mountain: Ready, Go!!!
 <p>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<br /><img src="https://github.com/user-attachments/assets/26e00c41-730b-4e23-81f7-a7dec4dc4cf6" /></p>
 <p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://github.com/user-attachments/assets/f4cadcfc-2770-4cb4-b99e-302c9b5db2ae" /></p>
 <p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm with CIELAB color space<br /><img src="https://github.com/user-attachments/assets/47daca56-ee8a-49c9-b01b-945de598dfe1" /></p>
+<p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm with CIELAB color space Plus (parallel quantum inspired Genetic Algorithm)<br /><img src="https://github.com/user-attachments/assets/b9313b90-ee56-4ee4-8211-62ca62622fd2" /></p>
 <p>Reduced to 16 colors by Xialoin Wu's fast optimal color Quantization Algorithm<br /><img src="https://github.com/user-attachments/assets/f0d26906-4b2b-42de-ae98-f660645cc198" /></p>
 <hr />
 <p>Original photo of Aetna's Hartford headquarters<br /><img src="https://mcychan.github.io/PnnQuant.js/demo/img/SE5x9.jpg" /></p>
