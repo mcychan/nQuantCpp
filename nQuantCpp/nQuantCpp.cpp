@@ -3,10 +3,10 @@
 
 #include "stdafx.h"
 #include <tchar.h>
-#include <algorithm>
 #include <chrono>
+#ifdef _WIN32
 #include <io.h>
-#define tcslen wcslen
+#endif
 #include <iostream>
 #include <fcntl.h>
 #include <filesystem>
@@ -44,7 +44,7 @@ GdiplusStartupInput  m_gdiplusStartupInput;
 ULONG_PTR m_gdiplusToken;
 
 wstring algs[] = { L"PNN", L"PNNLAB", L"PNNLAB+", L"NEU", L"WU", L"EAS", L"SPA", L"DIV", L"DL3", L"MMC", L"OTSU" };
-unordered_map<LPCTSTR, CLSID> extensionMap;
+unordered_map<LPCWSTR, CLSID> extensionMap;
 
 void PrintUsage()
 {
@@ -149,7 +149,7 @@ inline bool fileExists(const wstring& path)
 	return fs::exists(fs::path(path));
 }
 
-bool OutputImage(const fs::path& sourcePath, const wstring& algorithm, const UINT& nMaxColors, wstring& targetDir, Bitmap* pDest, LPCTSTR defaultExtension = L".png")
+bool OutputImage(const fs::path& sourcePath, const wstring& algorithm, const UINT& nMaxColors, wstring& targetDir, Bitmap* pDest, LPCWSTR defaultExtension = L".png")
 {
 	auto fileName = sourcePath.filename().wstring();
 	fileName = fileName.substr(0, fileName.find_last_of(L'.'));
@@ -268,7 +268,7 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 		}
 	}
 
-	if (algo == _T("PNN")) {
+	if (algo == L"PNN") {
 		if (nMaxColors > 256 || delay < 0) {
 			int i = 0;
 			for (auto& sourcePath : sourcePaths)
@@ -280,7 +280,7 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 
 			targetDir = fileExists(targetDir) ? fs::canonical(fs::path(targetDir)) : fs::current_path();
 			auto destPath = targetDir + L"/" + fileName + L"-";
-			if (algo == _T("PNNLAB")) {
+			if (algo == L"PNNLAB") {
 				destPath += L"PNNLABquant.gif";
 
 				UINT maxColors = nMaxColors;
@@ -352,7 +352,9 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 
 int _tmain(int argc, _TCHAR** argv)
 {
+#ifdef _WIN32
 	_setmode(_fileno(stdout), _O_U16TEXT);
+#endif
 
 #ifndef _DEBUG
 	if (argc <= 1) {
@@ -371,7 +373,7 @@ int _tmain(int argc, _TCHAR** argv)
 
 	vector<wstring> argList(argc);
 	for (int i = 1; i < argc; ++i)
-		argList[i] = wstring(argv[i], argv[i] + tcslen(argv[i]));
+		argList[i] = wstring(argv[i], argv[i] + wcslen(argv[i]));
 
 #ifdef _DEBUG
 	wstring sourceFile = szDir + L"/../ImgV64.gif";
@@ -380,7 +382,7 @@ int _tmain(int argc, _TCHAR** argv)
 	if (!ProcessArgs(argc, algo, nMaxColors, dither, targetDir, argList.data(), delay))
 		return 0;
 
-	wstring sourceFile(argv[1], argv[1] + tcslen(argv[1]));
+	wstring sourceFile(argv[1], argv[1] + wcslen(argv[1]));
 	if (!fileExists(sourceFile) && sourceFile.find_first_of(L"\\/") != wstring::npos)
 		sourceFile = szDir + L"/" + sourceFile;
 #endif

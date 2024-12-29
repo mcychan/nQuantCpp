@@ -17,6 +17,8 @@
 		#pragma comment(linker, "\"/manifestdependency:type='Win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='X86' publicKeyToken='6595b64144ccf1df' language='*'\"")
 	#endif
 #else
+	#include <shlobj.h>
+	#include <gdiplus.h>
 	using namespace Gdiplus;
 	#ifndef BYTE
 		typedef unsigned char BYTE;
