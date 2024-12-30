@@ -1,4 +1,5 @@
 #pragma once
+#include "bitmapUtilities.h"
 
 namespace OtsuThreshold
 {

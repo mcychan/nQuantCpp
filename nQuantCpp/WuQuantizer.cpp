@@ -21,7 +21,6 @@
 
 #include "stdafx.h"
 #include "WuQuantizer.h"
-#include "bitmapUtilities.h"
 #include "BlueNoise.h"
 #include <unordered_map>
 

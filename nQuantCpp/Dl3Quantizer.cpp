@@ -42,7 +42,6 @@
 
 #include "stdafx.h"
 #include "Dl3Quantizer.h"
-#include "bitmapUtilities.h"
 #include "BlueNoise.h"
 #include <unordered_map>
 

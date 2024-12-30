@@ -34,12 +34,6 @@ namespace fs = std::filesystem;
 #define new DEBUG_NEW
 #endif
 
-#ifdef UNICODE
-	auto& tcout = std::wcout;
-#else
-	auto& tcout = std::cout;
-#endif
-
 GdiplusStartupInput  m_gdiplusStartupInput;
 ULONG_PTR m_gdiplusToken;
 
@@ -48,19 +42,19 @@ unordered_map<LPCWSTR, CLSID> extensionMap;
 
 void PrintUsage()
 {
-	tcout << endl;
-	tcout << "usage: nQuantCpp <input image path> [options]" << endl;
-	tcout << endl;
-	tcout << "Valid options:" << endl;
-	tcout << "  /a : Algorithm used - Choose one of them, otherwise give you the defaults from [";
+	wcout << endl;
+	wcout << "usage: nQuantCpp <input image path> [options]" << endl;
+	wcout << endl;
+	wcout << "Valid options:" << endl;
+	wcout << "  /a : Algorithm used - Choose one of them, otherwise give you the defaults from [";
 	int i = 0;	
 	for(; i<sizeof(algs)/sizeof(string) - 1; ++i)
-		tcout << algs[i] << ", ";
-	tcout << algs[i] << "] ." << endl;
-	tcout << "  /m : Max Colors (pixel-depth) - Maximum number of colors for the output format to support. The default is 256 (8-bit)." << endl;
-	tcout << "  /d : Dithering or not? y or n." << endl;
-	tcout << "  /f : Frame delay in milliseconds for PNNLAB+ only." << endl;
-	tcout << "  /o : Output image file dir. The default is <source image path directory>" << endl;
+		wcout << algs[i] << ", ";
+	wcout << algs[i] << "] ." << endl;
+	wcout << "  /m : Max Colors (pixel-depth) - Maximum number of colors for the output format to support. The default is 256 (8-bit)." << endl;
+	wcout << "  /d : Dithering or not? y or n." << endl;
+	wcout << "  /f : Frame delay in milliseconds for PNNLAB+ only." << endl;
+	wcout << "  /o : Output image file dir. The default is <source image path directory>" << endl;
 }
 
 bool isdigit(const wchar_t* chars, const bool positiveOnly = true) {
@@ -175,9 +169,9 @@ bool OutputImage(const fs::path& sourcePath, const wstring& algorithm, const UIN
 	destPath += std::to_wstring(nMaxColors) + targetExtension;
 	auto status = pDest->Save(destPath.c_str(), &extensionMap[targetExtension]);
 	if (status == Status::Ok)
-		tcout << L"Converted image: " << destPath << endl;
+		wcout << L"Converted image: " << destPath << endl;
 	else
-		tcout << L"Failed to save image in '" << destPath << L"' file" << endl;
+		wcout << L"Failed to save image in '" << destPath << L"' file" << endl;
 
 	return status == Status::Ok;
 }
@@ -203,7 +197,7 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 		nQuantGA::APNsgaIII alg(pnnLABGAQuantizer);
 		alg.run(9999, -numeric_limits<double>::epsilon());
 		auto pGAq = alg.getResult();
-		tcout << L"\n" << pGAq->getResult().c_str() << endl;
+		wcout << L"\n" << pGAq->getResult().c_str() << endl;
 		vector<shared_ptr<Bitmap> > dests;
 		dests.emplace_back(pDest);
 		bSucceeded = pGAq->QuantizeImage(dests, dither);
@@ -287,7 +281,7 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 				for (int i = 0; i < pSources.size(); ++i) {
 					ostringstream ss;
 					ss << "\r" << i << " of " << pSources.size() << " completed." << showpoint;
-					tcout << ss.str().c_str();
+					wcout << ss.str().c_str();
 
 					PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
 					pnnLABQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);
@@ -300,20 +294,20 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 				for (int i = 0; i < pSources.size(); ++i) {
 					ostringstream ss;
 					ss << "\r" << i << " of " << pSources.size() << " completed." << showpoint;
-					tcout << ss.str().c_str();
+					wcout << ss.str().c_str();
 
 					PnnQuant::PnnQuantizer pnnQuantizer;
 					pnnQuantizer.QuantizeImage(pSources[i].get(), pDests[i].get(), maxColors, dither);
 				}
 			}
-			tcout << L"\rWell done!!!                             " << endl;
+			wcout << L"\rWell done!!!                             " << endl;
 
 			GifEncode::GifWriter gifWriter(destPath, false, abs(delay));
 			auto status = gifWriter.AddImages(pDests);
 			if (status == Status::Ok)
-				tcout << L"Converted image: " << destPath << endl;
+				wcout << L"Converted image: " << destPath << endl;
 			else
-				tcout << L"Failed to save image in '" << destPath << L"' file" << endl;
+				wcout << L"Failed to save image in '" << destPath << L"' file" << endl;
 		}
 	}
 	else {
@@ -322,7 +316,7 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 		nQuantGA::APNsgaIII alg(pnnLABGAQuantizer);
 		alg.run(9999, -numeric_limits<double>::epsilon());
 		auto pGAq = alg.getResult();
-		tcout << L"\n" << pGAq->getResult().c_str() << endl;
+		wcout << L"\n" << pGAq->getResult().c_str() << endl;
 		if (pGAq->QuantizeImage(pDests, dither)) {
 			if (nMaxColors > 256 || delay < 0) {
 				int i = 0;
@@ -339,18 +333,18 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 				GifEncode::GifWriter gifWriter(destPath, pGAq->hasAlpha(), abs(delay));
 				auto status = gifWriter.AddImages(pDests);
 				if (status == Status::Ok)
-					tcout << L"Converted image: " << destPath << endl;
+					wcout << L"Converted image: " << destPath << endl;
 				else
-					tcout << L"Failed to save image in '" << destPath << L"' file" << endl;
+					wcout << L"Failed to save image in '" << destPath << L"' file" << endl;
 			}
 		}
 	}	
 
 	auto dur = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;
-	tcout << "Completed in " << dur << " secs." << endl;
+	wcout << "Completed in " << dur << " secs." << endl;
 }
 
-int _tmain(int argc, _TCHAR** argv)
+int wmain(int argc, wchar_t** argv)
 {
 #ifdef _WIN32
 	_setmode(_fileno(stdout), _O_U16TEXT);
@@ -388,7 +382,7 @@ int _tmain(int argc, _TCHAR** argv)
 #endif
 	
 	if(!fileExists(sourceFile)) {
-		tcout << "The source file you specified does not exist." << endl;
+		wcout << "The source file you specified does not exist." << endl;
 		return 0;
 	}		
 
@@ -432,10 +426,10 @@ int _tmain(int argc, _TCHAR** argv)
 				QuantizeImage(algo, sourceFile, targetDir, pSource, nMaxColors, dither);
 
 			auto dur = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;
-			tcout << "Completed in " << dur << " secs." << endl;
+			wcout << "Completed in " << dur << " secs." << endl;
 		}
 		else
-			tcout << "Failed to read image in '" << sourceFile.c_str() << "' file";
+			wcout << "Failed to read image in '" << sourceFile.c_str() << "' file";
 	}
 	GdiplusShutdown(m_gdiplusToken);
 	return 0;

@@ -23,7 +23,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "stdafx.h"
 #include "SpatialQuantizer.h"
-#include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
 #include "GilbertCurve.h"
 

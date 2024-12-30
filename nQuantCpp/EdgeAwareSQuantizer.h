@@ -1,8 +1,5 @@
 #pragma once
-#include <memory>
-#include <vector>
-
-using namespace std;
+#include "bitmapUtilities.h"
 
 namespace EdgeAwareSQuant
 {

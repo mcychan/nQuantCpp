@@ -4,11 +4,11 @@
 
 #define COM_NO_WINDOWS_H
 #define GDIPVER 0x0110 //Use more advanced GDI+ features
+#include <unknwn.h>				// Needed for non-MFC/ATL use
 
 #ifdef _WIN32
 	#pragma comment(lib, "gdiplus")
 
-	#include <unknwn.h>				// Needed for non-MFC/ATL use
 	#include <gdiplus.h>
 	using namespace Gdiplus;
 	#ifdef _WIN64
@@ -17,17 +17,14 @@
 		#pragma comment(linker, "\"/manifestdependency:type='Win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='X86' publicKeyToken='6595b64144ccf1df' language='*'\"")
 	#endif
 #else
-	#include <shlobj.h>
+	#include <guiddef.h>
 	#include <gdiplus.h>
 	using namespace Gdiplus;
-	#ifndef BYTE
-		typedef unsigned char BYTE;
-	#endif
-	#ifndef UINT
-		typedef unsigned int UINT;
+
+	#ifndef LPCWSTR
+		typedef _Null_terminated_ CONST WCHAR* LPCWSTR, * PCWSTR;
 	#endif
 #endif
-
 
 #ifndef BYTE_MAX
 	#include <climits>

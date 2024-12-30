@@ -1,4 +1,20 @@
 #pragma once
+#ifndef _WIN32
+	#include <guiddef.h>
+	#include <gdiplus.h>
+	using namespace Gdiplus;
+
+	#ifndef ARGB
+		typedef unsigned long ARGB;
+	#endif
+	#ifndef BYTE
+		typedef unsigned char BYTE;
+	#endif
+	#ifndef BYTE_MAX
+		#include <climits>
+		#define BYTE_MAX UCHAR_MAX
+	#endif
+#endif
 
 class CIELABConvertor
 {

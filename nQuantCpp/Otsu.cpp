@@ -5,7 +5,6 @@
 
 #include "stdafx.h"
 #include "Otsu.h"
-#include "bitmapUtilities.h"
 #include "GilbertCurve.h"
 #define _USE_MATH_DEFINES
 #include <math.h>

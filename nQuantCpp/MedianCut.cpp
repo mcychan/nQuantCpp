@@ -31,7 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "stdafx.h"
 #include "MedianCut.h"
-#include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
 #include "BlueNoise.h"
 #include <unordered_map>

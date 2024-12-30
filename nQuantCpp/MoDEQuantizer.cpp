@@ -9,7 +9,6 @@ Copyright (c) 2018 - 2021 Miller Cy Chan
 
 #include "stdafx.h"
 #include "MoDEQuantizer.h"
-#include "bitmapUtilities.h"
 #include <ctime>
 #include <iomanip>      // std::setprecision
 #include <unordered_map>

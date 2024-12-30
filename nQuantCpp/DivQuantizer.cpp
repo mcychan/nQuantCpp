@@ -16,7 +16,6 @@
 
 #include "stdafx.h"
 #include "DivQuantizer.h"
-#include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
 #include "BlueNoise.h"
 #include <algorithm>

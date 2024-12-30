@@ -1,6 +1,5 @@
 ﻿#include "stdafx.h"
 #include "NeuQuantizer.h"
-#include "bitmapUtilities.h"
 #include "CIELABConvertor.h"
 #include <unordered_map>
 

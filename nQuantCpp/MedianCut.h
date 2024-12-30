@@ -31,12 +31,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 #include <string>
-#include <memory>
-#include <vector>
 #include <limits>
 #include "EdgeAwareSQuantizer.h"
 
-using namespace std;
 using namespace EdgeAwareSQuant;
 
 //#define VITER_CACHE_LINE_GAP ((64+sizeof(viter_state)-1)/sizeof(viter_state))

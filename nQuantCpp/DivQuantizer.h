@@ -1,4 +1,6 @@
 #pragma once
+#include "bitmapUtilities.h"
+
 #include <memory>
 #include <vector>
 using namespace std;

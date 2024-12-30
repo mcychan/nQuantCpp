@@ -5,7 +5,6 @@ Copyright (c) 2018-2024 Miller Cy Chan
 
 #include "stdafx.h"
 #include "PnnQuantizer.h"
-#include "bitmapUtilities.h"
 #include "GilbertCurve.h"
 #include "BlueNoise.h"
 #include <unordered_map>
