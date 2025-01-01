@@ -4,9 +4,6 @@
 	#include <gdiplus.h>
 	using namespace Gdiplus;
 
-	#ifndef ARGB
-		typedef unsigned long ARGB;
-	#endif
 	#ifndef BYTE
 		typedef unsigned char BYTE;
 	#endif
