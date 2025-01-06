@@ -1,14 +1,11 @@
 FROM ubuntu:22.04
 WORKDIR /tmp
 RUN apt update -y
-RUN apt install -y build-essential cmake gcc-12 g++-12 libomp-dev wget
-RUN apt install -y libgdiplus locales fontconfig
-RUN wget -O - https://dl.winehq.org/wine-builds/winehq.key | apt-key add -
-RUN add-apt-repository 'deb https://dl.winehq.org/wine-builds/ubuntu/ jammy main'
-RUN apt install -y --install-recommends winehq-stable-dev
+RUN apt install -y build-essential cmake gcc-12 g++-12 libomp-dev
+RUN DEBIAN_FRONTEND="noninteractive" apt install -y libgdiplus mingw-w64 locales fontconfig
 ADD . /tmp/nQuantCpp
 WORKDIR /tmp/nQuantCpp
-RUN cmake -S . -B ../build
+RUN cmake -D CMAKE_CXX_COMPILER=g++-12 /usr/bin/g++-12 -S . -B ../build
 # RUN cmake --build ../build
 # RUN cp *.gif /tmp/build/nQuantCpp/
 # WORKDIR /tmp/build/nQuantCpp
