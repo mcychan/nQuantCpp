@@ -7,13 +7,8 @@ using namespace std;
 
 #ifndef _WIN32
 	#include <guiddef.h>
-	#include <minwindef.h>
 	#include <gdiplus.h>
 	using namespace Gdiplus;
-
-	#ifndef bool
-		typedef BOOL bool;
-	#endif
 #endif
 
 

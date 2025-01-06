@@ -1,7 +1,7 @@
 ﻿cmake_minimum_required (VERSION 3.10)
 
 if(NOT WIN32)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I /usr/include/wine/wine/windows")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I /usr/share/mingw-w64/include")
 endif()
 add_executable(nQuantCpp "nQuantCpp.cpp" "nQuantCpp.h" "nQuantCpp.rc" "bitmapUtilities.cpp" "bitmapUtilities.h" "BlueNoise.cpp" "BlueNoise.h" "CIELABConvertor.cpp" "CIELABConvertor.h" "DivQuantizer.cpp" "DivQuantizer.h"
     "Dl3Quantizer.cpp" "Dl3Quantizer.h" "EdgeAwareSQuantizer.cpp" "EdgeAwareSQuantizer.h" "GifWriter.cpp" "GifWriter.h" "GilbertCurve.cpp" "GilbertCurve.h" "MedianCut.cpp" "MedianCut.h" "Otsu.cpp" "Otsu.h"
