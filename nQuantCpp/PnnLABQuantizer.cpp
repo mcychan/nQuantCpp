@@ -1,6 +1,6 @@
 ﻿/* Fast pairwise nearest neighbor based algorithm for multilevel thresholding
 Copyright (C) 2004-2016 Mark Tyler and Dmitry Groshev
-Copyright (c) 2018-2024 Miller Cy Chan
+Copyright (c) 2018-2025 Miller Cy Chan
 * error measure; time used is proportional to number of bins squared - WJ */
 
 #include "stdafx.h"
@@ -625,7 +625,21 @@ namespace PnnLABQuant
 			else {
 				pPalette[0] = Color::Black;
 				pPalette[1] = Color::White;
-			}
+
+				if (dither) {
+					saliencies.resize(pixels.size());
+					auto saliencyBase = .1f;
+					for (int i = 0; i < pixels.size(); ++i) {
+						const auto& pixel = pixels[i];
+						Color c(pixel);
+
+						CIELABConvertor::Lab lab1;
+						getLab(c, lab1);
+
+						saliencies[i] = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f;
+					}
+				}
+			}			
 		}
 
 		if (m_transparentPixelIndex >= 0) {
