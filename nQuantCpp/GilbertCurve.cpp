@@ -120,11 +120,8 @@ namespace Peano
 		unsigned short qPixelIndex = 0;
 		if (m_saliencies != nullptr && m_nMaxColor < 3)
 		{
-			int acceptedDiff = 1;
-			if (CIELABConvertor::Y_Diff(pixel, c2) > acceptedDiff) {
-				auto strength = 1 / 3.0f;
-				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], 1.0f / m_saliencies[bidx], strength, x, y);
-			}
+			auto strength = 1 / 3.0f;
+			c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], strength / m_saliencies[bidx], strength, x, y);
 			qPixelIndex = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx);
 		}
 		else if (m_nMaxColor <= 32 && a_pix > 0xF0)
