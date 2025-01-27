@@ -118,10 +118,15 @@ namespace Peano
 
 		Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		unsigned short qPixelIndex = 0;
-		if (m_saliencies != nullptr && m_nMaxColor < 3)
+		if (m_saliencies != nullptr && (m_nMaxColor < 3 || margin > 6))
 		{
 			auto strength = 1 / 3.0f;
-			c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], .5f / m_saliencies[bidx], strength, x, y);
+			auto beta = m_nMaxColor > 8 ? .7f : 1;
+			int acceptedDiff = max(2, m_nMaxColor - margin);
+			if (m_saliencies[bidx] > .2f && m_saliencies[bidx] < .25f)
+				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta / m_saliencies[bidx], strength, x, y);
+			else if (m_nMaxColor <= 8 || CIELABConvertor::Y_Diff(pixel, c2) < (2 * acceptedDiff))
+				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * .5f / m_saliencies[bidx], strength, x, y);
 			qPixelIndex = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx);
 		}
 		else if (m_nMaxColor <= 32 && a_pix > 0xF0)
@@ -134,7 +139,7 @@ namespace Peano
 			int acceptedDiff = max(2, m_nMaxColor - margin);
 			if (m_saliencies != nullptr && (CIELABConvertor::Y_Diff(pixel, c2) > acceptedDiff || CIELABConvertor::U_Diff(pixel, c2) > (2 * acceptedDiff))) {
 				auto strength = 1 / 3.0f;
-				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], 1.0f / m_saliencies[bidx], strength, x, y);
+				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], 1 / m_saliencies[bidx], strength, x, y);
 				qPixelIndex = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx);
 			}
 		}
