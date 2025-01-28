@@ -127,7 +127,15 @@ namespace Peano
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta / m_saliencies[bidx], strength, x, y);
 			else if (m_nMaxColor <= 8 || CIELABConvertor::Y_Diff(pixel, c2) < (2 * acceptedDiff))
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * .5f / m_saliencies[bidx], strength, x, y);
-			qPixelIndex = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx);
+			else {
+				Color c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+				c2 = BlueNoise::diffuse(c1, m_pPalette[qPixelIndex], beta * .5f / m_saliencies[bidx], strength, x, y);
+			}
+
+			int offset = m_getColorIndexFn(c2);
+			if (!m_lookup[offset])
+				m_lookup[offset] = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx) + 1;
+			qPixelIndex = m_lookup[offset] - 1;
 		}
 		else if (m_nMaxColor <= 32 && a_pix > 0xF0)
 		{
@@ -262,7 +270,7 @@ namespace Peano
 		errorq.clear();
 		sortedByYDiff = !m_hasAlpha && m_saliencies && m_nMaxColor >= 128 && weight >= .052;
 		weight = abs(weight);
-		margin = weight < .0025 ? 12 : 6;		
+		margin = weight < .0025 ? 12 : weight < .004 ? 8 : 6;
 		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		auto edge = m_hasAlpha ? 1 : exp(weight) + .25;
 		auto deviation = weight > .002 ? .25 : 1;
