@@ -118,7 +118,7 @@ namespace Peano
 
 		Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		unsigned short qPixelIndex = 0;
-		if (m_saliencies != nullptr)
+		if (m_saliencies != nullptr && !sortedByYDiff)
 		{
 			auto strength = 1 / 3.0f;
 			auto beta = m_nMaxColor > 8 ? .7f : 1;
