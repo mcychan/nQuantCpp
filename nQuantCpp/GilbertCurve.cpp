@@ -121,7 +121,7 @@ namespace Peano
 		if (m_saliencies != nullptr && !sortedByYDiff)
 		{
 			auto strength = 1 / 3.0f;
-			auto beta = m_nMaxColor > 8 ? .7f : 1;
+			auto beta = m_nMaxColor > 8 ? m_nMaxColor > 24 ? .25f : .7f : 1;
 			int acceptedDiff = max(2, m_nMaxColor - margin);
 			if (m_nMaxColor <= 8 && m_saliencies[bidx] > .2f && m_saliencies[bidx] < .25f)
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta / m_saliencies[bidx], strength, x, y);
