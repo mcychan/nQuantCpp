@@ -139,7 +139,7 @@ namespace PnnLABQuant
 	{
 		short quan_rt = 1;
 		vector<pnnbin> bins(USHRT_MAX + 1);
-		saliencies.resize(pixels.size());
+		saliencies.resize(nMaxColors >= 128 ? 0 : pixels.size());
 		auto saliencyBase = .1f;
 
 		/* Build histogram */
@@ -159,7 +159,7 @@ namespace PnnLABQuant
 			tb.Ac += lab1.A;
 			tb.Bc += lab1.B;
 			tb.cnt += 1.0;
-			if(lab1.alpha > alphaThreshold)
+			if(!saliencies.empty() && lab1.alpha > alphaThreshold)
 				saliencies[i] = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f;
 		}
 
