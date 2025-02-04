@@ -39,6 +39,7 @@ namespace Peano
 	bool m_hasAlpha, sortedByYDiff;
 	unsigned short m_nMaxColor;
 	UINT m_width, m_height;
+	float beta;
 	const ARGB *m_image, *m_pPalette;
 	unsigned short* m_qPixels;
 	ARGB* m_qColorPixels;
@@ -121,7 +122,6 @@ namespace Peano
 		if (m_saliencies != nullptr && !sortedByYDiff)
 		{
 			auto strength = 1 / 3.0f;
-			auto beta = m_nMaxColor > 8 ? m_nMaxColor > 24 ? .25f : .7f : 1;
 			int acceptedDiff = max(2, m_nMaxColor - margin);
 			if (m_nMaxColor <= 8 && m_saliencies[bidx] > .2f && m_saliencies[bidx] < .25f)
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta / m_saliencies[bidx], strength, x, y);
@@ -277,6 +277,7 @@ namespace Peano
 		sortedByYDiff = !m_hasAlpha && m_saliencies && m_nMaxColor >= 128 && weight >= .052;
 		weight = abs(weight);
 		margin = weight < .0025 ? 12 : weight < .004 ? 8 : 6;
+		beta = m_nMaxColor > 8 ? m_nMaxColor > 24 ? .25f : .7f : 1;
 		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		auto edge = m_hasAlpha ? 1 : exp(weight) + .25;
 		auto deviation = weight > .002 ? .25 : 1;
