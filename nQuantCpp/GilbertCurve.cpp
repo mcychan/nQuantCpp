@@ -39,7 +39,7 @@ namespace Peano
 	bool m_hasAlpha, sortedByYDiff;
 	unsigned short m_nMaxColor;
 	UINT m_width, m_height;
-	float ;
+	float beta;
 	const ARGB *m_image, *m_pPalette;
 	unsigned short* m_qPixels;
 	ARGB* m_qColorPixels;
