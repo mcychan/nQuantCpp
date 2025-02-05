@@ -136,7 +136,7 @@ namespace Peano
 				}
 			}
 			else if (m_nMaxColor > 8 && (CIELABConvertor::Y_Diff(pixel, c2) > (beta * acceptedDiff) || CIELABConvertor::U_Diff(pixel, c2) > acceptedDiff)) {
-				if(beta < .3f)
+				if(beta < .3f && (m_nMaxColor <= 32 || m_saliencies[bidx] < beta))
 					c2 = BlueNoise::diffuse(c2, m_pPalette[qPixelIndex], beta * .4f * m_saliencies[bidx], strength, x, y);
 				else
 					c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
