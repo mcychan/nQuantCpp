@@ -568,7 +568,7 @@ namespace PnnLABQuant
 		if (hasSemiTransparency || isGA)
 			weight *= -1;
 
-		if (dither && saliencies == nullptr && weight < .052) {
+		if (dither && saliencies.empty() && weight < .052) {
 			saliencies.resize(pixels.size());
 			auto saliencyBase = .1f;
 			for (int i = 0; i < pixels.size(); ++i) {
