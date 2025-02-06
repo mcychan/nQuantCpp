@@ -282,8 +282,8 @@ namespace Peano
 		weight = abs(weight);
 		margin = weight < .0025 ? 12 : weight < .004 ? 8 : 6;
 		beta = m_nMaxColor > 8 ? m_nMaxColor > 24 ? .25f : .7f : 1;
-		if (weight > .02)
-			beta *= .5f;
+		if (m_nMaxColor > 64 || weight > .02)
+			beta *= .4f;
 		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		auto edge = m_hasAlpha ? 1 : exp(weight) + .25;
 		auto deviation = weight > .002 ? .25 : 1;
