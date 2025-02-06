@@ -568,6 +568,20 @@ namespace PnnLABQuant
 		if (hasSemiTransparency || isGA)
 			weight *= -1;
 
+		if (dither && saliencies == nullptr && weight < .052) {
+			saliencies.resize(pixels.size());
+			auto saliencyBase = .1f;
+			for (int i = 0; i < pixels.size(); ++i) {
+				const auto& pixel = pixels[i];
+				Color c(pixel);
+
+				CIELABConvertor::Lab lab1;
+				getLab(c, lab1);
+
+				saliencies[i] = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f;
+			}
+		}
+
 		auto GetColorIndex = [&](const Color& c) -> int {
 			return GetARGBIndex(c, hasSemiTransparency, hasAlpha());
 		};
@@ -625,20 +639,6 @@ namespace PnnLABQuant
 			else {
 				pPalette[0] = Color::Black;
 				pPalette[1] = Color::White;
-
-				if (dither) {
-					saliencies.resize(pixels.size());
-					auto saliencyBase = .1f;
-					for (int i = 0; i < pixels.size(); ++i) {
-						const auto& pixel = pixels[i];
-						Color c(pixel);
-
-						CIELABConvertor::Lab lab1;
-						getLab(c, lab1);
-
-						saliencies[i] = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f;
-					}
-				}
 			}			
 		}
 
