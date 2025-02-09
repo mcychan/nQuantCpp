@@ -565,7 +565,7 @@ namespace PnnLABQuant
 
 	bool PnnLABQuantizer::QuantizeImageByPal(const vector<ARGB>& pixels, const UINT bitmapWidth, const ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
-		if (hasSemiTransparency || isGA)
+		if (hasSemiTransparency)
 			weight *= -1;
 
 		if (dither && !hasSemiTransparency && saliencies.empty() && weight < .052) {
