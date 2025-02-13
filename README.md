@@ -12,7 +12,7 @@ Let's climb up the mountain: Ready, Go!!!
 <p>Reduced to 256 colors by Divisive hierarchical clustering algorithm<br /><img src="https://github.com/user-attachments/assets/31a8c472-16ca-47ea-8f55-8143ad761eab" /></p>
 <p>Reduced to 256 colors by NeuQuant Neural-Net Quantization Algorithm<br /><img src="https://github.com/user-attachments/assets/26e00c41-730b-4e23-81f7-a7dec4dc4cf6" /></p>
 <p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm<br /><img src="https://github.com/user-attachments/assets/f4cadcfc-2770-4cb4-b99e-302c9b5db2ae" /></p>
-<p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm with CIELAB color space<br /><img src="https://github.com/user-attachments/assets/47daca56-ee8a-49c9-b01b-945de598dfe1" /></p>
+<p>Reduced to 16 colors by Fast pairwise nearest neighbor based algorithm with CIELAB color space<br /><img src="https://github.com/user-attachments/assets/a987c1b5-880d-43f6-8696-aa533aa61be5" /></p>
 <p>Reduced to 16 colors by Xialoin Wu's fast optimal color Quantization Algorithm<br /><img src="https://github.com/user-attachments/assets/f0d26906-4b2b-42de-ae98-f660645cc198" /></p>
 <hr />
 <p>Original photo of Aetna's Hartford headquarters<br /><img src="https://mcychan.github.io/PnnQuant.js/demo/img/SE5x9.jpg" /></p>
@@ -22,8 +22,8 @@ Let's climb up the mountain: Ready, Go!!!
 <p>Original image of Hong Kong Cuisines<br /><img src="https://mcychan.github.io/PnnQuant.js/demo/img/old-HK.jpg" /></p>
 <b><a href="http://www.cs.joensuu.fi/sipu/pub/Threshold-JEI.pdf">Fast pairwise nearest neighbor based algorithm</a></b> with CIELAB color space in 16 colors<br>
 High quality and fast<br />
-<img src="https://github.com/user-attachments/assets/cf8d36cd-e204-4363-aed1-77f6abe403fa" alt="Fast pairwise nearest neighbor based algorithm with CIELAB color space with CIELAB color space in 16 colors"></p>
-<p>Fast pairwise nearest neighbor based algorithm with CIELAB color space <b>Plus (parallel quantum inspired Genetic Algorithm)</b> in 16 colors<br /><img src="https://github.com/user-attachments/assets/b9313b90-ee56-4ee4-8211-62ca62622fd2" alt="Fast pairwise nearest neighbor based algorithm with CIELAB color space with CIELAB color space Plus (parallel quantum inspired Genetic Algorithm) in 16 colors" /></p>
+<img src="https://github.com/user-attachments/assets/d0c44261-b01a-4b6d-af31-bd1b7b0f2df5" alt="Fast pairwise nearest neighbor based algorithm with CIELAB color space with CIELAB color space in 16 colors"></p>
+<p>Fast pairwise nearest neighbor based algorithm with CIELAB color space <b>Plus (parallel quantum inspired Genetic Algorithm)</b> in 16 colors<br /><img src="https://github.com/user-attachments/assets/c129778d-436c-4a09-b280-6cf456e079f1" alt="Fast pairwise nearest neighbor based algorithm with CIELAB color space with CIELAB color space Plus (parallel quantum inspired Genetic Algorithm) in 16 colors" /></p>
 <p><b><a href="http://cg.cs.tsinghua.edu.cn/people/~huanghz/publications/TIP-2015-CombinedColorQuantization.pdf">Efficient, Edge-Aware, Combined Color Quantization and Dithering </a></b> with CIELAB color space in 16 colors<br />
 Higher quality for 32 or less colors but slower<br />
 <img src="https://user-images.githubusercontent.com/26831069/147355642-d72a9e2b-a47a-463a-bfb5-98d1a1def84a.png" alt="Efficient, Edge-Aware, Combined Color Quantization and Dithering with CIELAB color space in 16 colors"></p>
