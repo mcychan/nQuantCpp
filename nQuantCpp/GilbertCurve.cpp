@@ -290,7 +290,7 @@ namespace Peano
 		sortedByYDiff = !m_hasAlpha && m_saliencies && m_nMaxColor >= 128 && weight >= .052;
 		beta = m_nMaxColor > 8 ? (float) (1.05f - .0125f * m_nMaxColor) : 1;
 		if (m_nMaxColor > 8) {
-			auto boundary = .01 - .000063 * m_nMaxColor;
+			auto boundary = .005 - .0000625 * m_nMaxColor;
 			beta = (float) (weight > boundary ? max(.25, beta - m_nMaxColor * weight) : min(1.5, beta + m_nMaxColor * weight));
 		}
 		if (m_nMaxColor > 64 || (m_nMaxColor > 8 && weight > .02))
