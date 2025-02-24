@@ -288,7 +288,7 @@ namespace Peano
 		weight = abs(weight);
 		margin = weight < .0025 ? 12 : weight < .004 ? 8 : 6;
 		sortedByYDiff = !m_hasAlpha && m_saliencies && m_nMaxColor >= 128 && weight >= .052;
-		beta = m_nMaxColor > 8 ? (float) (1.05f - .0125f * m_nMaxColor) : 1;
+		beta = m_nMaxColor > 8 ? (float) (.6f - .00625f * m_nMaxColor) : 1;
 		if (m_nMaxColor > 8) {
 			auto boundary = .005 - .0000625 * m_nMaxColor;
 			beta = (float) (weight > boundary ? max(.25, beta - m_nMaxColor * weight) : min(1.5, beta + m_nMaxColor * weight));
