@@ -123,11 +123,11 @@ namespace Peano
 		{
 			auto strength = 1 / 3.0f;
 			int acceptedDiff = max(2, m_nMaxColor - margin);
-			if (m_nMaxColor <= 8 && m_saliencies[bidx] > .2f && m_saliencies[bidx] < .25f)
+			if (m_nMaxColor <= 4 && m_saliencies[bidx] > .2f && m_saliencies[bidx] < .25f)
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * 2 / m_saliencies[bidx], strength, x, y);
-			else if (m_nMaxColor <= 8 || CIELABConvertor::Y_Diff(pixel, c2) < (2 * acceptedDiff)) {
+			else if (m_nMaxColor <= 4 || CIELABConvertor::Y_Diff(pixel, c2) < (2 * acceptedDiff)) {
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * .5f / m_saliencies[bidx], strength, x, y);
-				if (m_nMaxColor <= 8 && CIELABConvertor::U_Diff(pixel, c2) > (8 * acceptedDiff)) {
+				if (m_nMaxColor <= 4 && CIELABConvertor::U_Diff(pixel, c2) > (8 * acceptedDiff)) {
 					Color c1 = m_saliencies[bidx] > .65f ? pixel : Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 					c2 = BlueNoise::diffuse(c1, m_pPalette[qPixelIndex], beta * m_saliencies[bidx], strength, x, y);
 				}
@@ -288,12 +288,12 @@ namespace Peano
 		weight = abs(weight);
 		margin = weight < .0025 ? 12 : weight < .004 ? 8 : 6;
 		sortedByYDiff = !m_hasAlpha && m_saliencies && m_nMaxColor >= 128 && weight >= .052;
-		beta = m_nMaxColor > 8 ? (float) (.6f - .00625f * m_nMaxColor) : 1;
-		if (m_nMaxColor > 8) {
+		beta = m_nMaxColor > 4 ? (float) (.6f - .00625f * m_nMaxColor) : 1;
+		if (m_nMaxColor > 4) {
 			auto boundary = .005 - .0000625 * m_nMaxColor;
 			beta = (float) (weight > boundary ? max(.25, beta - m_nMaxColor * weight) : min(1.5, beta + m_nMaxColor * weight));
 		}
-		if (m_nMaxColor > 64 || (m_nMaxColor > 8 && weight > .02))
+		if (m_nMaxColor > 64 || (m_nMaxColor > 4 && weight > .02))
 			beta *= .4f;
 		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		auto edge = m_hasAlpha ? 1 : exp(weight) + .25;
