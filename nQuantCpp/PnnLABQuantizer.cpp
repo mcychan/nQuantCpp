@@ -381,7 +381,7 @@ namespace PnnLABQuant
 					curdist += sqr(c2.GetA() - c.GetA());
 				}
 			}
-			else if (hasSemiTransparency) {
+			else if (hasSemiTransparency || nMaxColors < 16) {
 				curdist += sqr(lab2.L - lab1.L);
 				if (curdist > mindist)
 					continue;
