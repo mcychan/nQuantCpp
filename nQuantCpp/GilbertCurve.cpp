@@ -293,6 +293,8 @@ namespace Peano
 			auto boundary = .005 - .0000625 * m_nMaxColor;
 			beta = (float) (weight > boundary ? max(.25, beta - m_nMaxColor * weight) : min(1.5, beta + m_nMaxColor * weight));
 		}
+		if (m_nMaxColor < 16)
+			beta *= .75f;
 		if (m_nMaxColor > 64 || (m_nMaxColor > 4 && weight > .02))
 			beta *= .4f;
 		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
