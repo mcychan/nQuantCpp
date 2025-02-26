@@ -295,6 +295,8 @@ namespace Peano
 			if (m_nMaxColor < 16)
 				beta *= .75f;
 		}
+		else
+			beta *= .95f;
 		if (m_nMaxColor > 64 || (m_nMaxColor > 4 && weight > .02))
 			beta *= .4f;
 		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
