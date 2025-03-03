@@ -292,7 +292,9 @@ namespace Peano
 		if (m_nMaxColor > 4) {
 			auto boundary = .005 - .0000625 * m_nMaxColor;
 			beta = (float) (weight > boundary ? max(.25, beta - m_nMaxColor * weight) : min(1.5, beta + m_nMaxColor * weight));
-			if (m_nMaxColor < 16)
+			if(m_nMaxColor > 32)
+				beta += .1f;
+			else if (m_nMaxColor < 16)
 				beta *= .75f;
 		}
 		else
@@ -304,7 +306,7 @@ namespace Peano
 		auto deviation = !m_hasAlpha && weight > .002 ? .25 : 1;
 		ditherMax = (m_hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge * deviation) : DITHER_MAX;
 		int density = m_nMaxColor > 16 ? 3200 : 1500;
-		if (m_nMaxColor / weight > 5000 && (weight > .045 || (weight > .01 && m_nMaxColor <= 64)))
+		if (m_nMaxColor / weight > 5000 && (weight > .045 || (weight > .01 && m_nMaxColor < 64)))
 			ditherMax = (BYTE)sqr(5 + edge);
 		else if (weight < .03 && m_nMaxColor / weight < density && m_nMaxColor >= 16 && m_nMaxColor < 256)
 			ditherMax = (BYTE)sqr(5 + edge);
