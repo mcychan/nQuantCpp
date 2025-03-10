@@ -204,12 +204,12 @@ namespace PnnLABQuant
 			nMaxColors = pixelMap.size();
 			int k = 0;
 			for (const auto& [pixel, lab] : pixelMap) {
-				pPalette[k] = pixel;
-
 				Color c(pPalette[k]);
-				if (k > 0 && c.GetA() == 0)
-					swap(pPalette[k], pPalette[0]);
-				++k;
+				pPalette[k++] = pixel;
+
+
+				if (k > 1 && c.GetA() == 0)
+					swap(pPalette[k - 1], pPalette[0]);
 			}
 
 			return;
@@ -233,13 +233,13 @@ namespace PnnLABQuant
 				ratio = .5;
 			else if (quan_rt != 0 && nMaxColors < 64) {
 				if (proportional > .018 && proportional < .022)
-					ratio = min(1.0, proportional + weight * exp(3.622));
+					ratio = min(1.0, proportional + weight * exp(3.872));
 				else if (proportional > .1)
 					ratio = min(1.0, 1.0 - weight);
 				else if (proportional > .04)
-					ratio = min(1.0, weight * exp(2.44));
+					ratio = min(1.0, weight * exp(2.28));
 				else if (proportional > .03)
-					ratio = min(1.0, weight * exp(3.225));
+					ratio = min(1.0, weight * exp(3.275));
 				else {
 					auto beta = (nMaxColors < 16 && maxbins % 2 == 0) ? 2 : 1;
 					ratio = min(1.0, proportional + beta * weight * exp(1.947));
@@ -271,7 +271,7 @@ namespace PnnLABQuant
 		}
 
 		if (!isGA && quan_rt > 0 && nMaxColors < 64 && (proportional < .023 || proportional > .05) && proportional < .1)
-			ratio = min(1.0, proportional - weight * exp(2.107));
+			ratio = min(1.0, proportional - weight * exp(2.347));
 		else if (isGA)
 			ratio = ratioY;
 
@@ -431,7 +431,6 @@ namespace PnnLABQuant
 
 	unsigned short PnnLABQuantizer::closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
-		UINT k = 0;
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
 			return nearestColorIndex(pPalette, nMaxColors, argb, pos);
@@ -442,10 +441,10 @@ namespace PnnLABQuant
 			closest[2] = closest[3] = USHRT_MAX;
 			
 			int start = 0;
-			if(BlueNoise::TELL_BLUE_NOISE[pos & 4095] > -88)
+			if(c.GetA() > 0xE0 && BlueNoise::TELL_BLUE_NOISE[pos & 4095] > -88)
 				start = 1;
 			
-			for (; k < nMaxColors; ++k) {
+			for (UINT k = 0; k < nMaxColors; ++k) {
 				Color c2(pPalette[k]);
 				
 				auto err = PR * (1 - ratio) * sqr(c2.GetR() - c.GetR());
@@ -461,7 +460,7 @@ namespace PnnLABQuant
 					continue;
 
 				if (hasSemiTransparency) {
-					err += PA * (1 - ratio) * sqr(c2.GetA() - c.GetA());
+					err += PA * sqr(c2.GetA() - c.GetA());
 					start = 1;
 				}
 				

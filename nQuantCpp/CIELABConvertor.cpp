@@ -58,9 +58,9 @@ ARGB CIELABConvertor::LAB2RGB(const Lab& lab){
 	const auto y = yr * XYZ_WHITE_REFERENCE_Y;
 	const auto z = zr * XYZ_WHITE_REFERENCE_Z;
 
-	double r = (x * 3.2406 + y * -1.5372 + z * -0.4986) / 100.0;
-	double g = (x * -0.9689 + y * 1.8758 + z * 0.0415) / 100.0;
-	double b = (x * 0.0557 + y * -0.2040 + z * 1.0570) / 100.0;
+	auto r = (x * 3.2406 + y * -1.5372 + z * -0.4986) / 100.0;
+	auto g = (x * -0.9689 + y * 1.8758 + z * 0.0415) / 100.0;
+	auto b = (x * 0.0557 + y * -0.2040 + z * 1.0570) / 100.0;
 	r = r > 0.0031308 ? 1.055 * pow(r, 1 / 2.4) - 0.055 : 12.92 * r;
 	g = g > 0.0031308 ? 1.055 * pow(g, 1 / 2.4) - 0.055 : 12.92 * g;
 	b = b > 0.0031308 ? 1.055 * pow(b, 1 / 2.4) - 0.055 : 12.92 * b;
@@ -73,48 +73,48 @@ ARGB CIELABConvertor::LAB2RGB(const Lab& lab){
 * Conversions.
 ******************************************************************************/
 
-inline const double deg2Rad(const double deg)
+inline const float deg2Rad(const float deg)
 {
-	return deg * M_PI / 180.0;
+	return (float) (deg * M_PI / 180.0);
 }
 
-double CIELABConvertor::L_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2)
+float CIELABConvertor::L_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2)
 {
-	const auto k_L = 1.0; // kL
+	const auto k_L = 1.0f; // kL
 	auto deltaLPrime = lab2.L - lab1.L;
-	auto barLPrime = (lab1.L + lab2.L) / 2.0;
-	auto S_L = 1 + ((0.015 * sqr(barLPrime - 50.0)) / _sqrt(20 + sqr(barLPrime - 50.0)));
+	auto barLPrime = (lab1.L + lab2.L) / 2.0f;
+	auto S_L = (float)(1 + ((0.015 * sqr(barLPrime - 50.0)) / _sqrt(20 + sqr(barLPrime - 50.0))));
 	return deltaLPrime / (k_L * S_L);
 }
 
-double CIELABConvertor::C_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2, double& a1Prime, double& a2Prime, double& CPrime1, double& CPrime2)
+float CIELABConvertor::C_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2, double& a1Prime, double& a2Prime, double& CPrime1, double& CPrime2)
 {
-	const auto k_C = 1.0, K1 = 0.045; // K1
+	const auto k_C = 1.0f, K1 = 0.045f; // K1
 	const auto pow25To7 = 6103515625.0; /* pow(25, 7) */
-	auto C1 = _sqrt((lab1.A * lab1.A) + (lab1.B * lab1.B));
-	auto C2 = _sqrt((lab2.A * lab2.A) + (lab2.B * lab2.B));
-	auto barC = (C1 + C2) / 2.0;
-	auto G = 0.5 * (1 - _sqrt(pow(barC, 7) / (pow(barC, 7) + pow25To7)));
+	auto C1 = (float)(_sqrt((lab1.A * lab1.A) + (lab1.B * lab1.B)));
+	auto C2 = (float)(_sqrt((lab2.A * lab2.A) + (lab2.B * lab2.B)));
+	auto barC = (C1 + C2) / 2.0f;
+	auto G = (float)(0.5f * (1 - _sqrt(pow(barC, 7) / (pow(barC, 7) + pow25To7))));
 	a1Prime = (1.0 + G) * lab1.A;
 	a2Prime = (1.0 + G) * lab2.A;
 
 	CPrime1 = _sqrt((a1Prime * a1Prime) + (lab1.B * lab1.B));
 	CPrime2 = _sqrt((a2Prime * a2Prime) + (lab2.B * lab2.B));
-	auto deltaCPrime = CPrime2 - CPrime1;
-	auto barCPrime = (CPrime1 + CPrime2) / 2.0;
+	auto deltaCPrime = (float)(CPrime2 - CPrime1);
+	auto barCPrime = (float)((CPrime1 + CPrime2) / 2.0);
 	
 	auto S_C = 1 + (K1 * barCPrime);
 	return deltaCPrime / (k_C * S_C);
 }
 
-double CIELABConvertor::H_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2, const double a1Prime, const double a2Prime, const double CPrime1, const double CPrime2, double& barCPrime, double& barhPrime)
+float CIELABConvertor::H_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2, const double a1Prime, const double a2Prime, const double CPrime1, const double CPrime2, double& barCPrime, double& barhPrime)
 {
-	const auto k_H = 1.0, K2 = 0.015; // K2
-	const auto deg360InRad = deg2Rad(360.0);
-	const auto deg180InRad = deg2Rad(180.0);
+	const auto k_H = 1.0f, K2 = 0.015f; // K2
+	const auto deg360InRad = deg2Rad(360.0f);
+	const auto deg180InRad = deg2Rad(180.0f);
 	auto CPrimeProduct = CPrime1 * CPrime2;
 	double hPrime1;
-	if (lab1.B == 0 && a1Prime == 0)
+	if (rint(lab1.B) == 0 && rint(a1Prime) == 0)
 		hPrime1 = 0.0;
 	else {
 		hPrime1 = atan2(lab1.B, a1Prime);
@@ -126,7 +126,7 @@ double CIELABConvertor::H_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2, co
 			hPrime1 += deg360InRad;
 	}
 	double hPrime2;
-	if (lab2.B == 0 && a2Prime == 0)
+	if (rint(lab2.B) == 0 && rint(a2Prime) == 0)
 		hPrime2 = 0.0;
 	else {
 		hPrime2 = atan2(lab2.B, a2Prime);
@@ -138,7 +138,7 @@ double CIELABConvertor::H_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2, co
 			hPrime2 += deg360InRad;
 	}
 	double deltahPrime;
-	if (CPrimeProduct == 0)
+	if (rint(CPrimeProduct) == 0)
 		deltahPrime = 0;
 	else {
 		/* Avoid the fabs() call */
@@ -151,7 +151,7 @@ double CIELABConvertor::H_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2, co
 
 	auto deltaHPrime = 2.0 * _sqrt(CPrimeProduct) * sin(deltahPrime / 2.0);
 	auto hPrimeSum = hPrime1 + hPrime2;
-	if ((CPrime1 * CPrime2) == 0) {
+	if (rint(CPrime1 * CPrime2) == 0) {
 		barhPrime = hPrimeSum;
 	}
 	else {
@@ -171,19 +171,19 @@ double CIELABConvertor::H_prime_div_k_L_S_L(const Lab& lab1, const Lab& lab2, co
 		(0.32 * cos((3.0 * barhPrime) + deg2Rad(6.0))) -
 		(0.20 * cos((4.0 * barhPrime) - deg2Rad(63.0)));
 	auto S_H = 1 + (K2 * barCPrime * T);
-	return deltaHPrime / (k_H * S_H);
+	return (float) (deltaHPrime / (k_H * S_H));
 }
 
-double CIELABConvertor::R_T(const double barCPrime, const double barhPrime, const double C_prime_div_k_L_S_L, const double H_prime_div_k_L_S_L)
+float CIELABConvertor::R_T(const double barCPrime, const double barhPrime, const double C_prime_div_k_L_S_L, const double H_prime_div_k_L_S_L)
 {
-	const double pow25To7 = 6103515625.0; /* pow(25, 7) */
-	auto deltaTheta = deg2Rad(30.0) * exp(-pow((barhPrime - deg2Rad(275.0)) / deg2Rad(25.0), 2.0));
+	const auto pow25To7 = 6103515625.0; /* pow(25, 7) */
+	auto deltaTheta = deg2Rad(30.0f) * exp(-pow((barhPrime - deg2Rad(275.0f)) / deg2Rad(25.0f), 2.0));
 	auto R_C = 2.0 * _sqrt(pow(barCPrime, 7.0) / (pow(barCPrime, 7.0) + pow25To7));
 	auto R_T = -sin(2.0 * deltaTheta) * R_C;
-	return R_T * C_prime_div_k_L_S_L * H_prime_div_k_L_S_L;
+	return (float) (R_T * C_prime_div_k_L_S_L * H_prime_div_k_L_S_L);
 }
 
-double CIELABConvertor::CIEDE2000(const Lab& lab1, const Lab& lab2)
+float CIELABConvertor::CIEDE2000(const Lab& lab1, const Lab& lab2)
 {
 	auto deltaL_prime_div_k_L_S_L = L_prime_div_k_L_S_L(lab1, lab2);
 	double a1Prime, a2Prime, CPrime1, CPrime2;
@@ -191,11 +191,10 @@ double CIELABConvertor::CIEDE2000(const Lab& lab1, const Lab& lab2)
 	double barCPrime, barhPrime;
 	auto deltaH_prime_div_k_L_S_L = H_prime_div_k_L_S_L(lab1, lab2, a1Prime, a2Prime, CPrime1, CPrime2, barCPrime, barhPrime);
 	auto deltaR_T = R_T(barCPrime, barhPrime, deltaC_prime_div_k_L_S_L, deltaH_prime_div_k_L_S_L);
-	return
-		pow(deltaL_prime_div_k_L_S_L, 2.0) +
+	return (float) (pow(deltaL_prime_div_k_L_S_L, 2.0) +
 		pow(deltaC_prime_div_k_L_S_L, 2.0) +
 		pow(deltaH_prime_div_k_L_S_L, 2.0) +
-		deltaR_T;
+		deltaR_T);
 }
 
 double CIELABConvertor::Y_Diff(const Color& c1, const Color& c2)
@@ -206,7 +205,7 @@ double CIELABConvertor::Y_Diff(const Color& c1, const Color& c2)
 		auto sb = gammaToLinear(c.GetB());
 		return sr * 0.2126 + sg * 0.7152 + sb * 0.0722;
 	};
-		
+
 	auto y = color2Y(c1);
 	auto y2 = color2Y(c2);
 	return abs(y2 - y) * XYZ_WHITE_REFERENCE_Y;
