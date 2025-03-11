@@ -410,7 +410,7 @@ namespace PnnQuant
 
 		if (nMaxColors > 256) {
 			auto qPixels = make_unique<ARGB[]>(pixels.size());
-			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nMaxColors, ditherFn, GetColorIndex, qPixels.get(), saliencies.data(), weight);
+			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nMaxColors, ditherFn, GetColorIndex, qPixels.get(), saliencies.data(), weight, dither);
 
 			closestMap.clear();
 			nearestMap.clear();
@@ -418,9 +418,9 @@ namespace PnnQuant
 		}
 
 		auto qPixels = make_unique<unsigned short[]>(pixels.size());
-		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nMaxColors, ditherFn, GetColorIndex, qPixels.get(), saliencies.data(), weight);
+		Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nMaxColors, ditherFn, GetColorIndex, qPixels.get(), saliencies.data(), weight, dither);
 
-		if (!dither)
+		if (!dither && nMaxColors > 32)
 			BlueNoise::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette, nMaxColors, ditherFn, GetColorIndex, qPixels.get());
 
 		if (m_transparentPixelIndex >= 0) {
