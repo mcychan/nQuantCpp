@@ -304,7 +304,7 @@ namespace Peano
 			beta *= .95f;
 		if (m_nMaxColor > 64 || (m_nMaxColor > 4 && weight > .02))
 			beta *= .4f;
-		DITHER_MAX = weight < .01 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
+		DITHER_MAX = weight < .015 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		auto edge = m_hasAlpha ? 1 : exp(weight) + .25;
 		auto deviation = !m_hasAlpha && weight > .002 ? .25 : 1;
 		ditherMax = (m_hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge * deviation) : DITHER_MAX;
