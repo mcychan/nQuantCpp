@@ -88,9 +88,13 @@ namespace Peano
 		m_weights[0] += 1.0f - weight;
 	}
 
-	inline int compare(const ErrorBox& o1, const ErrorBox& o2)
+	int compare(const ErrorBox& o1, const ErrorBox& o2)
 	{
-		return sign(o1.yDiff - o2.yDiff);
+		if (o2.yDiff < o1.yDiff)
+			return -1;
+		if (o2.yDiff > o1.yDiff)
+			return 1;
+		return 0;
 	}
 
 	void ditherPixel(int x, int y)
@@ -305,7 +309,7 @@ namespace Peano
 		DITHER_MAX = weight < .015 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		auto edge = m_hasAlpha ? 1 : exp(weight) + .25;
 		auto deviation = !m_hasAlpha && weight > .002 ? .25 : 1;
-		ditherMax = (m_hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge * deviation) : DITHER_MAX;
+		ditherMax = (m_hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge * deviation) : (BYTE) (DITHER_MAX * exp(1.0));
 		int density = m_nMaxColor > 16 ? 3200 : 1500;
 		if (m_nMaxColor / weight > 5000 && (weight > .045 || (weight > .01 && m_nMaxColor < 64)))
 			ditherMax = (BYTE)sqr(5 + edge);
