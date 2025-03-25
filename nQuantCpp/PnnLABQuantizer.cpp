@@ -326,18 +326,14 @@ namespace PnnLABQuant
 
 		/* Fill palette */
 		short k = 0;
-		for (int i = 0;; ++k) {
+		for (int i = 0; k < nMaxColors; ++k) {
 			CIELABConvertor::Lab lab1;
 			lab1.alpha = (hasSemiTransparency || m_transparentPixelIndex > -1) ? rint(bins[i].ac) : BYTE_MAX;
 			lab1.L = bins[i].Lc, lab1.A = bins[i].Ac, lab1.B = bins[i].Bc;
 			pPalette[k] = CIELABConvertor::LAB2RGB(lab1);
 
-			if (!(i = bins[i].fw))
-				break;
+			i = bins[i].fw;
 		}
-
-		if (k < nMaxColors - 1)
-			nMaxColors = k + 1;
 	}
 
 	unsigned short PnnLABQuantizer::nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
@@ -431,6 +427,9 @@ namespace PnnLABQuant
 
 	unsigned short PnnLABQuantizer::closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
+		if (PG < coeffs[0][1] && BlueNoise::TELL_BLUE_NOISE[pos & 4095] > -88)
+			return nearestColorIndex(pPalette, nMaxColors, argb, pos);
+
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
 			return nearestColorIndex(pPalette, nMaxColors, argb, pos);
@@ -439,11 +438,7 @@ namespace PnnLABQuant
 		auto got = closestMap.find(argb);
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;
-			
-			int start = 0;
-			if(c.GetA() > 0xE0 && BlueNoise::TELL_BLUE_NOISE[pos & 4095] > -88)
-				start = 1;
-			
+
 			for (UINT k = 0; k < nMaxColors; ++k) {
 				Color c2(pPalette[k]);
 				
@@ -459,12 +454,10 @@ namespace PnnLABQuant
 				if (err >= closest[3])
 					continue;
 
-				if (hasSemiTransparency) {
+				if (hasSemiTransparency)
 					err += PA * sqr(c2.GetA() - c.GetA());
-					start = 1;
-				}
-				
-				for (int i = start; i < 3; ++i) {
+
+				for (int i = 0; i < 3; ++i) {
 					err += ratio * sqr(coeffs[i][0] * (c2.GetR() - c.GetR()));
 					if (err >= closest[3])
 						break;
@@ -498,14 +491,11 @@ namespace PnnLABQuant
 		else
 			closest = got->second;
 
-		auto MAX_ERR = nMaxColors;
-		if(PG < coeffs[0][1] && BlueNoise::TELL_BLUE_NOISE[pos & 4095] > -88)
-			return nearestColorIndex(pPalette, nMaxColors, argb, pos);
-
 		int idx = 1;
 		if (closest[2] == 0 || (rand() % (int)ceil(closest[3] + closest[2])) <= closest[3])
 			idx = 0;
 
+		auto MAX_ERR = nMaxColors;
 		if (closest[idx + 2] >= MAX_ERR || (hasAlpha() && closest[idx] == 0))
 			return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 		return closest[idx];

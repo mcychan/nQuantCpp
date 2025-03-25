@@ -237,16 +237,12 @@ namespace PnnQuant
 
 		/* Fill palette */
 		UINT k = 0;
-		for (int i = 0;; ++k) {
+		for (int i = 0; k < nMaxColors; ++k) {
 			auto alpha = (hasSemiTransparency || m_transparentPixelIndex > -1) ? rint(bins[i].ac) : BYTE_MAX;
 			pPalette[k] = Color::MakeARGB(alpha, (int) bins[i].rc, (int) bins[i].gc, (int) bins[i].bc);
 
-			if (!(i = bins[i].fw))
-				break;
+			i = bins[i].fw;
 		}
-
-		if (k < nMaxColors - 1)
-			nMaxColors = k + 1;
 	}
 
 	unsigned short nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
