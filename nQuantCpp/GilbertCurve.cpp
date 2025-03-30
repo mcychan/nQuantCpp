@@ -322,7 +322,7 @@ namespace Peano
 		errorq.clear();
 		weight = abs(weight);
 		margin = weight < .0025 ? 12 : weight < .004 ? 8 : 6;
-		sortedByYDiff = !m_hasAlpha && m_saliencies && m_nMaxColor >= 128 && weight >= .052;
+		sortedByYDiff = m_saliencies && m_nMaxColor >= 128 && (!m_hasAlpha || weight < .18);
 		beta = m_nMaxColor > 4 ? (float) (.6f - .00625f * m_nMaxColor) : 1;
 		if (m_nMaxColor > 4) {
 			auto boundary = .005 - .0000625 * m_nMaxColor;
