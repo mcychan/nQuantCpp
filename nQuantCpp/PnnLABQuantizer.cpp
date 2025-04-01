@@ -325,7 +325,7 @@ namespace PnnLABQuant
 		}
 
 		/* Fill palette */
-		short k = 0;
+		UINT k = 0;
 		for (int i = 0; k < nMaxColors; ++k) {
 			CIELABConvertor::Lab lab1;
 			lab1.alpha = (hasSemiTransparency || m_transparentPixelIndex > -1) ? rint(bins[i].ac) : BYTE_MAX;
