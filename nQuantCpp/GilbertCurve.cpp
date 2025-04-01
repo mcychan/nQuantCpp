@@ -144,7 +144,7 @@ namespace Peano
 		return m_lookup[offset] - 1;
 	}
 
-	void ditherPixel(int x, int y)
+	void diffusePixel(int x, int y)
 	{
 		int bidx = x + y * m_width;
 		Color pixel(m_image[bidx]);
@@ -213,9 +213,6 @@ namespace Peano
 		auto diffuse = BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > thresold;
 		error.yDiff = sortedByYDiff ? CIELABConvertor::Y_Diff(pixel, c2) : 1;
 		auto illusion = !diffuse && BlueNoise::TELL_BLUE_NOISE[(int)(error.yDiff * 4096) & 4095] > thresold;
-		auto yDiff = 1.0;
-		if (!m_saliencies && !sortedByYDiff)
-			yDiff = CIELABConvertor::Y_Diff(pixel, c2);
 
 		auto unaccepted = false;
 		int errLength = denoise ? error.length() - 1 : 0;
@@ -262,7 +259,7 @@ namespace Peano
 
 		if (h == 1) {
 			for (int i = 0; i < w; ++i) {
-				ditherPixel(x, y);
+				diffusePixel(x, y);
 				x += dax;
 				y += day;
 			}
@@ -271,7 +268,7 @@ namespace Peano
 
 		if (w == 1) {
 			for (int i = 0; i < h; ++i) {
-				ditherPixel(x, y);
+				diffusePixel(x, y);
 				x += dbx;
 				y += dby;
 			}
