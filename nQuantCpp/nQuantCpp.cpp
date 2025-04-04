@@ -231,7 +231,7 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 	else if (algorithm == L"OTSU") {
 		nMaxColors = 2;
 		OtsuThreshold::Otsu otsu;
-		bSucceeded = otsu.ConvertGrayScaleToBinary(pSource.get(), pDest.get(), dither);
+		bSucceeded = otsu.ConvertGrayScaleToBinary(pSource.get(), pDest.get(), false, dither);
 	}
 
 	if (!bSucceeded)
