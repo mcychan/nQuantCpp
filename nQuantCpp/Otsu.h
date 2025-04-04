@@ -23,6 +23,6 @@ namespace OtsuThreshold
 	{
 		public:
 			static Bitmap* ConvertToGrayScale(Bitmap* pSrcImg);
-			bool ConvertGrayScaleToBinary(Bitmap* pSrcImg, Bitmap* pDest, bool isGrayscale = false);
+			bool ConvertGrayScaleToBinary(Bitmap* pSrcImg, Bitmap* pDest, bool isGrayscale = false, bool dither = true);
 	};
 }

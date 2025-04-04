@@ -109,7 +109,7 @@ namespace OtsuThreshold
 		}
 	}
 
-	vector<ARGB> cannyFilter(const UINT width, const vector<ARGB>& pixelsGray, double lowerThreshold, double higherThreshold) {
+	vector<ARGB> cannyFilter(const UINT width, const vector<ARGB>& pixelsGray, double lowerThreshold, double higherThreshold, bool dither) {
 		const auto height = pixelsGray.size() / width;
 		const auto area = (size_t)(width * height);
 
@@ -222,12 +222,10 @@ namespace OtsuThreshold
 					const int center = i * width + j;
 					if (G[center] < minThreshold)
 						G[center] = 0;
-					else if (G[center] >= maxThreshold)
-						continue;
 					else if (G[center] < maxThreshold) {
 						G[center] = 0;
 						for (int x = -1; x <= 1; ++x) {
-							for (int y = -1; y <= 1; y++) {
+							for (int y = -1; y <= 1; ++y) {
 								if (x == 0 && y == 0)
 									continue;
 								if (G[center + x * width + y] >= maxThreshold) {
@@ -245,7 +243,7 @@ namespace OtsuThreshold
 					pixelsCanny[center] = Color::MakeARGB(c.GetA(), grey, grey, grey);
 				}
 			}
-		} while (k++ < 100);
+		} while (k++ < 100 && dither);
 		return pixelsCanny;
 	}
 
@@ -385,7 +383,7 @@ namespace OtsuThreshold
 	}
 
 
-	bool Otsu::ConvertGrayScaleToBinary(Bitmap* pSrcImg, Bitmap* pDest, bool isGrayscale)
+	bool Otsu::ConvertGrayScaleToBinary(Bitmap* pSrcImg, Bitmap* pDest, bool isGrayscale, bool dither)
 	{		
 		const auto bitmapWidth = pSrcImg->GetWidth();
 		const auto bitmapHeight = pSrcImg->GetHeight();
@@ -399,8 +397,12 @@ namespace OtsuThreshold
 			convertToGrayScale(pixels, pixelsGray);
 
 		auto otsuThreshold = getOtsuThreshold(pixelsGray);
-		auto lowerThreshold = 0.03, higherThreshold = 0.1;
-		pixels = cannyFilter(bitmapWidth, pixelsGray, lowerThreshold, higherThreshold);
+		auto lowerThreshold = .03, higherThreshold = .1;
+		if(!dither) {
+			lowerThreshold = otsuThreshold / 3.0;
+			higherThreshold = otsuThreshold;
+		}
+		pixels = cannyFilter(bitmapWidth, pixelsGray, lowerThreshold, higherThreshold, dither);
 		threshold(pixelsGray, pixels, otsuThreshold);
 
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + 2 * sizeof(ARGB));

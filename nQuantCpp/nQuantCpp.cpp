@@ -4,9 +4,7 @@
 #include "stdafx.h"
 #include <tchar.h>
 #include <chrono>
-#ifdef _WIN32
 #include <io.h>
-#endif
 #include <iostream>
 #include <fcntl.h>
 #include <filesystem>
@@ -233,7 +231,7 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 	else if (algorithm == L"OTSU") {
 		nMaxColors = 2;
 		OtsuThreshold::Otsu otsu;
-		bSucceeded = otsu.ConvertGrayScaleToBinary(pSource.get(), pDest.get());
+		bSucceeded = otsu.ConvertGrayScaleToBinary(pSource.get(), pDest.get(), dither);
 	}
 
 	if (!bSucceeded)
@@ -346,9 +344,7 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 
 int wmain(int argc, wchar_t** argv)
 {
-#ifdef _WIN32
 	_setmode(_fileno(stdout), _O_U16TEXT);
-#endif
 
 #ifndef _DEBUG
 	if (argc <= 1) {
