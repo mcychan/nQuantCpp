@@ -128,7 +128,7 @@ namespace Peano
 				c2 = BlueNoise::diffuse(c1, m_pPalette[qPixelIndex], kappa, strength, x, y);
 			}
 		}
-		else if (m_nMaxColor > 16 && (CIELABConvertor::Y_Diff(pixel, c2) > (beta * acceptedDiff) || CIELABConvertor::U_Diff(pixel, c2) > acceptedDiff)) {
+		else if (m_nMaxColor > 4 && (CIELABConvertor::Y_Diff(pixel, c2) > (beta * acceptedDiff) || CIELABConvertor::U_Diff(pixel, c2) > acceptedDiff)) {
 			if(beta < .3f && (m_nMaxColor <= 32 || m_saliencies[bidx] < beta))
 				c2 = BlueNoise::diffuse(c2, m_pPalette[qPixelIndex], beta * .4f * m_saliencies[bidx], strength, x, y);
 			else
