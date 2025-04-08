@@ -12,6 +12,8 @@
 		#define BYTE_MAX UCHAR_MAX
 	#endif
 #endif
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 class CIELABConvertor
 {

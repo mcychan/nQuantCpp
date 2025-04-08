@@ -1,9 +1,7 @@
 ﻿#include "stdafx.h"
 #include "CIELABConvertor.h"
 
-#define _USE_MATH_DEFINES
 #include <algorithm>
-#include <math.h>
 #include <iostream>
 
 using namespace std;
