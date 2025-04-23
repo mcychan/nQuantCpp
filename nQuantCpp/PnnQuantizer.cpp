@@ -44,6 +44,10 @@ namespace PnnQuant
 		auto wg = bin1.gc;
 		auto wb = bin1.bc;
 
+		int start = 0;
+		if (BlueNoise::TELL_BLUE_NOISE[idx & 4095] > -88)
+			start = (PG < coeffs[0][1]) ? 3 : 1;
+
 		for (int i = bin1.fw; i; i = bins[i].fw) {
 			auto n2 = bins[i].cnt, nerr2 = (n1 * n2) / (n1 + n2);
 			if (nerr2 >= err)
@@ -68,7 +72,7 @@ namespace PnnQuant
 			if (nerr >= err)
 				continue;
 
-			for (int j = 0; j < 3; ++j) {
+			for (int j = start; j < 3; ++j) {
 				nerr += nerr2 * ratio * sqr(coeffs[j][0] * (bins[i].rc - wr));
 				if (nerr >= err)
 					break;
