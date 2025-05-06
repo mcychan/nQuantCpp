@@ -137,7 +137,9 @@ namespace Peano
 				c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		}
 
-		if (DITHER_MAX < 16 && m_saliencies[bidx] < .6f && CIELABConvertor::Y_Diff(pixel, c2) > margin - 1)
+		if (DITHER_MAX < 16 && m_nMaxColor > 4 && m_saliencies[bidx] < .6f && CIELABConvertor::Y_Diff(pixel, c2) > margin - 1)
+			c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+		if (beta > 1 && CIELABConvertor::Y_Diff(pixel, c2) > DITHER_MAX)
 			c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 
 		int offset = m_getColorIndexFn(c2);
