@@ -186,10 +186,7 @@ namespace PnnLABQuant
 		weight = min(0.9, nMaxColors * 1.0 / maxbins);
 		if ((nMaxColors < 16 && weight < .0075) || weight < .001 || (weight > .0015 && weight < .0022))
 			quan_rt = 2;
-		if (weight < .04 && PG < 1 && PG >= coeffs[0][1]) {
-			auto delta = exp(1.75) * weight;
-			PG -= delta;
-			PB += delta;
+		if (weight < .03 && PG < 1 && PG >= coeffs[0][1]) {
 			if (nMaxColors >= 64)
 				quan_rt = 0;
 		}
@@ -350,7 +347,7 @@ namespace PnnLABQuant
 		if (nMaxColors > 2 && hasAlpha() && c.GetA() > alphaThreshold)
 			k = 1;
 
-		double mindist = INT_MAX;
+		double mindist = 1e100;
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
 		
@@ -504,8 +501,6 @@ namespace PnnLABQuant
 	bool PnnLABQuantizer::quantize_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
 		auto NearestColorIndex = [this, nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
-			if (hasAlpha() || nMaxColors < 64)
-				return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 			return closestColorIndex(pPalette, nMaxColors, argb, pos);
 		};
 
