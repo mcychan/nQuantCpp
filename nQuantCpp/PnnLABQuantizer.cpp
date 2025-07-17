@@ -549,7 +549,7 @@ namespace PnnLABQuant
 		if (hasSemiTransparency)
 			weight *= -1;
 
-		if (dither && !hasSemiTransparency && saliencies.empty() && (nMaxColors <= 128 || weight > .99)) {
+		if (dither && !hasSemiTransparency && saliencies.empty() && (nMaxColors <= 256 || weight > .99)) {
 			saliencies.resize(pixels.size());
 			auto saliencyBase = .1f;
 			for (int i = 0; i < pixels.size(); ++i) {
