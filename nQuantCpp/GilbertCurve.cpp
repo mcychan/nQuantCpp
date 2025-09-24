@@ -115,10 +115,6 @@ namespace Peano
 		else if (m_nMaxColor <= 4 || CIELABConvertor::Y_Diff(pixel, c2) < (2 * acceptedDiff)) {
 			if (m_nMaxColor <= 128 || BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > 0)
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * .5f / m_saliencies[bidx], strength, x, y);
-			if (m_nMaxColor <= 4 && CIELABConvertor::U_Diff(pixel, c2) > (8 * acceptedDiff)) {
-				Color c1 = m_saliencies[bidx] > .65f ? pixel : Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-				c2 = BlueNoise::diffuse(c1, m_pPalette[qPixelIndex], beta * m_saliencies[bidx], strength, x, y);
-			}
 			if (CIELABConvertor::U_Diff(pixel, c2) > (margin * acceptedDiff))
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta / m_saliencies[bidx], strength, x, y);
 		}
