@@ -43,6 +43,7 @@ namespace PnnLABQuant
 
 			void find_nn(pnnbin* bins, int idx, bool texicab);
 			unsigned short closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos);
+			unsigned short hybridColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos);
 			bool quantize_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither);
 
 		public:
