@@ -128,7 +128,8 @@ namespace PnnLABQuant
 		auto errors = _objectives;
 		fill(errors.begin(), errors.end(), 0);
 
-		int threshold = maxRatio < .1 ? -64 : -112;
+		int threshold = (maxRatio < .1 || _nMaxColors < 32) ? -64 : -112;
+
 		for (auto& pixels : m_pixelsList) {
 			for (int i = 0; i < pixels.size(); ++i)
 			{
