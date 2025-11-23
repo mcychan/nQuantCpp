@@ -121,7 +121,7 @@ namespace Peano
 
 		if (m_nMaxColor < 3 || margin > 6) {
 			auto delta = (m_weight > .0015 && m_weight < .0025) ? beta : M_PI;
-			if (m_nMaxColor > 4 && (CIELABConvertor::Y_Diff(pixel, c2) > (delta * acceptedDiff) || CIELABConvertor::U_Diff(pixel, c2) > (delta * acceptedDiff))) {
+			if (m_nMaxColor > 4 && CIELABConvertor::Y_Diff(pixel, c2) > (delta * acceptedDiff)) {
 				auto kappa = m_saliencies[bidx] < .4f ? beta * .4f / m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
 				Color c1 = m_saliencies[bidx] < .6f ? pixel : Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 				c2 = BlueNoise::diffuse(c1, m_pPalette[qPixelIndex], kappa, strength, x, y);
