@@ -159,8 +159,8 @@ namespace PnnLABQuant
 			tb.Ac += lab1.A;
 			tb.Bc += lab1.B;
 			tb.cnt += 1.0;
-			if(!saliencies.empty() && lab1.alpha > alphaThreshold)
-				saliencies[i] = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f;
+			if(!saliencies.empty())
+				saliencies[i] = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f * lab1.alpha / 255.0f;
 		}
 
 		/* Cluster nonempty bins at one end of array */
@@ -607,7 +607,7 @@ namespace PnnLABQuant
 		if (hasSemiTransparency)
 			weight *= -1;
 
-		if (dither && !hasSemiTransparency && saliencies.empty() && (nMaxColors <= 256 || weight > .99)) {
+		if (dither && saliencies.empty() && (nMaxColors <= 256 || weight > .99)) {
 			saliencies.resize(pixels.size());
 			auto saliencyBase = .1f;
 			for (int i = 0; i < pixels.size(); ++i) {
@@ -617,7 +617,7 @@ namespace PnnLABQuant
 				CIELABConvertor::Lab lab1;
 				getLab(c, lab1);
 
-				saliencies[i] = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f;
+				saliencies[i] = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f * lab1.alpha / 255.0f;
 			}
 		}
 

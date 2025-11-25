@@ -171,7 +171,7 @@ namespace Peano
 
 		Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		auto qPixelIndex = m_qPixels[bidx];
-		if (m_saliencies != nullptr && m_dither && !sortedByYDiff)
+		if (m_saliencies != nullptr && m_dither && !sortedByYDiff && pixel.GetA() < a_pix)
 			qPixelIndex = ditherPixel(x, y, c2, beta);
 		else if (m_nMaxColor <= 32 && a_pix > 0xF0)
 		{
@@ -220,7 +220,7 @@ namespace Peano
 		for (int j = 0; j < errLength; ++j) {
 			if (abs(error.p[j]) >= ditherMax) {
 				if (sortedByYDiff && m_saliencies != nullptr)
-					unaccepted = true;
+					unaccepted = pixel.GetA() < a_pix;
 
 				if (diffuse)
 					error[j] = (float)tanh(error.p[j] / maxErr * 20) * (ditherMax - 1);
@@ -231,7 +231,7 @@ namespace Peano
 			}
 
 			if (sortedByYDiff && m_saliencies == nullptr && abs(error.p[j]) >= DITHER_MAX)
-				unaccepted = true;
+				unaccepted = pixel.GetA() < a_pix;
 		}
 
 		if (unaccepted) {
@@ -325,7 +325,7 @@ namespace Peano
 		m_ditherFn = ditherFn;
 		m_getColorIndexFn = getColorIndexFn;
 		m_hasAlpha = weight < 0;
-		m_saliencies = m_hasAlpha ? nullptr : saliencies;
+		m_saliencies = saliencies;
 
 		errorq.clear();
 		weight = m_weight = abs(weight);
