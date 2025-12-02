@@ -120,10 +120,11 @@ namespace Peano
 		}
 
 		if (m_nMaxColor < 3 || margin > 6) {
-			auto delta = (m_weight > .0015 && m_weight < .0025) ? beta : M_PI;
-			if (m_nMaxColor > 4 && CIELABConvertor::Y_Diff(pixel, c2) > (delta * acceptedDiff)) {
-				auto kappa = m_saliencies[bidx] < .4f ? beta * .4f / m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
-				Color c1 = m_saliencies[bidx] < .6f ? pixel : Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+			if (m_nMaxColor > 4 && CIELABConvertor::Y_Diff(pixel, c2) > (beta * acceptedDiff)) {
+				auto kappa = m_saliencies[bidx] < .4f ? beta * .4f * m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
+				Color c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+				if (m_weight >= .0015 && m_saliencies[bidx] < .6)
+					c1 = pixel;
 				c2 = BlueNoise::diffuse(c1, m_pPalette[qPixelIndex], kappa, strength, x, y);
 			}
 		}
@@ -337,7 +338,7 @@ namespace Peano
 			beta = (float) (weight > boundary ? max(.25, beta - m_nMaxColor * weight) : min(1.5, beta + m_nMaxColor * weight));
 			if (m_nMaxColor > 16 && m_nMaxColor <= 32 && weight < .003)
 				beta += .075f;
-			else if (m_nMaxColor > 32 && m_nMaxColor < 256)
+			else if (weight < .0015 || (m_nMaxColor > 32 && m_nMaxColor < 256))
 				beta += .1f;
 			if (m_nMaxColor >= 64 && (weight > .012 && weight < .0125) || (weight > .025 && weight < .03))
 				beta *= 2;
