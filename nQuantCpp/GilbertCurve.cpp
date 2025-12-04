@@ -125,6 +125,8 @@ namespace Peano
 				Color c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 				if (m_weight >= .0015 && m_saliencies[bidx] < .6)
 					c1 = pixel;
+				if (CIELABConvertor::Y_Diff(c1, c2) > (beta * M_PI * acceptedDiff))
+					kappa = beta * .55f / m_saliencies[bidx];
 				c2 = BlueNoise::diffuse(c1, m_pPalette[qPixelIndex], kappa, strength, x, y);
 			}
 		}
