@@ -175,8 +175,12 @@ namespace Peano
 
 		Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		auto qPixelIndex = m_qPixels[bidx];
-		if (m_saliencies != nullptr && m_dither && !sortedByYDiff && (!m_hasAlpha || pixel.GetA() < a_pix))
-			qPixelIndex = ditherPixel(x, y, c2, beta);
+		if (m_saliencies != nullptr && m_dither && !sortedByYDiff && (!m_hasAlpha || pixel.GetA() < a_pix)) {
+			if (m_nMaxColor > 32 && m_saliencies[bidx] > .99f)
+				qPixelIndex = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx);
+			else
+				qPixelIndex = ditherPixel(x, y, c2, beta);
+		}
 		else if (m_nMaxColor <= 32 && a_pix > 0xF0)
 		{
 			int offset = m_getColorIndexFn(c2);
