@@ -98,6 +98,17 @@ namespace Peano
 		return 0;
 	}
 
+	float normalDistribution(float x) {
+		const float mean = .5f, stdDev = .1f;
+
+		// Calculate the probability density function (PDF)
+		auto exponent = -pow(x - mean, 2) / (2 * pow(stdDev, 2));
+		auto pdf = (1 / (stdDev * _sqrt(2 * M_PI))) * exp(exponent);
+		auto maxPdf = 1 / (stdDev * _sqrt(2 * M_PI)); // Peak at x = mean
+		auto scaledPdf = (pdf / maxPdf) * 2; // Scale peak to y = 2
+		return (float) max(0.0, min(2.0, scaledPdf));
+	}
+
 	unsigned short ditherPixel(int x, int y, Color c2, float beta)
 	{
 		int bidx = x + y * m_width;
@@ -123,10 +134,14 @@ namespace Peano
 			if (m_nMaxColor > 4 && CIELABConvertor::Y_Diff(pixel, c2) > (beta * acceptedDiff)) {
 				auto kappa = m_saliencies[bidx] < .4f ? beta * .4f * m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
 				Color c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
-				if (m_weight >= .0015 && m_saliencies[bidx] < .6)
-					c1 = pixel;
-				if (CIELABConvertor::Y_Diff(c1, c2) > (beta * M_PI * acceptedDiff))
-					kappa = beta * (!sortedByYDiff && m_weight < .0025 ? .55f : .5f) / m_saliencies[bidx];
+				if (m_nMaxColor > 32)
+					kappa = beta * normalDistribution(beta) * m_saliencies[bidx];
+				else {
+					if (m_weight >= .0015 && m_saliencies[bidx] < .6)
+						c1 = pixel;
+					if (CIELABConvertor::Y_Diff(c1, c2) > (beta * M_PI * acceptedDiff))
+						kappa = beta * (!sortedByYDiff && m_weight < .0025 ? .55f : .5f) / m_saliencies[bidx];
+				}
 
 				c2 = BlueNoise::diffuse(c1, m_pPalette[qPixelIndex], kappa, strength, x, y);
 			}
