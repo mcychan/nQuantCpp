@@ -223,7 +223,7 @@ namespace PnnLABQuant
 		}
 		bins[j].cnt = quanFn(bins[j].cnt);
 
-		const bool texicab = quan_rt < 2;
+		const bool texicab = proportional > .0225;
 
 		if (!isGA) {
 			if (hasSemiTransparency)
