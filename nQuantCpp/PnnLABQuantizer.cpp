@@ -126,11 +126,11 @@ namespace PnnLABQuant
 				return[](const float& cnt) { return (float)(int)pow(cnt, 0.75); };
 			if (nMaxColors < 64)
 				return[](const float& cnt) {
-					return (float)(int)_sqrt(cnt);
+				return (float)(int)_sqrt(cnt);
 				};
 			return[](const float& cnt) {
 				return (float)_sqrt(cnt);
-			};
+				};
 		}
 		return[](const float& cnt) { return cnt; };
 	}
@@ -159,7 +159,7 @@ namespace PnnLABQuant
 			tb.Ac += lab1.A;
 			tb.Bc += lab1.B;
 			tb.cnt += 1.0;
-			if(!saliencies.empty())
+			if (!saliencies.empty())
 				saliencies[i] = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f * lab1.alpha / 255.0f;
 		}
 
@@ -184,7 +184,7 @@ namespace PnnLABQuant
 			quan_rt = -1;
 
 		weight = min(0.9, nMaxColors * 1.0 / maxbins);
-		if ((nMaxColors < 16 && weight < .0075) || weight < .001 || (weight > .0014 && weight < .0022))
+		if ((nMaxColors < 16 && weight < .0075) || weight < .001 || (weight > .0015 && weight < .0022))
 			quan_rt = 2;
 		if (weight < (isGA ? .03 : .04) && PG < 1 && PG >= coeffs[0][1]) {
 			if (nMaxColors >= 64)
@@ -223,9 +223,9 @@ namespace PnnLABQuant
 		}
 		bins[j].cnt = quanFn(bins[j].cnt);
 
-		const bool texicab = proportional > .025;
-		
-		if(!isGA) {
+		const bool texicab = quan_rt < 2;
+
+		if (!isGA) {
 			if (hasSemiTransparency)
 				ratio = .5;
 			else if (quan_rt != 0 && nMaxColors < 64) {
@@ -246,7 +246,7 @@ namespace PnnLABQuant
 				ratio = min(1.0, 1 - 1.0 / proportional);
 			else
 				ratio = min(1.0, max(.98, 1 - weight * .7));
-	
+
 			if (!hasSemiTransparency && quan_rt < 0)
 				ratio = min(1.0, weight * exp(1.947));
 		}
@@ -280,14 +280,14 @@ namespace PnnLABQuant
 			/* Use heap to find which bins to merge */
 			for (;;) {
 				auto& tb = bins[b1 = heap[1]]; /* One with least error */
-											   /* Is stored error up to date? */
+				/* Is stored error up to date? */
 				if ((tb.tm >= tb.mtm) && (bins[tb.nn].mtm <= tb.tm))
 					break;
 				if (tb.mtm == USHRT_MAX) /* Deleted node */
 					b1 = heap[1] = heap[heap[0]--];
 				else /* Too old error value */
 				{
-					find_nn(bins.data(), b1, texicab && proportional < 1);
+					find_nn(bins.data(), b1, texicab);
 					tb.tm = i;
 				}
 				/* Push slot down */
@@ -350,7 +350,7 @@ namespace PnnLABQuant
 		double mindist = 1e100;
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
-		
+
 		for (UINT i = k; i < nMaxColors; ++i) {
 			Color c2(pPalette[i]);
 			auto curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) / exp(1.5) : 0;
@@ -434,7 +434,7 @@ namespace PnnLABQuant
 		double mindist = 1e100;
 		CIELABConvertor::Lab lab1, lab2;
 		getLab(c, lab1);
-		
+
 		for (UINT i = k; i < nMaxColors; ++i) {
 			Color c2(pPalette[i]);
 			getLab(c2, lab2);
@@ -496,7 +496,7 @@ namespace PnnLABQuant
 
 			for (UINT k = 0; k < nMaxColors; ++k) {
 				Color c2(pPalette[k]);
-				
+
 				auto err = PR * (1 - ratio) * sqr(c2.GetR() - c.GetR());
 				if (err >= closest[3])
 					continue;
@@ -516,11 +516,11 @@ namespace PnnLABQuant
 					err += ratio * sqr(coeffs[i][0] * (c2.GetR() - c.GetR()));
 					if (err >= closest[3])
 						break;
-						
+
 					err += ratio * sqr(coeffs[i][1] * (c2.GetG() - c.GetG()));
 					if (err >= closest[3])
 						break;
-						
+
 					err += ratio * sqr(coeffs[i][2] * (c2.GetB() - c.GetB()));
 					if (err >= closest[3])
 						break;
@@ -560,9 +560,9 @@ namespace PnnLABQuant
 	{
 		auto NearestColorIndex = [this, nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
 			return closestColorIndex(pPalette, nMaxColors, argb, pos);
-		};
+			};
 
-		
+
 		if (dither)
 			return dither_image(pixels, pPalette, nMaxColors, NearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height);
 
@@ -588,7 +588,7 @@ namespace PnnLABQuant
 	bool PnnLABQuantizer::hasAlpha() const {
 		return m_transparentPixelIndex >= 0;
 	}
-	
+
 	void PnnLABQuantizer::setRatio(double ratioX, double ratioY) {
 		ratio = min(1.0, ratioX);
 		this->ratioY = min(1.0, ratioY);
@@ -623,14 +623,14 @@ namespace PnnLABQuant
 
 		auto GetColorIndex = [&](const Color& c) -> int {
 			return GetARGBIndex(c, hasSemiTransparency, hasAlpha());
-		};
+			};
 		auto NearestColorIndex = [this, nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
 			if (hasAlpha() || nMaxColors <= 4)
 				return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 			if (IsGA() && nMaxColors < 16)
 				return hybridColorIndex(pPalette, nMaxColors, argb, pos);
 			return closestColorIndex(pPalette, nMaxColors, argb, pos);
-		};
+			};
 
 		const auto bitmapHeight = pixels.size() / bitmapWidth;
 
@@ -686,7 +686,7 @@ namespace PnnLABQuant
 			else if (pPalette[k] != m_transparentColor)
 				swap(pPalette[0], pPalette[1]);
 		}
-		
+
 		const auto& pPal = pPalette;
 		return QuantizeImageByPal(pixels, bitmapWidth, pPal, pDest, nMaxColors, dither);
 	}
@@ -695,18 +695,18 @@ namespace PnnLABQuant
 	{
 		const auto bitmapWidth = pSource->GetWidth();
 		const auto bitmapHeight = pSource->GetHeight();
-		const auto area = (size_t) (bitmapWidth * bitmapHeight);
+		const auto area = (size_t)(bitmapWidth * bitmapHeight);
 
 		vector<ARGB> pixels(area);
 		int semiTransCount = 0;
 		grabPixels(pSource, pixels, nMaxColors, hasSemiTransparency);
-		
+
 		if (nMaxColors > 256) {
 			auto pPalettes = make_unique<ARGB[]>(nMaxColors);
 			auto pPalette = pPalettes.get();
 			return QuantizeImage(pixels, bitmapWidth, pPalette, pDest, nMaxColors, dither);
 		}
-		
+
 		auto pPaletteBytes = make_unique<BYTE[]>(sizeof(ColorPalette) + nMaxColors * sizeof(ARGB));
 		auto pPalette = (ColorPalette*)pPaletteBytes.get();
 		pPalette->Count = nMaxColors;
