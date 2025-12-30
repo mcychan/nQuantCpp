@@ -49,8 +49,10 @@ namespace PnnLABQuant
 		}
 		minRatio = (hasSemiTransparency || nMaxColors < 64) ? .0111 : .85;
 		maxRatio = min(1.0, nMaxColors / ((nMaxColors < 64) ? 400.0 : 50.0));
-		if (nMaxColors < 16)
+		if (nMaxColors < 16) {
+			minRatio = -.003;
 			maxRatio = .2;
+		}
 		_dp = maxRatio < .1 ? 10000 : 100;
 	}
 
@@ -206,7 +208,7 @@ namespace PnnLABQuant
 	void PnnLABGAQuantizer::setRatio(double ratioX, double ratioY)
 	{
 		auto difference = abs(ratioX - ratioY);
-		if (difference <= minRatio)
+		if (difference <= abs(minRatio))
 			ratioY = ratioX;
 		_ratioX = min(max(ratioX, minRatio), maxRatio);
 		_ratioY = min(max(ratioY, minRatio), maxRatio);
