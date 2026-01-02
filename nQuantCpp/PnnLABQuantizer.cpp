@@ -1,6 +1,6 @@
 ﻿/* Fast pairwise nearest neighbor based algorithm for multilevel thresholding
 Copyright (C) 2004-2016 Mark Tyler and Dmitry Groshev
-Copyright (c) 2018-2025 Miller Cy Chan
+Copyright (c) 2018-2026 Miller Cy Chan
 * error measure; time used is proportional to number of bins squared - WJ */
 
 #include "stdafx.h"
@@ -440,7 +440,7 @@ namespace PnnLABQuant
 			getLab(c2, lab2);
 
 			auto curdist = 0.0;
-			if (abs(lab2.L - lab1.L) < nMaxColors) {
+			if (abs(lab2.L - lab1.L) < nMaxColors || saliencies[pos] < .2 || saliencies[pos] > .8) {
 				curdist += sqr(lab2.L - lab1.L);
 				if (curdist > mindist)
 					continue;
@@ -482,9 +482,6 @@ namespace PnnLABQuant
 
 	unsigned short PnnLABQuantizer::closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
-		if (PG < coeffs[0][1] && BlueNoise::TELL_BLUE_NOISE[pos & 4095] > -88)
-			return nearestColorIndex(pPalette, nMaxColors, argb, pos);
-
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
 			return nearestColorIndex(pPalette, nMaxColors, argb, pos);
@@ -560,7 +557,7 @@ namespace PnnLABQuant
 	{
 		auto NearestColorIndex = [this, nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
 			return closestColorIndex(pPalette, nMaxColors, argb, pos);
-			};
+		};
 
 
 		if (dither)
@@ -623,14 +620,14 @@ namespace PnnLABQuant
 
 		auto GetColorIndex = [&](const Color& c) -> int {
 			return GetARGBIndex(c, hasSemiTransparency, hasAlpha());
-			};
+		};
 		auto NearestColorIndex = [this, nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
 			if (hasAlpha() || nMaxColors <= 4)
 				return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 			if (IsGA() && nMaxColors < 16)
 				return hybridColorIndex(pPalette, nMaxColors, argb, pos);
 			return closestColorIndex(pPalette, nMaxColors, argb, pos);
-			};
+		};
 
 		const auto bitmapHeight = pixels.size() / bitmapWidth;
 
