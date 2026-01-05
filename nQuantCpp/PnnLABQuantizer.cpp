@@ -439,7 +439,7 @@ namespace PnnLABQuant
 			Color c2(pPalette[i]);
 			getLab(c2, lab2);
 
-			auto curdist = 0.0;
+			auto curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) / exp(1.5) : 0;
 			if (abs(lab2.L - lab1.L) < nMaxColors || saliencies[pos] < .2 || saliencies[pos] > .8) {
 				curdist += sqr(lab2.L - lab1.L);
 				if (curdist > mindist)
@@ -551,7 +551,8 @@ namespace PnnLABQuant
 			idx = 0;
 
 		auto MAX_ERR = nMaxColors;
-		if (closest[idx + 2] >= MAX_ERR || (hasAlpha() && closest[idx] == 0))
+		Color pixel(pPalette[closest[idx]]);
+		if (closest[idx + 2] >= MAX_ERR || closest[idx] == 0 || pixel.GetA() < c.GetA())
 			return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 		return closest[idx];
 	}
@@ -561,7 +562,6 @@ namespace PnnLABQuant
 		auto NearestColorIndex = [this, nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
 			return closestColorIndex(pPalette, nMaxColors, argb, pos);
 		};
-
 
 		if (dither)
 			return dither_image(pixels, pPalette, nMaxColors, NearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height);
@@ -625,7 +625,7 @@ namespace PnnLABQuant
 			return GetARGBIndex(c, hasSemiTransparency, hasAlpha());
 		};
 		auto NearestColorIndex = [this, nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
-			if (hasAlpha() || nMaxColors <= 4)
+			if (nMaxColors <= 4)
 				return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 			if (IsGA() && nMaxColors < 16)
 				return hybridColorIndex(pPalette, nMaxColors, argb, pos);
