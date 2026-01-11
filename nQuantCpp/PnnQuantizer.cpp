@@ -17,8 +17,8 @@ namespace PnnQuant
 	double ratio = .5, weight = 1.0;
 	ARGB m_transparentColor = Color::Transparent;
 	double PR = .299, PG = .587, PB = .114, PA = .3333;
-	unordered_map<ARGB, vector<unsigned short> > closestMap;
-	unordered_map<ARGB, unsigned short > nearestMap;
+	unordered_map<int, vector<unsigned short> > closestMap;
+	unordered_map<int, unsigned short > nearestMap;
 
 	static const float coeffs[3][3] = {
 		{0.299f, 0.587f, 0.114f},
@@ -246,7 +246,8 @@ namespace PnnQuant
 
 	unsigned short nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
-		auto got = nearestMap.find(argb);
+		int offset = GetARGBIndex(argb, hasSemiTransparency, m_transparentPixelIndex >= 0);
+		auto got = nearestMap.find(offset);
 		if (got != nearestMap.end())
 			return got->second;
 
@@ -284,7 +285,7 @@ namespace PnnQuant
 			mindist = curdist;
 			k = i;
 		}
-		nearestMap[argb] = k;
+		nearestMap[offset] = k;
 		return k;
 	}
 
@@ -296,7 +297,8 @@ namespace PnnQuant
 			return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 
 		vector<unsigned short> closest(4);
-		auto got = closestMap.find(argb);
+		int offset = GetARGBIndex(argb, hasSemiTransparency, m_transparentPixelIndex >= 0);
+		auto got = closestMap.find(offset);
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;
 
@@ -336,7 +338,7 @@ namespace PnnQuant
 			if (closest[3] == USHRT_MAX)
 				closest[1] = closest[0];
 
-			closestMap[argb] = closest;
+			closestMap[offset] = closest;
 		}
 		else
 			closest = got->second;
