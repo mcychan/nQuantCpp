@@ -9,7 +9,6 @@ Copyright (c) 2021 - 2025 Miller Cy Chan
 
 #include <memory>
 #include <list>
-#include <algorithm>
 
 namespace Peano
 {
@@ -49,7 +48,6 @@ namespace Peano
 	GetColorIndexFn m_getColorIndexFn;
 	list<ErrorBox> errorq;
 	vector<float> m_weights;
-	unsigned short* m_lookup;
 	static BYTE DITHER_MAX = 9, ditherMax;
 	static int margin, thresold;
 	static const float BLOCK_SIZE = 343.0f;
@@ -164,10 +162,7 @@ namespace Peano
 		if (beta > 1 && CIELABConvertor::Y_Diff(pixel, c2) > DITHER_MAX)
 			c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 
-		int offset = m_getColorIndexFn(c2);
-		if (!m_lookup[offset])
-			m_lookup[offset] = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx) + 1;
-		return m_lookup[offset] - 1;
+		return m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx);
 	}
 
 	void diffusePixel(int x, int y)
@@ -204,10 +199,7 @@ namespace Peano
 		}
 		else if (m_nMaxColor <= 32 && a_pix > 0xF0)
 		{
-			int offset = m_getColorIndexFn(c2);
-			if (!m_lookup[offset])
-				m_lookup[offset] = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx) + 1;
-			qPixelIndex = m_lookup[offset] - 1;
+			qPixelIndex = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx);
 
 			int acceptedDiff = max(2, m_nMaxColor - margin);
 			if (m_saliencies != nullptr && (CIELABConvertor::Y_Diff(pixel, c2) > acceptedDiff || CIELABConvertor::U_Diff(pixel, c2) > (2 * acceptedDiff))) {
@@ -370,6 +362,8 @@ namespace Peano
 				beta += .1f;
 			if (m_nMaxColor >= 64 && (weight > .012 && weight < .0125) || (weight > .025 && weight < .03))
 				beta *= 2;
+			else if (m_nMaxColor > 32 && m_nMaxColor < 64 && weight < .015)
+				beta = .55f;
 		}
 		else
 			beta *= .95f;
@@ -377,9 +371,7 @@ namespace Peano
 		if (m_nMaxColor > 64 || (m_nMaxColor > 4 && weight > .02))
 			beta *= .4f;
 		if (m_nMaxColor > 64 && weight < .02)
-			beta = .2f;
-		else if (m_nMaxColor > 32 && m_nMaxColor < 64 && weight < .015)
-			beta = .55f;
+			beta = .2f;		
 
 		DITHER_MAX = weight < .015 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		auto edge = m_hasAlpha ? 1 : exp(weight) + .25;
@@ -391,8 +383,6 @@ namespace Peano
 		else if (weight < .03 && m_nMaxColor / weight < density && m_nMaxColor >= 16 && m_nMaxColor < 256)
 			ditherMax = (BYTE)sqr(5 + edge);
 		thresold = DITHER_MAX > 9 ? -112 : -64;
-		auto pLookup = make_unique<unsigned short[]>(USHRT_MAX + 1);
-		m_lookup = pLookup.get();
 
 		if (!sortedByYDiff)
 			initWeights(DITHER_MAX);
