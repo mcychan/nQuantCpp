@@ -334,7 +334,7 @@ namespace PnnLABQuant
 
 	unsigned short PnnLABQuantizer::nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
-		int offset = GetARGBIndex(argb, hasSemiTransparency, hasAlpha());
+		int offset = nMaxColors > 32 ? argb : GetARGBIndex(argb, hasSemiTransparency, hasAlpha());
 		auto got = nearestMap.find(offset);
 		if (got != nearestMap.end())
 			return got->second;
@@ -424,7 +424,7 @@ namespace PnnLABQuant
 
 	unsigned short PnnLABQuantizer::hybridColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
-		int offset = GetARGBIndex(argb, hasSemiTransparency, hasAlpha());
+		int offset = nMaxColors > 32 ? argb : GetARGBIndex(argb, hasSemiTransparency, hasAlpha());
 		auto got = nearestMap.find(offset);
 		if (got != nearestMap.end())
 			return got->second;
@@ -491,7 +491,7 @@ namespace PnnLABQuant
 			return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 
 		vector<unsigned short> closest(4);
-		int offset = GetARGBIndex(argb, hasSemiTransparency, hasAlpha());
+		int offset = nMaxColors > 32 ? argb : GetARGBIndex(argb, hasSemiTransparency, hasAlpha());
 		auto got = closestMap.find(offset);
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;

@@ -257,7 +257,7 @@ namespace Peano
 
 		if (unaccepted) {
 			if (m_saliencies != nullptr)
-				qPixelIndex = ditherPixel(x, y, c2, 1.25f);
+				qPixelIndex = ditherPixel(x, y, c2, beta);
 			else if (CIELABConvertor::Y_Diff(pixel, c2) > 3 && CIELABConvertor::U_Diff(pixel, c2) > 3) {
 				auto strength = 1 / 3.0f;
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], strength, strength, x, y);
