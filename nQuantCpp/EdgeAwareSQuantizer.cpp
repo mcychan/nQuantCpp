@@ -773,10 +773,11 @@ namespace EdgeAwareSQuant
 		}
 
 		if (!dither && nMaxColors > 2) {
+			auto weight = hasSemiTransparency ? -2.5 : 2.5;
 			if(nMaxColors < 32)
-				Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette->Entries, nMaxColors, nearestColorIndex, GetColorIndex, qPixels.get(), saliencyMap.get(), .25);
+				Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette->Entries, nMaxColors, nearestColorIndex, GetColorIndex, qPixels.get(), saliencyMap.get(), weight);
 			else
-				Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette->Entries, nMaxColors, nearestColorIndex, GetColorIndex, qPixels.get(), nullptr, .25);
+				Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette->Entries, nMaxColors, nearestColorIndex, GetColorIndex, qPixels.get(), nullptr, weight);
 			nearestMap.clear();
 		}
 

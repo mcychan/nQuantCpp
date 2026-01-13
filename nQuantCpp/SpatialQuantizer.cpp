@@ -1062,7 +1062,8 @@ namespace SpatialQuant
 				if (lab1.alpha > alphaThreshold)
 					saliencies[i] = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f;
 			}
-			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette->Entries, nMaxColors, nearestColorIndex, GetColorIndex, qPixels.get(), saliencies.data());
+			auto weight = hasSemiTransparency ? -1.5 : 1.5;
+			Peano::GilbertCurve::dither(bitmapWidth, bitmapHeight, pixels.data(), pPalette->Entries, nMaxColors, nearestColorIndex, GetColorIndex, qPixels.get(), saliencies.data(), weight);
 			nearestMap.clear();
 		}
 		pixelMap.clear();
