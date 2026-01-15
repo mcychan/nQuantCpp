@@ -128,7 +128,7 @@ namespace Peano
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta / m_saliencies[bidx], strength, x, y);
 		}
 
-		if (margin > 6 || (m_nMaxColor <= 32 && m_weight > .007)) {
+		if (margin > 6 || (m_nMaxColor <= 32 && m_weight < .01 && m_weight > .007)) {
 			if (m_nMaxColor > 4 && CIELABConvertor::Y_Diff(pixel, c2) > (beta * acceptedDiff)) {
 				auto kappa = m_saliencies[bidx] < .4f ? beta * .4f * m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
 				Color c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
