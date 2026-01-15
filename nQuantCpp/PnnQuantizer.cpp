@@ -1,6 +1,6 @@
 ﻿/* Fast pairwise nearest neighbor based algorithm for multilevel thresholding
 Copyright (C) 2004-2016 Mark Tyler and Dmitry Groshev
-Copyright (c) 2018-2024 Miller Cy Chan
+Copyright (c) 2018-2026 Miller Cy Chan
 * error measure; time used is proportional to number of bins squared - WJ */
 
 #include "stdafx.h"
@@ -246,7 +246,7 @@ namespace PnnQuant
 
 	unsigned short nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
-		int offset = nMaxColors > 32 ? argb : GetARGBIndex(argb, hasSemiTransparency, m_transparentPixelIndex >= 0);
+		int offset = weight > .015 ? argb : GetARGBIndex(argb, hasSemiTransparency, m_transparentPixelIndex >= 0);
 		auto got = nearestMap.find(offset);
 		if (got != nearestMap.end())
 			return got->second;
@@ -297,7 +297,7 @@ namespace PnnQuant
 			return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 
 		vector<unsigned short> closest(4);
-		int offset = nMaxColors > 32 ? argb : GetARGBIndex(argb, hasSemiTransparency, m_transparentPixelIndex >= 0);
+		int offset = weight > .015 ? argb : GetARGBIndex(argb, hasSemiTransparency, m_transparentPixelIndex >= 0);
 		auto got = closestMap.find(offset);
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;
