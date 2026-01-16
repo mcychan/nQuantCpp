@@ -1,5 +1,5 @@
 /* Generalized Hilbert ("gilbert") space-filling curve for rectangular domains of arbitrary (non-power of two) sizes.
-Copyright (c) 2021 - 2025 Miller Cy Chan
+Copyright (c) 2021 - 2026 Miller Cy Chan
 * A general rectangle with a known orientation is split into three regions ("up", "right", "down"), for which the function calls itself recursively, until a trivial path can be produced. */
 
 #include "stdafx.h"
@@ -7,7 +7,6 @@ Copyright (c) 2021 - 2025 Miller Cy Chan
 #include "BlueNoise.h"
 #include "CIELABConvertor.h"
 
-#include <memory>
 #include <list>
 
 namespace Peano
@@ -351,7 +350,7 @@ namespace Peano
 		errorq.clear();
 		weight = m_weight = abs(weight);
 		margin = weight < .0025 ? 12 : weight < .004 ? 8 : 6;
-		sortedByYDiff = m_saliencies && m_nMaxColor >= 128 && weight >= .02 && (!m_hasAlpha || weight < .18);
+		sortedByYDiff = m_saliencies && m_nMaxColor >= 128 && weight < .08 && weight >= .02 && (!m_hasAlpha || weight < .18);
 		beta = m_nMaxColor > 4 ? (float) (.6f - .00625f * m_nMaxColor) : 1;
 		if (m_nMaxColor > 4) {
 			auto boundary = .005 - .0000625 * m_nMaxColor;
