@@ -1,6 +1,5 @@
 #pragma once
 #include "CIELABConvertor.h"
-#include <memory>
 #include <unordered_map>
 #include <vector>
 using namespace std;
@@ -28,7 +27,7 @@ namespace PnnLABQuant
 		private:
 			bool hasSemiTransparency = false;
 			int m_transparentPixelIndex = -1;
-			bool isGA = false;
+			bool isGA = false, isNano = false;
 			double proportional = 1.0, ratio = .5, ratioY = .5;
 			unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
 			unordered_map<int, vector<unsigned short> > closestMap;

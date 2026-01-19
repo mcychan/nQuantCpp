@@ -183,6 +183,7 @@ namespace PnnLABQuant
 			quan_rt = -1;
 
 		weight = min(0.9, nMaxColors * 1.0 / maxbins);
+		isNano = weight <= .015;
 		if ((nMaxColors < 16 && weight < .0075) || weight < .001 || (weight > .0015 && weight < .0022))
 			quan_rt = 2;
 		if (weight < (isGA ? .03 : .04) && PG < 1 && PG >= coeffs[0][1]) {
@@ -334,7 +335,7 @@ namespace PnnLABQuant
 
 	unsigned short PnnLABQuantizer::nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
-		int offset = weight > .015 ? argb : GetARGBIndex(argb, hasSemiTransparency, hasAlpha());
+		int offset = !isNano ? argb : GetARGBIndex(argb, hasSemiTransparency, hasAlpha());
 		auto got = nearestMap.find(offset);
 		if (got != nearestMap.end())
 			return got->second;
@@ -424,7 +425,7 @@ namespace PnnLABQuant
 
 	unsigned short PnnLABQuantizer::hybridColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
-		int offset = weight > .015 ? argb : GetARGBIndex(argb, hasSemiTransparency, hasAlpha());
+		int offset = !isNano ? argb : GetARGBIndex(argb, hasSemiTransparency, hasAlpha());
 		auto got = nearestMap.find(offset);
 		if (got != nearestMap.end())
 			return got->second;
@@ -483,7 +484,7 @@ namespace PnnLABQuant
 
 	unsigned short PnnLABQuantizer::closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
-		if (PG < coeffs[0][1] && BlueNoise::TELL_BLUE_NOISE[pos & 4095] > -88)
+		if (PG < 1 && weight > .1 && BlueNoise::TELL_BLUE_NOISE[pos & 4095] > 0)
 			return hybridColorIndex(pPalette, nMaxColors, argb, pos);
 
 		Color c(argb);
@@ -491,7 +492,7 @@ namespace PnnLABQuant
 			return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 
 		vector<unsigned short> closest(4);
-		int offset = weight > .015 ? argb : GetARGBIndex(argb, hasSemiTransparency, hasAlpha());
+		int offset = !isNano ? argb : GetARGBIndex(argb, hasSemiTransparency, hasAlpha());
 		auto got = closestMap.find(offset);
 		if (got == closestMap.end()) {
 			closest[2] = closest[3] = USHRT_MAX;
