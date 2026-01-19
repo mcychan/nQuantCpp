@@ -484,7 +484,7 @@ namespace PnnLABQuant
 
 	unsigned short PnnLABQuantizer::closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
-		if (PG < 1 && weight > .1 && BlueNoise::TELL_BLUE_NOISE[pos & 4095] > 0)
+		if (PG < 1 && weight > .15 && BlueNoise::TELL_BLUE_NOISE[pos & 4095] > 0)
 			return hybridColorIndex(pPalette, nMaxColors, argb, pos);
 
 		Color c(argb);
