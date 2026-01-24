@@ -86,13 +86,9 @@ namespace Peano
 		m_weights[0] += 1.0f - weight;
 	}
 
-	int compare(const ErrorBox& o1, const ErrorBox& o2)
+	inline int compare(const ErrorBox& o1, const ErrorBox& o2)
 	{
-		if (o2.yDiff < o1.yDiff)
-			return -1;
-		if (o2.yDiff > o1.yDiff)
-			return 1;
-		return 0;
+		return sign(o2.yDiff - o1.yDiff);
 	}
 
 	float normalDistribution(float x, float peak) {
@@ -121,8 +117,10 @@ namespace Peano
 		if (m_nMaxColor <= 4 && m_saliencies[bidx] > .2f && m_saliencies[bidx] < .25f)
 			c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * 2 / m_saliencies[bidx], strength, x, y);
 		else if (m_nMaxColor <= 4 || CIELABConvertor::Y_Diff(pixel, c2) < (2 * acceptedDiff)) {
-			if (m_nMaxColor <= 128 || BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > 0)
-				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * .5f / m_saliencies[bidx], strength, x, y);
+			if (m_nMaxColor <= 128 || BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > 0) {
+				auto kappa = m_saliencies[bidx] < .6f ? beta * .15f / m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
+				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], kappa, strength, x, y);
+			}
 			if (CIELABConvertor::U_Diff(pixel, c2) > (margin * acceptedDiff))
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta / m_saliencies[bidx], strength, x, y);
 		}
