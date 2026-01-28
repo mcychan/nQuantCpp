@@ -118,8 +118,12 @@ namespace Peano
 			c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * 2 / m_saliencies[bidx], strength, x, y);
 		else if (m_nMaxColor <= 4 || CIELABConvertor::Y_Diff(pixel, c2) < (2 * acceptedDiff)) {
 			if (m_nMaxColor <= 128 || BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > 0) {
-				auto kappa = m_saliencies[bidx] < .6f ? beta * .15f / m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
-				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], kappa, strength, x, y);
+				if (m_nMaxColor > 32) {
+					auto kappa = m_saliencies[bidx] < .6f ? beta * .15f / m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
+					c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], kappa, strength, x, y);
+				}
+				else if(m_saliencies[bidx] < .9)
+					c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * .5f / m_saliencies[bidx], strength, x, y);
 			}
 			if (CIELABConvertor::U_Diff(pixel, c2) > (margin * acceptedDiff))
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta / m_saliencies[bidx], strength, x, y);
@@ -154,8 +158,8 @@ namespace Peano
 				c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		}
 
-		if (DITHER_MAX < 16 && m_nMaxColor > 4 && m_saliencies[bidx] < .6f && CIELABConvertor::Y_Diff(pixel, c2) > margin - 1)
-			c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+		if (!sortedByYDiff && m_nMaxColor > 32 && (m_nMaxColor <= 64 || m_weight >= .02) && CIELABConvertor::Y_Diff(pixel, c2) > margin - 1)
+			c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * normalDistribution(beta, m_nMaxColor / 128.0f) * m_saliencies[bidx], strength, x, y);
 		if (beta > 1 && CIELABConvertor::Y_Diff(pixel, c2) > DITHER_MAX)
 			c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 
@@ -368,7 +372,7 @@ namespace Peano
 		if (m_nMaxColor > 64 || (m_nMaxColor > 4 && weight > .02))
 			beta *= .4f;
 		if (m_nMaxColor > 64 && weight < .02)
-			beta = .18f;		
+			beta = .18f;
 
 		DITHER_MAX = weight < .015 ? (weight > .0025) ? (BYTE)25 : 16 : 9;
 		if (weight > .99) {
