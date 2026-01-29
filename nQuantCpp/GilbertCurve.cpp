@@ -118,7 +118,7 @@ namespace Peano
 			c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * 2 / m_saliencies[bidx], strength, x, y);
 		else if (m_nMaxColor <= 4 || CIELABConvertor::Y_Diff(pixel, c2) < (2 * acceptedDiff)) {
 			if (m_nMaxColor <= 128 || BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > 0) {
-				if (m_nMaxColor > 32) {
+				if (m_nMaxColor > 64) {
 					auto kappa = m_saliencies[bidx] < .6f ? beta * .15f / m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
 					c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], kappa, strength, x, y);
 				}
@@ -134,12 +134,12 @@ namespace Peano
 				auto kappa = m_saliencies[bidx] < .4f ? beta * .4f * m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
 				Color c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 				if (m_nMaxColor > 32 && m_saliencies[bidx] < .9)
-					kappa = beta * normalDistribution(beta, 2.0f) * m_saliencies[bidx];
+					kappa = beta * normalDistribution(m_saliencies[bidx], 2.0f);
 				else {
 					if (m_weight >= .0015 && m_saliencies[bidx] < .6)
 						c1 = pixel;
 					if (m_saliencies[bidx] < .6)
-						kappa = beta * normalDistribution(beta, m_weight < .0008 ? 2.5f : 1.75f) * m_saliencies[bidx];
+						kappa = beta * normalDistribution(m_saliencies[bidx], m_weight < .0008 ? 2.5f : 1.75f);
 					else if (m_nMaxColor >= 32 || CIELABConvertor::Y_Diff(c1, c2) > (beta * M_PI * acceptedDiff)) {
 						if (m_saliencies[bidx] < .9)
 							kappa = beta * (!sortedByYDiff && m_weight < .0025 ? .55f : .5f) / m_saliencies[bidx];
@@ -158,8 +158,8 @@ namespace Peano
 				c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		}
 
-		if (!sortedByYDiff && m_nMaxColor > 32 && (m_nMaxColor <= 64 || m_weight >= .02) && CIELABConvertor::Y_Diff(pixel, c2) > margin - 1)
-			c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * normalDistribution(beta, m_nMaxColor / 128.0f) * m_saliencies[bidx], strength, x, y);
+		if (DITHER_MAX < 16 && m_nMaxColor > 4 && m_saliencies[bidx] < .6f && CIELABConvertor::Y_Diff(pixel, c2) > margin - 1)
+			c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		if (beta > 1 && CIELABConvertor::Y_Diff(pixel, c2) > DITHER_MAX)
 			c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 
