@@ -130,7 +130,12 @@ namespace PnnLABQuant
 		auto errors = _objectives;
 		fill(errors.begin(), errors.end(), 0);
 
-		int threshold = (maxRatio < .1 || abs(_ratioX - _ratioY) > .01) ? -64 : -112;
+		if (maxRatio < .1 && maxRatio > 0)
+			minRatio = m_pq->getProportional();
+
+		int threshold = (maxRatio < .1) ? -64 : -112;
+		if (abs(_ratioX - _ratioY) > .005)
+			threshold = -32;
 
 		for (auto& pixels : m_pixelsList) {
 			for (int i = 0; i < pixels.size(); ++i)
@@ -218,19 +223,19 @@ namespace PnnLABQuant
 		return (float) _fitness;
 	}
 
-	static double rotateLeft(double u, double v, double delta) {
-		auto theta = M_PI * randrange(minRatio, maxRatio) / exp(delta);
+	static double rotateLeft(double u, double v) {
+		auto theta = M_PI * randrange(minRatio, maxRatio);
 		auto result = u * sin(theta) + v * cos(theta);
-		if (delta < 50 && (result <= minRatio || result >= maxRatio))
-			result = rotateLeft(u, v, delta + .5);
+		if (result <= minRatio || result >= maxRatio)
+			result = minRatio + fmod(minRatio, maxRatio - minRatio);
 		return result;
 	}
 	
-	static double rotateRight(double u, double v, double delta) {
-		auto theta = M_PI * randrange(minRatio, maxRatio) / exp(delta);
+	static double rotateRight(double u, double v) {
+		auto theta = M_PI * randrange(minRatio, maxRatio);
 		auto result = u * cos(theta) - v * sin(theta);
-		if (delta < 50 && (result <= minRatio || result >= maxRatio))
-			result = rotateRight(u, v, delta + .5);
+		if (result <= minRatio || result >= maxRatio)
+			result = maxRatio - fmod(minRatio, maxRatio - minRatio);
 		return result;
 	}
 
@@ -240,8 +245,8 @@ namespace PnnLABQuant
 		if ((rand() % 100) <= crossoverProbability)
 			return child;
 
-		auto ratioX = rotateRight(_ratioX, mother._ratioY, 0.0);
-		auto ratioY = rotateLeft(_ratioY, mother._ratioX, 0.0);
+		auto ratioX = rotateRight(_ratioX, mother._ratioY);
+		auto ratioY = rotateLeft(_ratioY, mother._ratioX);
 		child->setRatio(ratioX, ratioY);
 		child->calculateFitness();
 		return child;

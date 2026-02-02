@@ -581,11 +581,11 @@ namespace PnnLABQuant
 		nearestMap.clear();
 	}
 
-	bool PnnLABQuantizer::IsGA() const {
+	const bool PnnLABQuantizer::IsGA() const {
 		return isGA;
 	}
 
-	bool PnnLABQuantizer::hasAlpha() const {
+	const bool PnnLABQuantizer::hasAlpha() const {
 		return m_transparentPixelIndex >= 0;
 	}
 
