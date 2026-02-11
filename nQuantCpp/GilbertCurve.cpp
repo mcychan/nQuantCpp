@@ -153,8 +153,8 @@ namespace Peano
 			}
 		}
 		else if (m_nMaxColor > 4 && CIELABConvertor::Y_Diff(pixel, c2) > (beta * acceptedDiff)) {
-			if (beta < .4f && ((m_nMaxColor <= 32 && m_weight >= .005) || m_saliencies[bidx] < beta))
-				c2 = BlueNoise::diffuse(c2, m_pPalette[qPixelIndex], beta * normalDistribution(m_saliencies[bidx], .4f), strength, x, y);
+			if ((m_nMaxColor <= 32 && m_weight >= .004) || m_saliencies[bidx] < beta)
+				c2 = BlueNoise::diffuse(c2, m_pPalette[qPixelIndex], beta * normalDistribution(m_saliencies[bidx], .25f), strength, x, y);
 			else
 				c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		}
