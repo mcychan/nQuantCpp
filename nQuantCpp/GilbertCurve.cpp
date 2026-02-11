@@ -122,7 +122,7 @@ namespace Peano
 					auto kappa = m_saliencies[bidx] < .6f ? beta * .15f / m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
 					c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], kappa, strength, x, y);
 				}
-				else if (m_nMaxColor > 16 && m_nMaxColor <= 32)
+				else if (m_nMaxColor > 16 && m_weight < .005)
 					c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * normalDistribution(m_saliencies[bidx], .5f) + beta, strength, x, y);
 				else
 					c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * .5f / m_saliencies[bidx], strength, x, y);
@@ -152,8 +152,8 @@ namespace Peano
 				c2 = BlueNoise::diffuse(c1, m_pPalette[qPixelIndex], kappa, strength, x, y);
 			}
 		}
-		else if (m_nMaxColor > 4 && CIELABConvertor::Y_Diff(pixel, c2) > (beta * M_PI * acceptedDiff)) {
-			if (beta < .3f && (m_nMaxColor <= 32 || m_saliencies[bidx] < beta))
+		else if (m_nMaxColor > 4 && CIELABConvertor::Y_Diff(pixel, c2) > (beta * acceptedDiff)) {
+			if (beta < .4f && ((m_nMaxColor <= 32 && m_weight >= .005) || m_saliencies[bidx] < beta))
 				c2 = BlueNoise::diffuse(c2, m_pPalette[qPixelIndex], beta * normalDistribution(m_saliencies[bidx], .4f), strength, x, y);
 			else
 				c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
@@ -363,6 +363,8 @@ namespace Peano
 			if (m_nMaxColor >= 64 && (weight > .012 && weight < .0125) || (weight > .025 && weight < .03))
 				beta += .05f;
 			else if (m_nMaxColor > 32 && m_nMaxColor < 64 && weight < .015)
+				beta = .55f;
+			else if (m_nMaxColor > 16 && m_nMaxColor <= 32 && weight >= .005)
 				beta = .55f;
 		}
 		else
