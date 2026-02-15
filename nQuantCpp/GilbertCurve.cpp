@@ -129,8 +129,8 @@ namespace Peano
 			}
 		}
 
-		if (margin > 6 || (m_nMaxColor <= 32 && m_weight < .01 && m_weight > .007)) {
-			if (m_nMaxColor > 4 && CIELABConvertor::Y_Diff(pixel, c2) > (beta * acceptedDiff)) {
+		if (m_nMaxColor > 4 && CIELABConvertor::Y_Diff(pixel, c2) > (beta * acceptedDiff)) {
+			if (margin > 6 || (m_nMaxColor <= 32 && m_weight < .01 && m_weight > .007)) {
 				auto kappa = m_saliencies[bidx] < .4f ? beta * .4f * m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
 				Color c1 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 				if (m_nMaxColor > 32 && m_saliencies[bidx] < .9)
@@ -151,9 +151,7 @@ namespace Peano
 
 				c2 = BlueNoise::diffuse(c1, m_pPalette[qPixelIndex], kappa, strength, x, y);
 			}
-		}
-		else if (m_nMaxColor > 4 && CIELABConvertor::Y_Diff(pixel, c2) > (beta * acceptedDiff)) {
-			if (m_nMaxColor <= 32 && m_weight >= .004)
+			else if (m_nMaxColor <= 32 && m_weight >= .004)
 				c2 = BlueNoise::diffuse(c2, m_pPalette[qPixelIndex], beta * normalDistribution(m_saliencies[bidx], .25f), strength, x, y);
 			else
 				c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
