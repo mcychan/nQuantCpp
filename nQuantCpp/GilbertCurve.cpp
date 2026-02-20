@@ -364,7 +364,7 @@ namespace Peano
 			else if (m_nMaxColor > 32 && m_nMaxColor < 64 && weight < .015)
 				beta = .55f;
 			else if (m_nMaxColor > 16 && m_nMaxColor <= 32 && weight >= .005)
-				beta += .1f;
+				beta += .05f + weight * m_nMaxColor;
 		}
 		else
 			beta *= .95f;
