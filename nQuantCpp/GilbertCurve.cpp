@@ -160,6 +160,10 @@ namespace Peano
 
 		if (DITHER_MAX < 16 && m_nMaxColor > 4 && m_saliencies[bidx] < .6f && CIELABConvertor::Y_Diff(pixel, c2) > margin - 1)
 			c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
+		if (m_nMaxColor > 32 && m_saliencies[bidx] > .95) {
+			auto kappa = beta * (.75f - m_nMaxColor / 128.0f) * m_saliencies[bidx];
+			c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], kappa, strength, x, y);
+		}
 
 		return m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx);
 	}
