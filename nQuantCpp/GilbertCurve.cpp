@@ -117,16 +117,14 @@ namespace Peano
 		if (m_nMaxColor <= 4 && m_saliencies[bidx] > .2f && m_saliencies[bidx] < .25f)
 			c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * 2 / m_saliencies[bidx], strength, x, y);
 		else if (m_nMaxColor <= 4 || CIELABConvertor::Y_Diff(pixel, c2) < (2 * acceptedDiff)) {
-			if (m_nMaxColor <= 128 || BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > 0) {
-				if (m_nMaxColor > 64) {
-					auto kappa = m_saliencies[bidx] < .6f ? beta * .15f / m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
-					c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], kappa, strength, x, y);
-				}
-				else if (m_nMaxColor > 16 && m_weight < .005)
-					c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * normalDistribution(m_saliencies[bidx], .5f) + beta, strength, x, y);
-				else
-					c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * .5f / m_saliencies[bidx], strength, x, y);
+			if (m_nMaxColor > 64) {
+				auto kappa = m_saliencies[bidx] < .6f ? beta * .15f / m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
+				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], kappa, strength, x, y);
 			}
+			else if (m_nMaxColor > 16 && m_weight < .005)
+				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * normalDistribution(m_saliencies[bidx], .5f) + beta, strength, x, y);
+			else
+				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * .5f / m_saliencies[bidx], strength, x, y);
 		}
 
 		auto gamma = (m_nMaxColor <= 32 && m_weight < .01 && m_weight > .007) ? 1 - beta : beta;
@@ -161,7 +159,7 @@ namespace Peano
 		if (DITHER_MAX < 16 && m_nMaxColor > 4 && m_saliencies[bidx] < .6f && CIELABConvertor::Y_Diff(pixel, c2) > margin - 1)
 			c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		if (m_nMaxColor > 32 && m_saliencies[bidx] > .95) {
-			auto kappa = beta * (.75f - m_nMaxColor / 128.0f) * m_saliencies[bidx];
+			auto kappa = beta * max(.05f, .75f - m_nMaxColor / 128.0f) * m_saliencies[bidx];
 			c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], kappa, strength, x, y);
 		}
 
