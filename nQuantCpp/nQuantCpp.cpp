@@ -80,7 +80,7 @@ bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstrin
 
 		auto currentCmd = currentArg[0];
 		if (currentArg.length() > 1 && 
-			(currentCmd == L'–' || currentCmd == L'/')) {
+			(currentCmd == L'-' || currentCmd == L'/')) {
 			if (index >= argc - 1) {
 				PrintUsage();
 				return false;
@@ -189,6 +189,9 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 		bSucceeded = pnnLABQuantizer.QuantizeImage(pSource.get(), pDest.get(), nMaxColors, dither);
 	}
 	else if (algorithm == L"PNNLAB+") {
+		if (nMaxColors < 3)
+			return QuantizeImage(L"PNNLAB", sourceFile, targetDir, pSource, nMaxColors, dither);
+
 		PnnLABQuant::PnnLABQuantizer pnnLABQuantizer;
 		vector<shared_ptr<Bitmap> > sources(1, pSource);
 		PnnLABQuant::PnnLABGAQuantizer pnnLABGAQuantizer(pnnLABQuantizer, sources, nMaxColors);
