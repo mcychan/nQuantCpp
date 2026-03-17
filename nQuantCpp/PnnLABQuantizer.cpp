@@ -63,7 +63,7 @@ namespace PnnLABQuant
 
 			CIELABConvertor::Lab lab2;
 			lab2.alpha = bins[i].ac, lab2.L = bins[i].Lc, lab2.A = bins[i].Ac, lab2.B = bins[i].Bc;
-			auto alphaDiff = hasSemiTransparency ? sqr(lab2.alpha - lab1.alpha) / exp(1.75) : 0;
+			auto alphaDiff = hasSemiTransparency ? sqr(lab2.alpha - lab1.alpha) * TRANS_RATE : 0;
 			auto nerr = nerr2 * alphaDiff;
 			if (nerr >= err)
 				continue;
@@ -354,7 +354,7 @@ namespace PnnLABQuant
 
 		for (UINT i = k; i < nMaxColors; ++i) {
 			Color c2(pPalette[i]);
-			auto curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) / exp(1.5) : 0;
+			auto curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) * TRANS_RATE : 0;
 			if (curdist > mindist)
 				continue;
 
@@ -441,7 +441,7 @@ namespace PnnLABQuant
 			Color c2(pPalette[i]);
 			getLab(c2, lab2);
 
-			auto curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) / exp(1.5) : 0;
+			auto curdist = hasSemiTransparency ? sqr(c2.GetA() - c.GetA()) * TRANS_RATE : 0;
 			if (abs(lab2.L - lab1.L) < nMaxColors || saliencies[pos] < .2 || saliencies[pos] > .8) {
 				curdist += sqr(lab2.L - lab1.L);
 				if (curdist > mindist)

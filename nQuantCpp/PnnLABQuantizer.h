@@ -29,6 +29,7 @@ namespace PnnLABQuant
 			int m_transparentPixelIndex = -1;
 			bool isGA = false, isNano = false;
 			double proportional = 1.0, ratio = .5, ratioY = .5;
+			const double TRANS_RATE = 1 - (512 + 101) / 768.0;
 			unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
 			unordered_map<int, vector<unsigned short> > closestMap;
 			unordered_map<int, unsigned short> nearestMap;
