@@ -235,6 +235,7 @@ namespace Peano
 		auto denoise = m_nMaxColor > 2;
 		auto diffuse = BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > thresold;
 		error.yDiff = sortedByYDiff ? CIELABConvertor::Y_Diff(pixel, c2) : 1;
+		auto illusion = !diffuse && BlueNoise::TELL_BLUE_NOISE[(int)(error.yDiff * 4096) & 4095] > thresold;
 
 		auto unaccepted = false;
 		int errLength = denoise ? error.length() - 1 : 0;
@@ -251,8 +252,10 @@ namespace Peano
 
 				if (diffuse)
 					error[j] = (float)tanh(error.p[j] / maxErr * 20) * (ditherMax - 1);
+				else if (illusion)
+					error[j] = (float)(error.p[j] / maxErr * error.yDiff) * (ditherMax - 1);
 				else
-					unaccepted = true;
+					error[j] /= (float)(1 + _sqrt(ditherMax));
 			}
 
 			if (sortedByYDiff && m_saliencies == nullptr && abs(error.p[j]) >= DITHER_MAX)
