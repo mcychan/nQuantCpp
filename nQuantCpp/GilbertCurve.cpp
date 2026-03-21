@@ -48,7 +48,7 @@ namespace Peano
 	list<ErrorBox> errorq;
 	vector<float> m_weights;
 	static BYTE DITHER_MAX = 9, ditherMax;
-	static int margin, thresold;
+	static int margin;
 	static const float BLOCK_SIZE = 343.0f;
 
 	template <typename T> int sign(T val) {
@@ -233,32 +233,25 @@ namespace Peano
 		error[3] = a_pix - c2.GetA();
 
 		auto denoise = m_nMaxColor > 2;
-		auto diffuse = BlueNoise::TELL_BLUE_NOISE[bidx & 4095] > thresold;
 		error.yDiff = sortedByYDiff ? CIELABConvertor::Y_Diff(pixel, c2) : 1;
-		auto illusion = !diffuse && BlueNoise::TELL_BLUE_NOISE[(int)(error.yDiff * 4096) & 4095] > thresold;
 
 		auto unaccepted = false;
 		int errLength = denoise ? error.length() - 1 : 0;
 		for (int j = 0; j < errLength; ++j) {
-			if (abs(error.p[j]) >= ditherMax) {
+			if (abs(error[j]) >= ditherMax) {
 				if (sortedByYDiff && m_saliencies != nullptr)
 					unaccepted = true;
 
 				if (m_hasAlpha && m_saliencies == nullptr) {
-					if (abs(error.p[j]) >= (ditherMax * 2))
-						error.p[j] = (float)tanh(error.p[j] / maxErr * 20) * (ditherMax - 1);
+					if (abs(error[j]) >= (ditherMax * M_PI) || error[3] < 1)
+						error[j] = (float)tanh(error[j] / maxErr * 20) * (ditherMax - 1);
 					continue;
 				}
 
-				if (diffuse)
-					error[j] = (float)tanh(error.p[j] / maxErr * 20) * (ditherMax - 1);
-				else if (illusion)
-					error[j] = (float)(error.p[j] / maxErr * error.yDiff) * (ditherMax - 1);
-				else
-					error[j] /= (float)(1 + _sqrt(ditherMax));
+				error[j] = (float)tanh(error[j] / maxErr * 20) * (ditherMax - 1);
 			}
 
-			if (sortedByYDiff && m_saliencies == nullptr && abs(error.p[j]) >= DITHER_MAX)
+			if (sortedByYDiff && m_saliencies == nullptr && abs(error[j]) >= DITHER_MAX)
 				unaccepted = true;
 		}
 
@@ -396,7 +389,6 @@ namespace Peano
 			ditherMax = (BYTE)sqr(5 + edge);
 		else if (weight < .03 && m_nMaxColor / weight < density && m_nMaxColor >= 16 && m_nMaxColor < 256)
 			ditherMax = (BYTE)sqr(5 + edge);
-		thresold = DITHER_MAX > 9 ? -112 : -64;
 
 		if (!sortedByYDiff)
 			initWeights(DITHER_MAX);
