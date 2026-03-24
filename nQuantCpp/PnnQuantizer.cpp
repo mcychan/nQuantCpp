@@ -263,7 +263,7 @@ namespace PnnQuant
 		if(nMaxColors < 3)
 			pr = pg = pb = pa = 1;
 
-		double mindist = INT_MAX;		
+		double mindist = INT_MAX;
 		for (UINT i = k; i < nMaxColors; ++i) {
 			Color c2(pPalette[i]);
 			double curdist = pa * sqr(c2.GetA() - c.GetA());
@@ -360,22 +360,6 @@ namespace PnnQuant
 		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
 	}
 
-	bool quantize_image(const ARGB* pixels, const ColorPalette* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
-	{		
-		if (dither) 
-			return dither_image(pixels, pPalette->Entries, nMaxColors, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height);
-
-		DitherFn ditherFn = (m_transparentPixelIndex >= 0 || nMaxColors < 256) ? nearestColorIndex : closestColorIndex;
-		UINT pixelIndex = 0;
-		for (int j = 0; j < height; ++j) {
-			for (int i = 0; i < width; ++i, ++pixelIndex)
-				qPixels[pixelIndex] = ditherFn(pPalette->Entries, nMaxColors, pixels[pixelIndex], i + j);
-		}
-
-		BlueNoise::dither(width, height, pixels, pPalette->Entries, nMaxColors, ditherFn, GetColorIndex, qPixels);
-		return true;
-	}
-
 	bool PnnQuantizer::QuantizeImage(const vector<ARGB>& pixels, const UINT bitmapWidth, ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
 		if (nMaxColors <= 32)
@@ -443,7 +427,7 @@ namespace PnnQuant
 		int semiTransCount = 0;
 		GrabPixels(pSource, pixels, semiTransCount, m_transparentPixelIndex, m_transparentColor, alphaThreshold, nMaxColors);
 		hasSemiTransparency = semiTransCount > 0;
-		
+
 		if (nMaxColors > 256) {
 			auto pPalettes = make_unique<ARGB[]>(nMaxColors);
 			auto pPalette = pPalettes.get();
