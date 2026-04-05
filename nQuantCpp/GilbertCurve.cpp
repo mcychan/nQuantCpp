@@ -382,7 +382,7 @@ namespace Peano
 		}
 
 		auto edge = m_hasAlpha ? 1 : exp(weight) - .25;
-		if (sortedByYDiff || (m_hasAlpha && saliencies != nullptr))
+		if (m_hasAlpha || (sortedByYDiff && saliencies != nullptr))
 			ditherMax = (BYTE)(DITHER_MAX / weight);
 		else {
 			auto deviation = !m_hasAlpha && weight > .0025 ? -.25 : 1;
