@@ -244,11 +244,11 @@ namespace Peano
 
 				if (m_hasAlpha && m_saliencies == nullptr) {
 					if (abs(error[j]) >= (ditherMax * M_E * M_PI) || error[3] < 0)
-						error[j] = (float)tanh(error[j] / maxErr * 20) * (ditherMax - 1);
+						error[j] = tanh(error[j] / maxErr * 20) * (ditherMax - 1);
 					continue;
 				}
 
-				error[j] = (float)tanh(error[j] / maxErr * 20) * (ditherMax - 1);
+				error[j] = tanh(error[j] / maxErr * 20) * (ditherMax - 1);
 			}
 
 			if (sortedByYDiff && m_saliencies == nullptr && abs(error[j]) >= DITHER_MAX)
@@ -384,6 +384,8 @@ namespace Peano
 		auto edge = m_hasAlpha ? 1 : exp(weight) - .25;
 		if (saliencies != nullptr && (m_hasAlpha || (sortedByYDiff && weight < .03)))
 			ditherMax = (BYTE)(DITHER_MAX / weight);
+		else if (m_hasAlpha)
+			ditherMax = (BYTE)(DITHER_MAX / _sqrt(weight));
 		else {
 			auto deviation = !m_hasAlpha && weight > .0025 ? -.25 : 1;
 			ditherMax = (m_hasAlpha || DITHER_MAX > 9) ? (BYTE)sqr(_sqrt(DITHER_MAX) + edge * deviation) : (BYTE)(DITHER_MAX * (saliencies != nullptr ? 2 : M_E));
