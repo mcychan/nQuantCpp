@@ -338,8 +338,7 @@ namespace GrowingNeuralGas
 			}
 		}
 		if (winner != nullptr) {
-			// Replaces Java's synchronized(winner) block cleanly
-#pragma omp critical(WinnerErrorAccumulation)
+			#pragma omp critical(WinnerErrorAccumulation)
 			{
 				winner->error += minDist;
 			}
@@ -626,9 +625,6 @@ namespace GrowingNeuralGas
 	void gngquan(const vector<ARGB>& pixels, ARGB* pPalette, UINT& nMaxColors)
 	{
 		maxNodes = nMaxColors;		// number of colours used
-		auto mDivn = min(0.9, nMaxColors * 1.0 / pixelMap.size());
-		if (hasSemiTransparency)
-			mDivn *= -1;
 
 		auto GetColorIndex = [&](const Color& c) -> int {
 			return GetARGBIndex(c, hasSemiTransparency, hasAlpha());
@@ -686,6 +682,10 @@ namespace GrowingNeuralGas
 
 			return;
 		}
+
+		auto mDivn = min(0.9, nMaxColors * 1.0 / pixelMap.size());
+		if (hasSemiTransparency)
+			mDivn *= -1;
 
 		vector<shared_ptr<GNGNode>> stdDevSamples;
 		for (const auto& [pixel, count] : histogram) {
