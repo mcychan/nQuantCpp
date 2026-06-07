@@ -15,6 +15,7 @@ namespace fs = std::filesystem;
 #include "nQuantCpp.h"
 
 #include "PnnQuantizer.h"
+#include "DblGNGQuantizer.h"
 #include "NeuQuantizer.h"
 #include "WuQuantizer.h"
 #include "PnnLABQuantizer.h"
@@ -35,7 +36,7 @@ namespace fs = std::filesystem;
 GdiplusStartupInput  m_gdiplusStartupInput;
 ULONG_PTR m_gdiplusToken;
 
-wstring algs[] = { L"PNN", L"PNNLAB", L"PNNLAB+", L"NEU", L"WU", L"EAS", L"SPA", L"DIV", L"DL3", L"MMC", L"OTSU" };
+wstring algs[] = { L"PNN", L"PNNLAB", L"PNNLAB+", L"DBLGNG", L"NEU", L"WU", L"EAS", L"SPA", L"DIV", L"DL3", L"MMC", L"OTSU"};
 unordered_map<LPCWSTR, CLSID> extensionMap;
 
 void PrintUsage()
@@ -202,6 +203,10 @@ bool QuantizeImage(const wstring& algorithm, const wstring& sourceFile, wstring&
 		vector<shared_ptr<Bitmap> > dests;
 		dests.emplace_back(pDest);
 		bSucceeded = pGAq->QuantizeImage(dests, dither);
+	}
+	else if (algorithm == L"DBLGNG") {
+		GrowingNeuralGas::DblGNGQuantizer dblGNGQuantizer;
+		bSucceeded = dblGNGQuantizer.QuantizeImage(pSource.get(), pDest.get(), nMaxColors, dither);
 	}
 	else if (algorithm == L"NEU") {
 		NeuralNet::NeuQuantizer neuQuantizer;

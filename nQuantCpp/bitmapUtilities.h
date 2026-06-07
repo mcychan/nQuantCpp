@@ -99,3 +99,12 @@ inline int GetARGBIndex(const Color& c, const bool hasSemiTransparency, const bo
 		return GetARGB1555(c);
 	return (c.GetR() & 0xF8) << 8 | (c.GetG() & 0xFC) << 3 | (c.GetB() >> 3);
 }
+
+inline ARGB GetARGB(const Color& c, const bool hasSemiTransparency, const bool hasTransparency)
+{
+	if (hasSemiTransparency)
+		return Color::MakeARGB(c.GetA() & 0xF0, c.GetR() & 0xF0, c.GetG() & 0xF0, c.GetB() & 0xF0);
+	if (hasTransparency)
+		return Color::MakeARGB(c.GetA() & 0x80, c.GetR() & 0xF8, c.GetG() & 0xF8, c.GetB() & 0xF8);
+	return Color::MakeARGB(BYTE_MAX, c.GetR() & 0xF8, c.GetG() & 0xFC, c.GetB() & 0xF8);
+}

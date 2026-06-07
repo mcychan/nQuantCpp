@@ -34,7 +34,7 @@ namespace Peano
 		}
 	};
 
-	bool m_hasAlpha, m_dither, sortedByYDiff;
+	bool m_hasAlpha, m_dither, m_enforcedDither = true, sortedByYDiff;
 	unsigned short m_nMaxColor;
 	UINT m_width, m_height;
 	float beta;
@@ -121,9 +121,9 @@ namespace Peano
 				auto kappa = m_saliencies[bidx] < .6f ? beta * .15f / m_saliencies[bidx] : beta * .4f / m_saliencies[bidx];
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], kappa, strength, x, y);
 			}
-			else if (m_nMaxColor > 16 && m_weight < .005)
+			else if (m_enforcedDither && m_nMaxColor > 16 && m_weight < .005)
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * normalDistribution(m_saliencies[bidx], .5f) + beta, strength, x, y);
-			else
+			else if (m_enforcedDither)
 				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], beta * .5f / m_saliencies[bidx], strength, x, y);
 		}
 
@@ -408,12 +408,28 @@ namespace Peano
 	void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColor, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, float* saliencies, double weight, bool dither)
 	{
 		m_qPixels = qPixels;
+		m_dither = dither;		
+		doDither(width, height, pixels, pPalette, nMaxColor, ditherFn, getColorIndexFn, saliencies, weight);
+	}	
+
+	void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColor, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, ARGB* qPixels, float* saliencies, double weight, bool dither)
+	{
+		m_qColorPixels = qPixels;
 		m_dither = dither;
 		doDither(width, height, pixels, pPalette, nMaxColor, ditherFn, getColorIndexFn, saliencies, weight);
 	}
 
-	void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColor, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, ARGB* qPixels, float* saliencies, double weight, bool dither)
+	void GilbertCurve::dithering(const UINT width, const UINT height, const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColor, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, float* saliencies, double weight, bool dither, bool enforcedDither)
 	{
+		m_enforcedDither = enforcedDither;
+		m_qPixels = qPixels;
+		m_dither = dither;
+		doDither(width, height, pixels, pPalette, nMaxColor, ditherFn, getColorIndexFn, saliencies, weight);
+	}
+
+	void GilbertCurve::dithering(const UINT width, const UINT height, const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColor, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, ARGB* qPixels, float* saliencies, double weight, bool dither, bool enforcedDither)
+	{
+		m_enforcedDither = enforcedDither;
 		m_qColorPixels = qPixels;
 		m_dither = dither;
 		doDither(width, height, pixels, pPalette, nMaxColor, ditherFn, getColorIndexFn, saliencies, weight);

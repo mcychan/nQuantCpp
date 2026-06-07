@@ -28,14 +28,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>false</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>false</UseOfMfc>
@@ -43,14 +43,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>false</UseOfMfc>
@@ -159,6 +159,7 @@
     <ClInclude Include="bitmapUtilities.h" />
     <ClInclude Include="BlueNoise.h" />
     <ClInclude Include="CIELABConvertor.h" />
+    <ClInclude Include="DblGNGQuantizer.h" />
     <ClInclude Include="DivQuantizer.h" />
     <ClInclude Include="Dl3Quantizer.h" />
     <ClInclude Include="EdgeAwareSQuantizer.h" />
@@ -183,6 +184,7 @@
     <ClCompile Include="bitmapUtilities.cpp" />
     <ClCompile Include="BlueNoise.cpp" />
     <ClCompile Include="CIELABConvertor.cpp" />
+    <ClCompile Include="DblGNGQuantizer.cpp" />
     <ClCompile Include="DivQuantizer.cpp" />
     <ClCompile Include="Dl3Quantizer.cpp" />
     <ClCompile Include="EdgeAwareSQuantizer.cpp" />
