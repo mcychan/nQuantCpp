@@ -710,7 +710,7 @@ namespace GrowingNeuralGas
 
 		if (mDivn < .04 && PG < 1 && PG >= coeffs[0][1] && nMaxColors >= 64)
 			enforcedDither = false;
-		if (mDivn > .003 && nMaxColors <= 32)
+		if (mDivn > .0029 && nMaxColors <= 32)
 			enforcedDither = false;
 
 		if ((nMaxColors < 32 && mDivn > .015 && mDivn < .032) || (nMaxColors >= 32 && nMaxColors < 64 && mDivn > .03 && mDivn < .06))
