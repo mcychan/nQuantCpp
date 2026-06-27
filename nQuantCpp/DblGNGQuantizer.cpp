@@ -18,15 +18,13 @@ namespace GrowingNeuralGas
 	 * Mathematics, 12(12), 1909. */
 
 	double PR = 0.299, PG = 0.587, PB = 0.114, PA = .3333;
-	BYTE alphaThreshold = 0xF;
-	const double TRANS_RATE = 1 - (512 + 101) / 768.0;
+	BYTE alphaThreshold = 0xF;	
 
 	int maxNodes = 256;		// number of colours used	
 	int epochs = 20, maxAge = 10; // Maximum age in terms of epochs/batches, not pixels
 	mt19937 random;
 
-	bool enforcedDither = true, hasSemiTransparency = false;
-	int m_transparentPixelIndex = -1;
+	bool enforcedDither = true;
 	ARGB m_transparentColor = Color::Transparent;
 
 	static const float coeffs[3][3] = {
@@ -34,91 +32,43 @@ namespace GrowingNeuralGas
 		{-0.14713f, -0.28886f, 0.436f},
 		{0.615f, -0.51499f, -0.10001f}
 	};
-	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
+	
 	unordered_map<int, vector<unsigned short> > closestMap;
-	unordered_map<int, unsigned short> nearestMap;
-	vector<float> saliencies;
+	unordered_map<int, unsigned short> nearestMap;	
 
-	struct GNGNode;
-
-	struct SharedPtrHash {
-		template <typename T>
-		size_t operator()(const shared_ptr<T>& ptr) const {
-			return hash<T*>()(ptr.get());
-		}
-	};
-
-	struct GNGNode {
-		vector<double> weight;
-		double error = 0.0;
-
-		unordered_map<shared_ptr<GNGNode>, int, SharedPtrHash> neighbors;
-
-		GNGNode(const vector<double>& w) : weight(w), error(0.0) {}
-
-		void addNeighbour(const shared_ptr<GNGNode>& nextNode) {
-			neighbors[nextNode] = 0;
-		}
-
-		shared_ptr<GNGNode> findNeighborByMaxError() {
-			if (neighbors.empty())
-				return nullptr;
-			auto it = max_element(neighbors.begin(), neighbors.end(),
-				[](const auto& a, const auto& b) -> bool {
-					return a.first->error < b.first->error;
-				}
-			);
-			return it->first;
-		}
-
-		void incrementAge() {
-			for (auto& [neighbor, age] : neighbors) {
-				age += 1;
-			}
-		}
-
-		bool noNeighbor() const { return neighbors.empty(); }
-		void removeNeighbour(const shared_ptr<GNGNode>& nextNode) { neighbors.erase(nextNode); }
-
-		void removeNeighbourByAge(int maxAge) {
-			for (auto it = neighbors.begin(); it != neighbors.end(); ) {
-				if (it->second > maxAge) {
-					it = neighbors.erase(it);
-				}
-				else {
-					++it;
-				}
-			}
-		}
-
-		double distance(const vector<double>& input) const {
-			double d = 0.0;
-			for (size_t i = 0; i < weight.size(); ++i) {
-				double diff = weight[i] - input[i];
-				d += diff * diff;
-			}
-			return d;
-		}
-	};
-
-	vector<shared_ptr<GNGNode>> nodes;
-
-	inline const bool hasAlpha() {
-		return m_transparentPixelIndex >= 0;
+	DblGNGQuantizer::DblGNGQuantizer() : startingPoints(2)
+		, learningRate(0.002)
+		, mDivn(0.0)
+		, isGA(false)
+	{
 	}
 
-	int calculateStartingPoints(double learningRate) {
-		const auto K = (hasAlpha() || maxNodes > 32) ? 6.5 : 10.0; 
+	DblGNGQuantizer::DblGNGQuantizer(const DblGNGQuantizer& quantizer) : startingPoints(quantizer.startingPoints)
+		, learningRate(quantizer.learningRate)
+		, mDivn(quantizer.mDivn)
+		, hasSemiTransparency(quantizer.hasSemiTransparency)
+		, m_transparentPixelIndex(quantizer.m_transparentPixelIndex)
+		, saliencies(quantizer.saliencies)
+		, samples(quantizer.samples)
+		, uniqueSamples(quantizer.uniqueSamples)
+		, stdDevSamples(quantizer.stdDevSamples)
+		, isGA(true)
+	{
+		pixelMap.insert(quantizer.pixelMap.begin(), quantizer.pixelMap.end());
+	}	
+
+	int calculateStartingPoints(int transparentPixelIndex, double learningRate) {
+		const auto K = (transparentPixelIndex >= 0 || maxNodes > 32) ? 6.5 : 10.0;
 		auto continuousPoints = maxNodes * exp(-K * learningRate);
 		auto noOfStartingPoints = static_cast<int>(round(continuousPoints));
 
-		auto minFloor = hasAlpha() ? 8 : 2;
+		auto minFloor = transparentPixelIndex >= 0 ? 8 : 2;
 		auto maxCeiling = max(2, maxNodes / 4); 
 
 		return max(minFloor, min(maxCeiling, noOfStartingPoints));
 	}
 
-	void insertNewNodeWeighted(unordered_map<shared_ptr<GNGNode>, vector<shared_ptr<GNGNode>>, SharedPtrHash>& assignments) {
+	void DblGNGQuantizer::insertNewNodeWeighted(unordered_map<shared_ptr<GNGNode>, vector<shared_ptr<GNGNode>>, SharedPtrHash>& assignments) {
 		auto it_q = max_element(nodes.begin(), nodes.end(),
 			[&](const auto& a, const auto& b) -> bool {
 				auto errA = 0.0;
@@ -173,11 +123,9 @@ namespace GrowingNeuralGas
 		r->error = q->error;
 	}
 
-	void updateNodeWeightsAdaptive(
+	void DblGNGQuantizer::updateNodeWeightsAdaptive(
 		unordered_map<shared_ptr<GNGNode>, vector<shared_ptr<GNGNode>>, SharedPtrHash>& assignments,
-		double baseLearningRate,
-		double progress
-	) {
+		double baseLearningRate, double progress) {
 		// Flatten map entries into indexable vector for uniform OpenMP loop parsing
 		auto entries = vector<pair<shared_ptr<GNGNode>, vector<shared_ptr<GNGNode>>>>(assignments.begin(), assignments.end());
 
@@ -213,10 +161,8 @@ namespace GrowingNeuralGas
 		}
 	}
 
-	void manageGraphTopology(
-		unordered_map<shared_ptr<GNGNode>, vector<shared_ptr<GNGNode>>, SharedPtrHash>& assignments,
-		int remainingEpochs
-	) {
+	void DblGNGQuantizer::manageGraphTopology(unordered_map<shared_ptr<GNGNode>, vector<shared_ptr<GNGNode>>, 
+		SharedPtrHash>& assignments, int remainingEpochs) {
 		const auto MAX_AGE = 20;
 
 		for (auto& node : nodes) {
@@ -272,7 +218,7 @@ namespace GrowingNeuralGas
 		}
 	}
 
-	void getLab(const Color& c, CIELABConvertor::Lab& lab1)
+	void DblGNGQuantizer::getLab(const Color& c, CIELABConvertor::Lab& lab1)
 	{
 		auto got = pixelMap.find(c.GetValue());
 		if (got == pixelMap.end()) {
@@ -283,7 +229,7 @@ namespace GrowingNeuralGas
 			lab1 = got->second;
 	}
 
-	void initializeDistributedNode(const vector<shared_ptr<GNGNode>>& samples, int noOfStartingPoints) {
+	void DblGNGQuantizer::initializeDistributedNode(const vector<shared_ptr<GNGNode>>& samples, int noOfStartingPoints) {
 		if (samples.empty()) {
 			throw invalid_argument("Sample list cannot be empty.");
 		}
@@ -327,7 +273,7 @@ namespace GrowingNeuralGas
 		return max(0.015, min(0.080, adaptiveLR));
 	}
 
-	shared_ptr<GNGNode> findBestWinner(const vector<double>& sample, const vector<shared_ptr<GNGNode>>& snapshot) {
+	shared_ptr<DblGNGQuantizer::GNGNode> DblGNGQuantizer::findBestWinner(const vector<double>& sample, const vector<shared_ptr<GNGNode>>& snapshot) {
 		auto winner = shared_ptr<GNGNode>(nullptr);
 		auto minDist = DBL_MAX;
 		for (auto i = 0u; i < snapshot.size(); i++) {
@@ -346,13 +292,13 @@ namespace GrowingNeuralGas
 		return winner;
 	}
 
-	void trainBatch(vector<shared_ptr<GNGNode>>& samples,
-		vector<shared_ptr<GNGNode>>& uniqueSamples,
-		vector<shared_ptr<GNGNode>>& stdDevSamples,
-		int totalEpochs)
+	void DblGNGQuantizer::trainBatch(vector<shared_ptr<GNGNode>>& samples, vector<shared_ptr<GNGNode>>& uniqueSamples, 
+		vector<shared_ptr<GNGNode>>& stdDevSamples, int totalEpochs)
 	{
-		auto balancedLR = calculateBalancedLearningRate(stdDevSamples.size());
-		auto startingPoints = calculateStartingPoints(balancedLR);
+		if (!isGA) {
+			learningRate = calculateBalancedLearningRate(stdDevSamples.size());
+			startingPoints = calculateStartingPoints(m_transparentPixelIndex, learningRate);
+		}
 
 		initializeDistributedNode(uniqueSamples, startingPoints);
 		auto growthEpochs = static_cast<int>(totalEpochs * 0.7);
@@ -371,7 +317,7 @@ namespace GrowingNeuralGas
 			}
 
 			auto progress = (double)epoch / growthEpochs;
-			updateNodeWeightsAdaptive(assignments, balancedLR, progress);
+			updateNodeWeightsAdaptive(assignments, learningRate, progress);
 			manageGraphTopology(assignments, growthEpochs - epoch);
 		}
 
@@ -450,7 +396,7 @@ namespace GrowingNeuralGas
 		}
 	}
 
-	void Inxbuild(ARGB* pPalette, const UINT& nMaxColors) {
+	void DblGNGQuantizer::Inxbuild(ARGB* pPalette, const UINT& nMaxColors) {
 		UINT k = 0;
 
 		for (const auto& n : nodes) {
@@ -465,7 +411,7 @@ namespace GrowingNeuralGas
 		}
 	}
 
-	unsigned short nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
+	unsigned short DblGNGQuantizer::nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
 		int offset = GetARGBIndex(argb, hasSemiTransparency, hasAlpha());
 		auto got = nearestMap.find(offset);
@@ -555,7 +501,7 @@ namespace GrowingNeuralGas
 		return k;
 	}
 	
-	unsigned short closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
+	unsigned short DblGNGQuantizer::closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos)
 	{
 		Color c(argb);
 		if (c.GetA() <= alphaThreshold)
@@ -616,87 +562,21 @@ namespace GrowingNeuralGas
 		return closest[idx];
 	}
 
-	void clear() {
-		saliencies.clear();
-		closestMap.clear();
-		nearestMap.clear();
-	}
-
-	void gngquan(const vector<ARGB>& pixels, ARGB* pPalette, UINT& nMaxColors)
+	void DblGNGQuantizer::gngquan(const vector<ARGB>& pixels, ARGB* pPalette, UINT& nMaxColors)
 	{
-		maxNodes = nMaxColors;		// number of colours used
+		maxNodes = nMaxColors;		// number of colours used		
 
-		auto GetColorIndex = [&](const Color& c) -> int {
-			return GetARGBIndex(c, hasSemiTransparency, hasAlpha());
-		};
-		auto NearestColorIndex = [nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
-			if (nMaxColors <= 4)
-				return nearestColorIndex(pPalette, nMaxColors, argb, pos);
-			return closestColorIndex(pPalette, nMaxColors, argb, pos);
-		};
+		if (samples.empty()) {
+			// Sequential color extraction loop
+			for (auto i = 0u; i < pixels.size(); ++i) {
+				auto pixel = GetARGB(pixels[i], hasSemiTransparency, hasAlpha());
+				auto isRegistered = pixelMap.find(pixel) != pixelMap.end();
 
-		vector<shared_ptr<GNGNode>> samples;
-		vector<shared_ptr<GNGNode>> uniqueSamples;
-		unordered_map<uint32_t, int> histogram;
-
-		// Sequential color extraction loop
-		for (auto i = 0u; i < pixels.size(); ++i) {
-			auto pixel = GetARGB(pixels[i], hasSemiTransparency, hasAlpha());
-			auto isRegistered = pixelMap.find(pixel) != pixelMap.end();
-
-			Color c(pixel);
-			CIELABConvertor::Lab lab1;
-			getLab(c, lab1);
-			vector<double> currentWeight;
-
-			if (hasAlpha()) {
-				currentWeight = { lab1.L, lab1.A, lab1.B, (double) lab1.alpha };
-			}
-			else {
-				currentWeight = { lab1.L, lab1.A, lab1.B };
-			}
-
-			// Generate a new GNGNode inside a safe shared heap block
-			auto sampleNode = make_shared<GNGNode>(currentWeight);
-			samples.push_back(sampleNode);
-
-			if (!isRegistered) {
-				uniqueSamples.push_back(make_shared<GNGNode>(currentWeight));
-			}
-
-			// Idiomatic count tracking incrementation (Auto-initializes to 0 if key is absent)
-			histogram[pixel]++;
-		}
-
-		if (pixelMap.size() <= nMaxColors) {
-			/* Fill palette */
-			nMaxColors = pixelMap.size();
-			int k = 0;
-			for (const auto& [pixel, lab] : pixelMap) {
-				Color c(pPalette[k]);
-				pPalette[k++] = pixel;
-
-				if (k > 1 && c.GetA() == 0)
-					swap(pPalette[k - 1], pPalette[0]);
-			}
-
-			return;
-		}
-
-		auto mDivn = min(0.9, nMaxColors * 1.0 / pixelMap.size());
-		if (hasSemiTransparency)
-			mDivn *= -1;
-
-		vector<shared_ptr<GNGNode>> stdDevSamples;
-		for (const auto& [pixel, count] : histogram) {
-			auto freq = static_cast<int>(sqrt(count));
-
-			for (auto j = 0; j < freq; ++j) {
 				Color c(pixel);
 				CIELABConvertor::Lab lab1;
 				getLab(c, lab1);
-
 				vector<double> currentWeight;
+
 				if (hasAlpha()) {
 					currentWeight = { lab1.L, lab1.A, lab1.B, (double)lab1.alpha };
 				}
@@ -704,7 +584,55 @@ namespace GrowingNeuralGas
 					currentWeight = { lab1.L, lab1.A, lab1.B };
 				}
 
-				stdDevSamples.push_back(make_shared<GNGNode>(currentWeight));
+				// Generate a new GNGNode inside a safe shared heap block
+				auto sampleNode = make_shared<GNGNode>(currentWeight);
+				samples.push_back(sampleNode);
+
+				if (!isRegistered) {
+					uniqueSamples.push_back(make_shared<GNGNode>(currentWeight));
+				}
+
+				// Idiomatic count tracking incrementation (Auto-initializes to 0 if key is absent)
+				histogram[pixel]++;
+			}
+
+			if (pixelMap.size() <= nMaxColors) {
+				/* Fill palette */
+				nMaxColors = pixelMap.size();
+				int k = 0;
+				for (const auto& [pixel, lab] : pixelMap) {
+					Color c(pPalette[k]);
+					pPalette[k++] = pixel;
+
+					if (k > 1 && c.GetA() == 0)
+						swap(pPalette[k - 1], pPalette[0]);
+				}
+
+				return;
+			}
+
+			mDivn = min(0.9, nMaxColors * 1.0 / pixelMap.size());
+			if (hasSemiTransparency)
+				mDivn *= -1;
+			
+			for (const auto& [pixel, count] : histogram) {
+				auto freq = static_cast<int>(sqrt(count));
+
+				for (auto j = 0; j < freq; ++j) {
+					Color c(pixel);
+					CIELABConvertor::Lab lab1;
+					getLab(c, lab1);
+
+					vector<double> currentWeight;
+					if (hasAlpha()) {
+						currentWeight = { lab1.L, lab1.A, lab1.B, (double)lab1.alpha };
+					}
+					else {
+						currentWeight = { lab1.L, lab1.A, lab1.B };
+					}
+
+					stdDevSamples.push_back(make_shared<GNGNode>(currentWeight));
+				}
 			}
 		}
 
@@ -719,26 +647,33 @@ namespace GrowingNeuralGas
 			trainBatch(samples, uniqueSamples, stdDevSamples, epochs);
 
 		if (nodes.size() > static_cast<size_t>(nMaxColors)) {
-			cerr << "Truncated no. of clusters from " << nodes.size() << " to " << nMaxColors << "\n";
+			wcerr << L"Truncated no. of clusters from " << nodes.size() << L" to " << nMaxColors << L"\n";
 		} 
 		else if (nodes.size() < static_cast<size_t>(nMaxColors)) {
 			nMaxColors = nodes.size();
-			cerr << "Reduced no. of clusters to " << nMaxColors << "\n";
+			wcerr << L"Reduced no. of clusters to " << nMaxColors << L"\n";
 		}
+
 		Inxbuild(pPalette, nMaxColors);
 	}	
 
-	void grabPixels(Bitmap* srcImg, vector<ARGB>& pixels, UINT& nMaxColors, bool& hasSemiTransparency)
+	void DblGNGQuantizer::grabPixels(Bitmap* srcImg, vector<ARGB>& pixels, UINT& nMaxColors, bool& hasSemiTransparency)
 	{
 		int semiTransCount = 0;
 		GrabPixels(srcImg, pixels, semiTransCount, m_transparentPixelIndex, m_transparentColor, alphaThreshold, nMaxColors);
-		hasSemiTransparency = semiTransCount > 0;
+		this->hasSemiTransparency = hasSemiTransparency = semiTransCount > 0;
 	}
 
-	bool quantize_image(const vector<ARGB>& pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
+	bool DblGNGQuantizer::quantize_image(const vector<ARGB>& pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
 	{
-		if (dither)
-			return dither_image(pixels.data(), pPalette, nMaxColors, nearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height);
+		if (dither) {
+			auto NearestColorIndex = [this, nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
+				if (nMaxColors <= 4)
+					return nearestColorIndex(pPalette, nMaxColors, argb, pos);
+				return closestColorIndex(pPalette, nMaxColors, argb, pos);
+			};
+			return dither_image(pixels.data(), pPalette, nMaxColors, NearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height);
+		}
 
 		UINT pixelIndex = 0;
 		for (UINT j = 0; j < height; ++j) {
@@ -751,15 +686,16 @@ namespace GrowingNeuralGas
 
 	bool DblGNGQuantizer::QuantizeImageByPal(const vector<ARGB>& pixels, const UINT bitmapWidth, const ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
-		auto mDivn = min(0.9, nMaxColors * 1.0 / pixelMap.size());
-		if (hasSemiTransparency)
-			mDivn *= -1;
-
 		const auto bitmapHeight = pixels.size() / bitmapWidth;
 
 		if (dither && !enforcedDither) {
 			auto qPixels = make_unique<unsigned short[]>(pixels.size());
 			quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+
+			pixelMap.clear();
+			clear();
+
+			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex >= 0);
 		}
 
 		if (dither) {
@@ -782,7 +718,7 @@ namespace GrowingNeuralGas
 		auto GetColorIndex = [&](const Color& c) -> int {
 			return GetARGBIndex(c, hasSemiTransparency, hasAlpha());
 		};
-		auto NearestColorIndex = [nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
+		auto NearestColorIndex = [this, nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
 			if (nMaxColors <= 4)
 				return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 			return closestColorIndex(pPalette, nMaxColors, argb, pos);
@@ -867,5 +803,28 @@ namespace GrowingNeuralGas
 		auto result = QuantizeImage(pixels, bitmapWidth, pPalette->Entries, pDest, nMaxColors, dither);
 		pDest->SetPalette(pPalette);
 		return result;
+	}
+
+	void DblGNGQuantizer::clear() {
+		saliencies.clear();
+		closestMap.clear();
+		nearestMap.clear();
+	}
+	
+	const bool DblGNGQuantizer::IsGA() const {
+		return isGA;
+	}
+
+	const bool DblGNGQuantizer::hasAlpha() const {
+		return m_transparentPixelIndex >= 0;
+	}
+
+	void DblGNGQuantizer::setParams(double learningRate, int startingPoints) {
+		#pragma omp critical(QuantizerParamLock)
+		{
+			this->learningRate = learningRate;
+			this->startingPoints = startingPoints;
+			clear();
+		}
 	}
 }

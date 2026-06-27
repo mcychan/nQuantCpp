@@ -575,7 +575,6 @@ namespace PnnLABQuant
 	void PnnLABQuantizer::setRatio(double ratioX, double ratioY) {
 		ratio = min(1.0, ratioX);
 		this->ratioY = min(1.0, ratioY);
-		clear();
 	}
 
 	void PnnLABQuantizer::grabPixels(Bitmap* srcImg, vector<ARGB>& pixels, UINT& nMaxColors, bool& hasSemiTransparency)

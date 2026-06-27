@@ -159,6 +159,7 @@
     <ClInclude Include="bitmapUtilities.h" />
     <ClInclude Include="BlueNoise.h" />
     <ClInclude Include="CIELABConvertor.h" />
+    <ClInclude Include="DblGNGGAQuantizer.h" />
     <ClInclude Include="DblGNGQuantizer.h" />
     <ClInclude Include="DivQuantizer.h" />
     <ClInclude Include="Dl3Quantizer.h" />
@@ -184,6 +185,7 @@
     <ClCompile Include="bitmapUtilities.cpp" />
     <ClCompile Include="BlueNoise.cpp" />
     <ClCompile Include="CIELABConvertor.cpp" />
+    <ClCompile Include="DblGNGGAQuantizer.cpp" />
     <ClCompile Include="DblGNGQuantizer.cpp" />
     <ClCompile Include="DivQuantizer.cpp" />
     <ClCompile Include="Dl3Quantizer.cpp" />

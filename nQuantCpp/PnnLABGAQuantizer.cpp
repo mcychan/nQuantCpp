@@ -223,19 +223,23 @@ namespace PnnLABQuant
 		return (float) _fitness;
 	}
 
-	static double rotateLeft(double u, double v) {
-		auto theta = M_PI * randrange(minRatio, maxRatio);
+	double rotateLeft(double u, double v) {
+		auto theta = randrange(0.0, 2.0 * M_PI);
 		auto result = u * sin(theta) + v * cos(theta);
-		if (result <= minRatio || result >= maxRatio)
-			result = minRatio + fmod(minRatio, maxRatio - minRatio);
+		if (result <= minRatio || result >= maxRatio) {
+			auto range = maxRatio - minRatio;
+			result = minRatio + fmod(abs(result) - minRatio, range);
+		}
 		return result;
 	}
 	
-	static double rotateRight(double u, double v) {
-		auto theta = M_PI * randrange(minRatio, maxRatio);
+	double rotateRight(double u, double v) {
+		auto theta = randrange(0.0, 2.0 * M_PI);
 		auto result = u * cos(theta) - v * sin(theta);
-		if (result <= minRatio || result >= maxRatio)
-			result = maxRatio - fmod(minRatio, maxRatio - minRatio);
+		if (result <= minRatio || result >= maxRatio) {
+			auto range = maxRatio - minRatio;
+			result = maxRatio - fmod(abs(result) + maxRatio, range);
+		}
 		return result;
 	}
 

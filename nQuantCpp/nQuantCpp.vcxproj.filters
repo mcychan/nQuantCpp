@@ -87,6 +87,9 @@
     <ClInclude Include="DblGNGQuantizer.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
+    <ClInclude Include="DblGNGGAQuantizer.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="nQuantCpp.cpp">
@@ -153,6 +156,9 @@
       <Filter>原始程式檔</Filter>
     </ClCompile>
     <ClCompile Include="DblGNGQuantizer.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="DblGNGGAQuantizer.cpp">
       <Filter>原始程式檔</Filter>
     </ClCompile>
   </ItemGroup>
