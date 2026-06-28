@@ -97,6 +97,9 @@ namespace GrowingNeuralGas
 			vector<shared_ptr<GNGNode>> uniqueSamples;
 			vector<shared_ptr<GNGNode>> stdDevSamples;
 			unordered_map<uint32_t, int> histogram;
+
+			unordered_map<int, vector<unsigned short> > closestMap;
+			unordered_map<int, unsigned short> nearestMap;
 			
 			void insertNewNodeWeighted(unordered_map<shared_ptr<GNGNode>, vector<shared_ptr<GNGNode>>, SharedPtrHash>& assignments);
 			void updateNodeWeightsAdaptive(unordered_map<shared_ptr<GNGNode>, vector<shared_ptr<GNGNode>>, SharedPtrHash>& assignments,

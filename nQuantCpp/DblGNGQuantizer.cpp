@@ -31,10 +31,7 @@ namespace GrowingNeuralGas
 		{0.299f, 0.587f, 0.114f},
 		{-0.14713f, -0.28886f, 0.436f},
 		{0.615f, -0.51499f, -0.10001f}
-	};
-	
-	unordered_map<int, vector<unsigned short> > closestMap;
-	unordered_map<int, unsigned short> nearestMap;	
+	};	
 
 	DblGNGQuantizer::DblGNGQuantizer() : startingPoints(2)
 		, learningRate(0.002)
@@ -820,11 +817,9 @@ namespace GrowingNeuralGas
 	}
 
 	void DblGNGQuantizer::setParams(double learningRate, int startingPoints) {
-		#pragma omp critical(QuantizerParamLock)
-		{
-			this->learningRate = learningRate;
-			this->startingPoints = startingPoints;
-			clear();
-		}
+		this->learningRate = learningRate;
+		this->startingPoints = startingPoints;
+		closestMap.clear();
+		nearestMap.clear();
 	}
 }

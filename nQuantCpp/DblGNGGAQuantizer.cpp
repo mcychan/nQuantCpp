@@ -219,7 +219,7 @@ namespace GrowingNeuralGas
 	}
 	
 	double rotateLR(double u, double v) {
-		auto theta = randrange(0.0, 2.0 * M_PI);
+		auto theta = randrange(0.0, 2 * M_PI);
 		auto result = u * cos(theta) - v * sin(theta);
 		if (result <= minLR || result >= maxLR) {
 			auto range = maxLR - minLR;
@@ -241,9 +241,25 @@ namespace GrowingNeuralGas
 		return child;
 	}
 
+	const double MUTATION_STDDEV_RATIO = 0.15;
 	double boxMuller(double value, double minValue, double maxValue) {
-		auto r1 = randrange(minValue, maxValue);
-		return sqrt(-2 * log(value)) * cos(2 * M_PI * r1);
+		auto u1 = randrange(0.0, 1.0);
+		auto u2 = randrange(0.0, 1.0);
+
+		if (u1 < 1e-9)
+			u1 = 1e-9;
+
+		auto pureBoxMuller = sqrt(-2 * log(u1))* cos(2 * M_PI * u2);
+		auto stddev = (maxValue - minValue) * MUTATION_STDDEV_RATIO;
+
+		auto result = value + pureBoxMuller * stddev;
+		if (result < minValue) {
+			result = minValue;
+		}
+		else if (result > maxValue) {
+			result = maxValue;
+		}
+		return result;
 	}
 
 	bool DblGNGGAQuantizer::dominates(const DblGNGGAQuantizer* right) {

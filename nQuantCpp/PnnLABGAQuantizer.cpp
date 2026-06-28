@@ -256,9 +256,25 @@ namespace PnnLABQuant
 		return child;
 	}
 
-	static double boxMuller(double value) {
-		auto r1 = randrange(minRatio, maxRatio);
-		return sqrt(-2 * log(value)) * cos(2 * M_PI * r1);
+	const double MUTATION_STDDEV_RATIO = 0.15;
+	double boxMuller(double value) {
+		auto u1 = randrange(0.0, 1.0);
+		auto u2 = randrange(0.0, 1.0);
+
+		if (u1 < 1e-9)
+			u1 = 1e-9;
+
+		auto pureBoxMuller = sqrt(-2 * log(u1)) * cos(2 * M_PI * u2);
+		auto stddev = (maxRatio - minRatio) * MUTATION_STDDEV_RATIO;
+
+		auto result = value + pureBoxMuller * stddev;
+		if (result < minRatio) {
+			result = minRatio;
+		}
+		else if (result > maxRatio) {
+			result = maxRatio;
+		}
+		return result;
 	}
 
 	bool PnnLABGAQuantizer::dominates(const PnnLABGAQuantizer* right) {
