@@ -76,6 +76,10 @@ bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColor
 
 bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, ARGB* qPixels, const UINT width, const UINT height);
 
+bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn,
+	const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels,
+	const UINT width, const UINT height, const vector<float>& saliencies, bool enforcedDither);
+
 bool ProcessImagePixels(Bitmap* pDest, const ARGB* qPixels, const bool& hasSemiTransparency, const int& transparentPixelIndex);
 
 bool ProcessImagePixels(Bitmap* pDest, const unsigned short* qPixels, const bool hasTransparent);

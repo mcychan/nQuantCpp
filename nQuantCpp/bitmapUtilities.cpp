@@ -4,6 +4,7 @@
 // GetBitmapHeaderSize
 //
 #include "bitmapUtilities.h"
+#include <algorithm>
 
 ULONG GetBitmapHeaderSize(LPCVOID pDib)
 {
@@ -660,6 +661,55 @@ bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn 
 		dir *= -1;
 		swap(row0, row1);
 	}
+	return true;
+}
+
+// Standard Interleaved Gradient Noise formula by Jorge Jimenez
+inline float GetInterleavedGradientNoise(int x, int y)
+{
+	// Returns a pseudo-random value between 0.0f and 1.0f
+	return fmod(52.9829189f * fmod(0.06711056f * float(x) + 0.00583715f * float(y), 1.0f), 1.0f);
+}
+
+bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn,
+	const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels,
+	const UINT width, const UINT height, const vector<float>& saliencies, bool enforcedDither)
+{
+	// Base spread determined by palette density
+	const float baseSpread = 255.0f / cbrt(static_cast<float>(nMaxColors));
+
+	for (UINT y = 0; y < height; ++y)
+	{
+		for (UINT x = 0; x < width; ++x)
+		{
+			UINT pixelIndex = y * width + x;
+			Color c(pixels[pixelIndex]);
+
+			// Handle pure transparency early
+			if (transparentPixelIndex >= 0 && c.GetA() == 0) {
+				qPixels[pixelIndex] = static_cast<unsigned short>(transparentPixelIndex);
+				continue;
+			}
+
+			// Generate centered noise [-0.5, 0.5]
+			float noise = GetInterleavedGradientNoise(static_cast<int>(x), static_cast<int>(y)) - 0.5f;
+
+			// Compute noise offset. If saliencies, modulate by pixel saliency;
+			// otherwise, use uniform base noise intensity across the image.
+			float weight = enforcedDither && !saliencies.empty() ? saliencies[pixelIndex] : 1.0f;
+			float offset = noise * baseSpread * weight;
+
+			// Apply noise and clamp safely to RGB limits
+			int r = clamp(static_cast<int>(c.GetR() + offset), 0, 255);
+			int g = clamp(static_cast<int>(c.GetG() + offset), 0, 255);
+			int b = clamp(static_cast<int>(c.GetB() + offset), 0, 255);
+			int a = c.GetA();
+
+			auto noisyArgb = Color::MakeARGB(a, r, g, b);
+			qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, noisyArgb, y + x);
+		}
+	}
+
 	return true;
 }
 

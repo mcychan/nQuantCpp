@@ -633,8 +633,6 @@ namespace GrowingNeuralGas
 			}
 		}
 
-		if (mDivn < .04 && PG < 1 && PG >= coeffs[0][1] && nMaxColors >= 64)
-			enforcedDither = false;
 		if (mDivn > .0029 && nMaxColors <= 32)
 			enforcedDither = false;
 
@@ -669,7 +667,7 @@ namespace GrowingNeuralGas
 					return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 				return closestColorIndex(pPalette, nMaxColors, argb, pos);
 			};
-			return dither_image(pixels.data(), pPalette, nMaxColors, NearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height);
+			return dither_image(pixels.data(), pPalette, nMaxColors, NearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height, saliencies, enforcedDither);
 		}
 
 		UINT pixelIndex = 0;
@@ -684,16 +682,6 @@ namespace GrowingNeuralGas
 	bool DblGNGQuantizer::QuantizeImageByPal(const vector<ARGB>& pixels, const UINT bitmapWidth, const ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither)
 	{
 		const auto bitmapHeight = pixels.size() / bitmapWidth;
-
-		if (dither && !enforcedDither) {
-			auto qPixels = make_unique<unsigned short[]>(pixels.size());
-			quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
-
-			pixelMap.clear();
-			clear();
-
-			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex >= 0);
-		}
 
 		if (dither) {
 			saliencies.resize(pixels.size());
@@ -711,6 +699,17 @@ namespace GrowingNeuralGas
 
 		if (enforcedDither)
 			enforcedDither = nMaxColors < 32 || nMaxColors > 64;
+
+		bool sortedByYDiff = nMaxColors >= 128 && mDivn >= .02 && (!hasAlpha() || mDivn < .18);
+		if (dither && (sortedByYDiff || !enforcedDither)) {
+			auto qPixels = make_unique<unsigned short[]>(pixels.size());
+			quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+
+			pixelMap.clear();
+			clear();
+
+			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex >= 0);
+		}		
 
 		auto GetColorIndex = [&](const Color& c) -> int {
 			return GetARGBIndex(c, hasSemiTransparency, hasAlpha());
