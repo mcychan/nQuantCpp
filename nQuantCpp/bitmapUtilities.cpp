@@ -675,8 +675,9 @@ bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColor
 	const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels,
 	const UINT width, const UINT height, const vector<float>& saliencies, bool enforcedDither)
 {
-	// Base spread determined by palette density
-	const float baseSpread = 255.0f / cbrt(static_cast<float>(nMaxColors));
+	// Introduce a tuning multiplier (e.g., 0.5f to 0.8f) to reduce overall noise amplitude
+	const float noiseDampener = 0.8f;
+	const float baseSpread = (255.0f / cbrt(static_cast<float>(nMaxColors))) * noiseDampener;
 
 	for (UINT y = 0; y < height; ++y)
 	{

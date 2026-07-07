@@ -700,8 +700,11 @@ namespace GrowingNeuralGas
 		if (enforcedDither)
 			enforcedDither = nMaxColors < 32 || nMaxColors > 64;
 
-		bool sortedByYDiff = nMaxColors >= 128 && mDivn >= .02 && (!hasAlpha() || mDivn < .18);
-		if (dither && (sortedByYDiff || !enforcedDither)) {
+		bool ditherByIGN = nMaxColors >= 128 && (!hasAlpha() || mDivn < .18);
+		if ((nMaxColors < 32 && mDivn > .015 && mDivn < .032) || (nMaxColors >= 32 && nMaxColors < 64 && mDivn > .03 && mDivn < .06))
+			ditherByIGN = true;
+
+		if (dither && (ditherByIGN || !enforcedDither)) {
 			auto qPixels = make_unique<unsigned short[]>(pixels.size());
 			quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
 
