@@ -584,7 +584,27 @@ namespace PnnLABQuant
 		this->hasSemiTransparency = hasSemiTransparency = semiTransCount > 0;
 	}
 
-	bool PnnLABQuantizer::QuantizeImageByPal(const vector<ARGB>& pixels, const UINT bitmapWidth, const ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither)
+	bool PnnLABQuantizer::quantize_image(const vector<ARGB>& pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const UINT frameIndex, const bool dither)
+	{
+		if (dither) {
+			auto NearestColorIndex = [this, nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
+				if (nMaxColors <= 4)
+					return nearestColorIndex(pPalette, nMaxColors, argb, pos);
+				return closestColorIndex(pPalette, nMaxColors, argb, pos);
+				};
+			return dither_image(pixels.data(), pPalette, nMaxColors, NearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height, saliencies, true, frameIndex);
+		}
+
+		UINT pixelIndex = 0;
+		for (UINT j = 0; j < height; ++j) {
+			for (UINT i = 0; i < width; ++i)
+				qPixels[pixelIndex++] = nearestColorIndex(pPalette, nMaxColors, pixels[pixelIndex], i + j);
+		}
+
+		return true;
+	}
+
+	bool PnnLABQuantizer::QuantizeImageByPal(const vector<ARGB>& pixels, const UINT bitmapWidth, const ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, UINT frameIndex, bool dither)
 	{
 		if (hasSemiTransparency)
 			weight *= -1;
@@ -615,6 +635,19 @@ namespace PnnLABQuant
 		};
 
 		const auto bitmapHeight = pixels.size() / bitmapWidth;
+		bool ditherByIGN = nMaxColors >= 128 && weight >= .02 && (!hasAlpha() || weight < .18);
+		if (isGA && nMaxColors >= 128)
+			ditherByIGN = true;
+
+		if (dither && ditherByIGN) {
+			auto qPixels = make_unique<unsigned short[]>(pixels.size());
+			quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, frameIndex, dither);
+
+			pixelMap.clear();
+			clear();
+
+			return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex >= 0);
+		}
 
 		if (nMaxColors > 256) {
 			auto qPixels = make_unique<ARGB[]>(pixels.size());
@@ -640,7 +673,7 @@ namespace PnnLABQuant
 		return ProcessImagePixels(pDest, qPixels.get(), m_transparentPixelIndex >= 0);
 	}
 
-	bool PnnLABQuantizer::QuantizeImage(const vector<ARGB>& pixels, const UINT bitmapWidth, ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither)
+	bool PnnLABQuantizer::QuantizeImage(const vector<ARGB>& pixels, const UINT bitmapWidth, ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, UINT frameIndex, bool dither)
 	{
 		if (nMaxColors <= 32)
 			PR = PG = PB = PA = 1;
@@ -670,7 +703,7 @@ namespace PnnLABQuant
 		}
 
 		const auto& pPal = pPalette;
-		return QuantizeImageByPal(pixels, bitmapWidth, pPal, pDest, nMaxColors, dither);
+		return QuantizeImageByPal(pixels, bitmapWidth, pPal, pDest, nMaxColors, frameIndex, dither);
 	}
 
 	bool PnnLABQuantizer::QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither)

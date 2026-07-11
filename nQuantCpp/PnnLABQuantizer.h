@@ -44,6 +44,7 @@ namespace PnnLABQuant
 			void find_nn(pnnbin* bins, int idx, bool texicab);
 			unsigned short closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos);
 			unsigned short hybridColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos);
+			bool quantize_image(const vector<ARGB>& pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const UINT frameIndex, const bool dither);
 
 		public:
 			PnnLABQuantizer();
@@ -59,8 +60,8 @@ namespace PnnLABQuant
 			unsigned short nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos);
 			void setRatio(double ratioX, double ratioY);
 			void grabPixels(Bitmap* srcImg, vector<ARGB>& pixels, UINT& nMaxColors, bool& hasSemiTransparency);
-			bool QuantizeImageByPal(const vector<ARGB>& pixels, const UINT bitmapWidth, const ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
-			bool QuantizeImage(const vector<ARGB>& pixels, const UINT bitmapWidth, ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
+			bool QuantizeImageByPal(const vector<ARGB>& pixels, const UINT bitmapWidth, const ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, UINT frameIndex = 0, bool dither = true);
+			bool QuantizeImage(const vector<ARGB>& pixels, const UINT bitmapWidth, ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, UINT frameIndex = 0, bool dither = true);
 			bool QuantizeImage(Bitmap* pSource, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
 	};
 }

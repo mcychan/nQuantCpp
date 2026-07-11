@@ -36,8 +36,9 @@ namespace Peano
 
 	bool m_hasAlpha, m_dither, m_enforcedDither = true, sortedByYDiff;
 	unsigned short m_nMaxColor;
-	UINT m_width, m_height;
-	float beta;
+	UINT m_width, m_height, m_frameIndex = 0;
+	const float noiseDampener = 0.8f;
+	float baseSpread, beta;
 	double m_weight;
 	const ARGB *m_image, *m_pPalette;
 	unsigned short* m_qPixels;
@@ -204,8 +205,12 @@ namespace Peano
 
 			int acceptedDiff = max(2, m_nMaxColor - margin);
 			if (m_saliencies != nullptr && (CIELABConvertor::Y_Diff(pixel, c2) > acceptedDiff || CIELABConvertor::U_Diff(pixel, c2) > (2 * acceptedDiff))) {
-				auto strength = 1 / 3.0f;
-				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], 1 / m_saliencies[bidx], strength, x, y);
+				if (m_dither)
+					c2 = dither_pixel(m_image, bidx, m_width, noiseDampener, baseSpread, m_saliencies, true, m_frameIndex);
+				else {
+					auto strength = 1 / 3.0f;
+					c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], strength, strength, x, y);
+				}
 				qPixelIndex = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx);
 			}
 		}
@@ -258,9 +263,13 @@ namespace Peano
 		if (unaccepted) {
 			if (m_saliencies != nullptr)
 				qPixelIndex = ditherPixel(x, y, c2, beta);
-			else if (CIELABConvertor::Y_Diff(pixel, c2) > 3 && CIELABConvertor::U_Diff(pixel, c2) > 3) {
-				auto strength = 1 / 3.0f;
-				c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], strength, strength, x, y);
+			else if (CIELABConvertor::Y_Diff(pixel, c2) > 3 && CIELABConvertor::U_Diff(pixel, c2) > 3) {				
+				if (m_dither)
+					c2 = dither_pixel(m_image, bidx, m_width, noiseDampener, baseSpread, m_saliencies, true, m_frameIndex);
+				else {
+					auto strength = 1 / 3.0f;
+					c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], strength, strength, x, y);
+				}
 				qPixelIndex = m_ditherFn(m_pPalette, m_nMaxColor, c2.GetValue(), bidx);
 			}
 
@@ -342,6 +351,7 @@ namespace Peano
 		m_image = pixels;
 		m_pPalette = pPalette;
 		m_nMaxColor = nMaxColor;
+		baseSpread = (255.0f / cbrt(static_cast<float>(m_nMaxColor))) * noiseDampener;
 		
 		m_ditherFn = ditherFn;
 		m_getColorIndexFn = getColorIndexFn;
@@ -412,9 +422,10 @@ namespace Peano
 		doDither(width, height, pixels, pPalette, nMaxColor, ditherFn, getColorIndexFn, saliencies, weight);
 	}	
 
-	void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColor, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, ARGB* qPixels, float* saliencies, double weight, bool dither)
+	void GilbertCurve::dither(const UINT width, const UINT height, const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColor, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, ARGB* qPixels, float* saliencies, double weight, UINT frameIndex, bool dither)
 	{
 		m_qColorPixels = qPixels;
+		m_frameIndex = frameIndex;
 		m_dither = dither;
 		doDither(width, height, pixels, pPalette, nMaxColor, ditherFn, getColorIndexFn, saliencies, weight);
 	}
