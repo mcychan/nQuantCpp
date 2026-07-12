@@ -700,8 +700,8 @@ namespace GrowingNeuralGas
 		if (enforcedDither)
 			enforcedDither = nMaxColors < 32 || nMaxColors > 64;
 
-		bool ditherByIGN = nMaxColors >= 128 && (!hasAlpha() || mDivn < .18);
-		if (isGA && nMaxColors >= 128)
+		bool ditherByIGN = !hasAlpha() && nMaxColors >= 128 && mDivn < .18;
+		if (isGA && !hasAlpha() && nMaxColors >= 128)
 			ditherByIGN = true;
 		if ((nMaxColors < 32 && mDivn > .015 && mDivn < .032) || (nMaxColors >= 32 && nMaxColors < 64 && mDivn > .03 && mDivn < .06))
 			ditherByIGN = true;
