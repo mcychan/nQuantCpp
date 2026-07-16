@@ -112,7 +112,7 @@ namespace GrowingNeuralGas
 			void Inxbuild(ARGB* pPalette, const UINT& nMaxColors);
 
 			unsigned short closestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos);
-			bool quantize_image(const vector<ARGB>& pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither);
+			bool quantize_image(const vector<ARGB>& pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const UINT frameIndex, const bool dither);
 
 		public:
 			int m_transparentPixelIndex = -1;
@@ -130,7 +130,7 @@ namespace GrowingNeuralGas
 			unsigned short nearestColorIndex(const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos);
 			void setParams(double learningRate, int startingPoints);
 			void grabPixels(Bitmap* srcImg, vector<ARGB>& pixels, UINT& nMaxColors, bool& hasSemiTransparency);
-			bool QuantizeImageByPal(const vector<ARGB>& pixels, const UINT bitmapWidth, const ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
+			bool QuantizeImageByPal(const vector<ARGB>& pixels, const UINT bitmapWidth, const ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, const UINT frameIndex = 0, bool dither = true);
 			bool QuantizeImage(const vector<ARGB>& pixels, const UINT bitmapWidth, ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither = true);
 			bool QuantizeImage(Bitmap* pSource, Bitmap *pDest, UINT& nMaxColors, bool dither = true);
 	};

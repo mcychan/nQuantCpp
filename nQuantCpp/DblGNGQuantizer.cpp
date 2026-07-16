@@ -659,7 +659,37 @@ namespace GrowingNeuralGas
 		this->hasSemiTransparency = hasSemiTransparency = semiTransCount > 0;
 	}
 
-	bool DblGNGQuantizer::quantize_image(const vector<ARGB>& pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const bool dither)
+	bool ditherImage(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn,
+		const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels,
+		const UINT width, const UINT height, const vector<float>& saliencies, bool enforcedDither, unsigned int frameIndex)
+	{
+		// Introduce a tuning multiplier (e.g., 0.5f to 0.8f) to reduce overall noise amplitude
+		const float noiseDampener = 0.8f;
+		const float baseSpread = (255.0f / cbrt(static_cast<float>(nMaxColors))) * noiseDampener;
+
+		for (UINT y = 0; y < height; ++y)
+		{
+			for (UINT x = 0; x < width; ++x)
+			{
+				UINT pixelIndex = y * width + x;
+				Color c(pixels[pixelIndex]);
+
+				// Handle pure transparency early
+				if (transparentPixelIndex >= 0 && c.GetA() == 0) {
+					qPixels[pixelIndex] = static_cast<unsigned short>(transparentPixelIndex);
+					continue;
+				}
+
+				auto noisyArgb = BlueNoise::dither_pixel(pixels, pixelIndex, width, baseSpread,
+					saliencies.data(), enforcedDither, frameIndex);
+				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, noisyArgb, y + x);
+			}
+		}
+
+		return true;
+	}
+
+	bool DblGNGQuantizer::quantize_image(const vector<ARGB>& pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const UINT frameIndex, const bool dither)
 	{
 		if (dither) {
 			auto NearestColorIndex = [this, nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
@@ -667,7 +697,7 @@ namespace GrowingNeuralGas
 					return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 				return closestColorIndex(pPalette, nMaxColors, argb, pos);
 			};
-			return dither_image(pixels.data(), pPalette, nMaxColors, NearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height, saliencies, enforcedDither);
+			return ditherImage(pixels.data(), pPalette, nMaxColors, NearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height, saliencies, enforcedDither, frameIndex);
 		}
 
 		UINT pixelIndex = 0;
@@ -679,7 +709,7 @@ namespace GrowingNeuralGas
 		return true;
 	}
 
-	bool DblGNGQuantizer::QuantizeImageByPal(const vector<ARGB>& pixels, const UINT bitmapWidth, const ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, bool dither)
+	bool DblGNGQuantizer::QuantizeImageByPal(const vector<ARGB>& pixels, const UINT bitmapWidth, const ARGB* pPalette, Bitmap* pDest, UINT& nMaxColors, const UINT frameIndex, bool dither)
 	{
 		const auto bitmapHeight = pixels.size() / bitmapWidth;
 
@@ -700,15 +730,15 @@ namespace GrowingNeuralGas
 		if (enforcedDither)
 			enforcedDither = nMaxColors < 32 || nMaxColors > 64;
 
-		bool ditherByIGN = !hasAlpha() && nMaxColors >= 128 && mDivn < .18;
+		bool fullDither = !hasAlpha() && nMaxColors >= 128 && mDivn < .18;
 		if (isGA && !hasAlpha() && nMaxColors >= 128)
-			ditherByIGN = true;
+			fullDither = true;
 		if ((nMaxColors < 32 && mDivn > .015 && mDivn < .032) || (nMaxColors >= 32 && nMaxColors < 64 && mDivn > .03 && mDivn < .06))
-			ditherByIGN = true;
+			fullDither = true;
 
-		if (dither && (ditherByIGN || !enforcedDither)) {
+		if (dither && (fullDither || !enforcedDither)) {
 			auto qPixels = make_unique<unsigned short[]>(pixels.size());
-			quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, dither);
+			quantize_image(pixels, pPalette, nMaxColors, qPixels.get(), bitmapWidth, bitmapHeight, frameIndex, dither);
 
 			pixelMap.clear();
 			clear();

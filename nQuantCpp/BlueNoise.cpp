@@ -1,15 +1,17 @@
-/**
- * Alan Wolfe, Nathan Morrical, Tomas Akenine-M�ller, Ravi Ramamoorthi:
+﻿/**
+ * Alan Wolfe, Nathan Morrical, Tomas Akenine-Möller, Ravi Ramamoorthi:
  * Scalar Spatiotemporal Blue Noise Masks. CoRR abs/2112.09629 (2021)
  * Copyright (c) 2022 - 2023 Miller Cy Chan */
 
 #include "stdafx.h"
 #include "BlueNoise.h"
 
-#include <memory>
+#include <algorithm>
 
 namespace BlueNoise
 {
+	static constexpr int BLUE_NOISE_SIZE = 64;
+
 	// Reference mask from: https://tellusim.com/download/noise/64x64_l64_s16.png
 	// Made from: https://github.com/Tellusim/BlueNoise
 	const char TELL_BLUE_NOISE[] = {
@@ -177,7 +179,7 @@ namespace BlueNoise
 		20, -37, 38, 0, -99, 51, 95, 81, -76, 127, -61, 50, 87, -14, 105, -84, 68, -47, -4, -104, -49, -83, 63, -104, 39,
 		-63, 18, -114, 48, -13, 82, 3, -78, 26, 101, -101, 30, -83, 43, -110, 64, -88, -53, -14, 22, 104, -87, 73, 127, -8,
 		26, -34, 118, 8, -25, 22, -104, 48, -57, 80, 26, -125, -33, 1, 108, -117, 90, -62, -31, 6, -107
-	};
+	};	
 	
 	ARGB diffuse(const Color& pixel, const Color& qPixel, const float weight, const float strength, const int x, const int y)
 	{
@@ -212,4 +214,79 @@ namespace BlueNoise
 			}
 		}
     }
+
+	// Convert signed-byte blue-noise value (-128 … 127) → float [0, 1]
+	// (the +0.5 / 256 form is the conventional unbiased mapping)
+	inline float BlueNoiseByteToFloat(char v)
+	{
+		return (static_cast<unsigned char>(v) + 0.5f) * (1.0f / 256.0f);
+	}
+
+	// Optional: convert directly to a centered value in [-0.5, 0.5]
+	// (useful if you want to skip the “- 0.5f” later)
+	inline float BlueNoiseByteToCentered(char v)
+	{
+		return (static_cast<unsigned char>(v) + 0.5f) * (1.0f / 256.0f) - 0.5f;
+		// almost identical alternative:  return static_cast<float>(v) * (1.0f / 255.0f);
+	}
+
+	inline float GetTemporalBlueNoise(int x, int y, unsigned int frameIndex)
+	{
+		// simple temporal offset (replace with a better 3-D sequence if you have one)
+		const int ox = (x + static_cast<int>(frameIndex * 13u)) & (BLUE_NOISE_SIZE - 1);
+		const int oy = (y + static_cast<int>(frameIndex * 29u)) & (BLUE_NOISE_SIZE - 1);
+		const size_t index = oy * BLUE_NOISE_SIZE + ox;
+		const char raw = (index < sizeof(TELL_BLUE_NOISE)) ? TELL_BLUE_NOISE[index] : TELL_BLUE_NOISE[index & (BLUE_NOISE_SIZE - 1)];
+		return BlueNoiseByteToFloat(raw);               // returns [0,1]
+	}
+
+	ARGB dither_pixel(const ARGB* pixels, const UINT pixelIndex, const UINT width,
+		const float baseSpread, const float* saliencies, bool enforcedDither, unsigned int frameIndex)
+	{
+		// Resolve x and y from pixelIndex and width
+		const int x = static_cast<int>(pixelIndex % width);
+		const int y = static_cast<int>(pixelIndex / width);
+		// Blue-noise sample centered to [-0.5, 0.5]
+		const float noise = GetTemporalBlueNoise(x, y, frameIndex) - 0.5f;
+		// Saliency-weighted offset (same logic as original)
+		const float weight = saliencies[pixelIndex];
+		const float offset = noise * baseSpread * weight;
+		Color c(pixels[pixelIndex]);
+		// Apply noise and clamp safely to RGB limits
+		const int r = clamp(static_cast<int>(c.GetR() + offset), 0, BYTE_MAX);
+		const int g = clamp(static_cast<int>(c.GetG() + offset), 0, BYTE_MAX);
+		const int b = clamp(static_cast<int>(c.GetB() + offset), 0, BYTE_MAX);
+		const int a = c.GetA();
+		return Color::MakeARGB(a, r, g, b);
+	}
+
+	bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn,
+		const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels,
+		const UINT width, const UINT height, const vector<float>& saliencies, bool enforcedDither, unsigned int frameIndex)
+	{
+		// Introduce a tuning multiplier (e.g., 0.5f to 0.8f) to reduce overall noise amplitude
+		const float noiseDampener = 0.8f;
+		const float baseSpread = (255.0f / cbrt(static_cast<float>(nMaxColors))) * noiseDampener;
+
+		for (UINT y = 0; y < height; ++y)
+		{
+			for (UINT x = 0; x < width; ++x)
+			{
+				UINT pixelIndex = y * width + x;
+				Color c(pixels[pixelIndex]);
+
+				// Handle pure transparency early
+				if (transparentPixelIndex >= 0 && c.GetA() == 0) {
+					qPixels[pixelIndex] = static_cast<unsigned short>(transparentPixelIndex);
+					continue;
+				}
+
+				auto noisyArgb = dither_pixel(pixels, pixelIndex, width, baseSpread,
+					saliencies.data(), enforcedDither, frameIndex);
+				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, noisyArgb, y + x);
+			}
+		}
+
+		return true;
+	}
 }
