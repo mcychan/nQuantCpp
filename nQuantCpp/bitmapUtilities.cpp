@@ -664,6 +664,75 @@ bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn 
 	return true;
 }
 
+// Standard Interleaved Gradient Noise formula by Jorge Jimenez with a temporal frame seed
+inline float GetTemporalInterleavedGradientNoise(int x, int y, unsigned int frameIndex)
+{
+	// Wrap the frame index to prevent precision loss in floating-point math over time
+	unsigned int frameModulo = frameIndex % 8;
+
+	// Shift coordinates using fractional steps derived from low-discrepancy sequences
+	auto temporalOffsetX = float(frameModulo) * 0.75487767f;
+	auto temporalOffsetY = float(frameModulo) * 0.56984029f;
+
+	auto f = 0.06711056f * (float(x) + temporalOffsetX) + 0.00583715f * (float(y) + temporalOffsetY);
+
+	return fmod(52.9829189f * fmod(f, 1.0f), 1.0f);
+}
+
+ARGB dither_pixel(const ARGB* pixels, const UINT pixelIndex, const UINT width,
+	const float baseSpread, const float* saliencies, bool enforcedDither, unsigned int frameIndex)
+{
+	// Resolve x and y from pixelIndex and width
+	int x = static_cast<int>(pixelIndex % width);
+	int y = static_cast<int>(pixelIndex / width);
+
+	// Generate centered noise [-0.5, 0.5]
+	auto noise = GetTemporalInterleavedGradientNoise(x, y, frameIndex) - 0.5f;
+
+	// Compute noise offset
+	auto weight = (enforcedDither && saliencies != nullptr) ? saliencies[pixelIndex] : 1.0f;
+	auto offset = noise * baseSpread * weight;
+
+	Color c(pixels[pixelIndex]);
+	// Apply noise and clamp safely to RGB limits
+	int r = clamp(static_cast<int>(c.GetR() + offset), 0, BYTE_MAX);
+	int g = clamp(static_cast<int>(c.GetG() + offset), 0, BYTE_MAX);
+	int b = clamp(static_cast<int>(c.GetB() + offset), 0, BYTE_MAX);
+	int a = c.GetA();
+
+	return Color::MakeARGB(a, r, g, b);
+}
+
+bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn,
+	const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels,
+	const UINT width, const UINT height, const vector<float>& saliencies, bool enforcedDither, unsigned int frameIndex)
+{
+	// Introduce a tuning multiplier (e.g., 0.5f to 0.8f) to reduce overall noise amplitude
+	const float noiseDampener = 0.8f;
+	const float baseSpread = (255.0f / cbrt(static_cast<float>(nMaxColors))) * noiseDampener;
+
+	for (UINT y = 0; y < height; ++y)
+	{
+		for (UINT x = 0; x < width; ++x)
+		{
+			UINT pixelIndex = y * width + x;
+			Color c(pixels[pixelIndex]);
+
+			// Handle pure transparency early
+			if (transparentPixelIndex >= 0 && c.GetA() == 0) {
+				qPixels[pixelIndex] = static_cast<unsigned short>(transparentPixelIndex);
+				continue;
+			}
+
+			auto noisyArgb = dither_pixel(pixels, pixelIndex, width, baseSpread,
+				saliencies.data(), enforcedDither, frameIndex);
+			qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, noisyArgb, y + x);
+		}
+	}
+
+	return true;
+}
+
 bool ProcessImagePixels(Bitmap* pDest, const ARGB* qPixels, const bool& hasSemiTransparency, const int& transparentPixelIndex)
 {
 	UINT bpp = GetPixelFormatSize(pDest->GetPixelFormat());

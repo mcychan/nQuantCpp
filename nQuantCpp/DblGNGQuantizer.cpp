@@ -663,30 +663,13 @@ namespace GrowingNeuralGas
 		const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels,
 		const UINT width, const UINT height, const vector<float>& saliencies, bool enforcedDither, unsigned int frameIndex)
 	{
-		// Introduce a tuning multiplier (e.g., 0.5f to 0.8f) to reduce overall noise amplitude
-		const float noiseDampener = 0.8f;
-		const float baseSpread = (255.0f / cbrt(static_cast<float>(nMaxColors))) * noiseDampener;
-
-		for (UINT y = 0; y < height; ++y)
-		{
-			for (UINT x = 0; x < width; ++x)
-			{
-				UINT pixelIndex = y * width + x;
-				Color c(pixels[pixelIndex]);
-
-				// Handle pure transparency early
-				if (transparentPixelIndex >= 0 && c.GetA() == 0) {
-					qPixels[pixelIndex] = static_cast<unsigned short>(transparentPixelIndex);
-					continue;
-				}
-
-				auto noisyArgb = BlueNoise::dither_pixel(pixels, pixelIndex, width, baseSpread,
-					saliencies.data(), enforcedDither, frameIndex);
-				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, noisyArgb, y + x);
-			}
-		}
-
-		return true;
+		if (nMaxColors < 64)
+			return dither_image(pixels, pPalette, nMaxColors, ditherFn,
+				hasSemiTransparency, transparentPixelIndex, qPixels,
+				width, height, saliencies, enforcedDither, frameIndex);
+		return BlueNoise::dither_image(pixels, pPalette, nMaxColors, ditherFn,
+				hasSemiTransparency, transparentPixelIndex, qPixels,
+				width, height, saliencies, enforcedDither, frameIndex);
 	}
 
 	bool DblGNGQuantizer::quantize_image(const vector<ARGB>& pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const UINT frameIndex, const bool dither)

@@ -236,7 +236,7 @@ namespace BlueNoise
 		const int ox = (x + static_cast<int>(frameIndex * 13u)) & (BLUE_NOISE_SIZE - 1);
 		const int oy = (y + static_cast<int>(frameIndex * 29u)) & (BLUE_NOISE_SIZE - 1);
 		const size_t index = oy * BLUE_NOISE_SIZE + ox;
-		const char raw = (index < sizeof(TELL_BLUE_NOISE)) ? TELL_BLUE_NOISE[index] : TELL_BLUE_NOISE[index & (BLUE_NOISE_SIZE - 1)];
+		const char raw = (index < sizeof(TELL_BLUE_NOISE)) ? TELL_BLUE_NOISE[index] : TELL_BLUE_NOISE[index & 4095];
 		return BlueNoiseByteToFloat(raw);               // returns [0,1]
 	}
 
