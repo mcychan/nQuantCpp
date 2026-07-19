@@ -669,7 +669,7 @@ namespace GrowingNeuralGas
 				width, height, saliencies, enforcedDither, frameIndex);
 		return BlueNoise::dither_image(pixels, pPalette, nMaxColors, ditherFn,
 				hasSemiTransparency, transparentPixelIndex, qPixels,
-				width, height, saliencies, enforcedDither, frameIndex);
+				width, height, saliencies, frameIndex);
 	}
 
 	bool DblGNGQuantizer::quantize_image(const vector<ARGB>& pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const UINT frameIndex, const bool dither)

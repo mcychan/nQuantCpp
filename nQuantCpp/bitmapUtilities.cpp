@@ -6,6 +6,9 @@
 #include "bitmapUtilities.h"
 #include <algorithm>
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 ULONG GetBitmapHeaderSize(LPCVOID pDib)
 {
 	ULONG nHeaderSize = *(PDWORD)pDib;
@@ -662,6 +665,17 @@ bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn 
 		swap(row0, row1);
 	}
 	return true;
+}
+
+float normalDistribution(float x, float peak) {
+	const float mean = .5f, stdDev = .1f;
+
+	// Calculate the probability density function (PDF)
+	auto exponent = -pow(x - mean, 2) / (2 * pow(stdDev, 2));
+	auto pdf = (1 / (stdDev * _sqrt(2 * M_PI))) * exp(exponent);
+	auto maxPdf = 1 / (stdDev * _sqrt(2 * M_PI)); // Peak at x = mean
+	auto scaledPdf = (pdf / maxPdf) * peak;
+	return (float)max(0.0, min(peak, scaledPdf));
 }
 
 // Standard Interleaved Gradient Noise formula by Jorge Jimenez with a temporal frame seed

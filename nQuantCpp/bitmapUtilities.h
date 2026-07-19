@@ -76,6 +76,8 @@ bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColor
 
 bool dithering_image(const ARGB* pixels, const ColorPalette* pPalette, DitherFn ditherFn, const bool& hasSemiTransparency, const int& transparentPixelIndex, const UINT nMaxColors, ARGB* qPixels, const UINT width, const UINT height);
 
+float normalDistribution(float x, float peak);
+
 ARGB dither_pixel(const ARGB* pixels, const UINT pixelIndex, const UINT width,
 	const float baseSpread,	const float* saliencies, bool enforcedDither, unsigned int frameIndex = 0);
 

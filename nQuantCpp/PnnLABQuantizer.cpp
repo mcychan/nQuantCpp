@@ -592,7 +592,7 @@ namespace PnnLABQuant
 					return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 				return closestColorIndex(pPalette, nMaxColors, argb, pos);
 				};
-			return BlueNoise::dither_image(pixels.data(), pPalette, nMaxColors, NearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height, saliencies, true, frameIndex);
+			return BlueNoise::dither_image(pixels.data(), pPalette, nMaxColors, NearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height, saliencies, frameIndex);
 		}
 
 		UINT pixelIndex = 0;

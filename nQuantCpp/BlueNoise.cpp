@@ -241,7 +241,7 @@ namespace BlueNoise
 	}
 
 	ARGB dither_pixel(const ARGB* pixels, const UINT pixelIndex, const UINT width,
-		const float baseSpread, const float* saliencies, bool enforcedDither, unsigned int frameIndex)
+		const float baseSpread, const float* saliencies, unsigned int frameIndex)
 	{
 		// Resolve x and y from pixelIndex and width
 		const int x = static_cast<int>(pixelIndex % width);
@@ -250,7 +250,8 @@ namespace BlueNoise
 		const float noise = GetTemporalBlueNoise(x, y, frameIndex) - 0.5f;
 		// Saliency-weighted offset (same logic as original)
 		const float weight = saliencies[pixelIndex];
-		const float offset = noise * baseSpread * weight;
+		float offset = noise * baseSpread * normalDistribution(weight, 1.0f);
+
 		Color c(pixels[pixelIndex]);
 		// Apply noise and clamp safely to RGB limits
 		const int r = clamp(static_cast<int>(c.GetR() + offset), 0, BYTE_MAX);
@@ -262,7 +263,7 @@ namespace BlueNoise
 
 	bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn,
 		const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels,
-		const UINT width, const UINT height, const vector<float>& saliencies, bool enforcedDither, unsigned int frameIndex)
+		const UINT width, const UINT height, const vector<float>& saliencies, unsigned int frameIndex)
 	{
 		// Introduce a tuning multiplier (e.g., 0.5f to 0.8f) to reduce overall noise amplitude
 		const float noiseDampener = 0.8f;
@@ -282,7 +283,7 @@ namespace BlueNoise
 				}
 
 				auto noisyArgb = dither_pixel(pixels, pixelIndex, width, baseSpread,
-					saliencies.data(), enforcedDither, frameIndex);
+					saliencies.data(), frameIndex);
 				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, noisyArgb, y + x);
 			}
 		}

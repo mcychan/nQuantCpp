@@ -90,18 +90,7 @@ namespace Peano
 	inline int compare(const ErrorBox& o1, const ErrorBox& o2)
 	{
 		return sign(o2.yDiff - o1.yDiff);
-	}
-
-	float normalDistribution(float x, float peak) {
-		const float mean = .5f, stdDev = .1f;
-
-		// Calculate the probability density function (PDF)
-		auto exponent = -pow(x - mean, 2) / (2 * pow(stdDev, 2));
-		auto pdf = (1 / (stdDev * _sqrt(2 * M_PI))) * exp(exponent);
-		auto maxPdf = 1 / (stdDev * _sqrt(2 * M_PI)); // Peak at x = mean
-		auto scaledPdf = (pdf / maxPdf) * peak;
-		return (float) max(0.0, min(peak, scaledPdf));
-	}
+	}	
 
 	unsigned short ditherPixel(int x, int y, Color c2, float beta)
 	{
@@ -206,7 +195,7 @@ namespace Peano
 			int acceptedDiff = max(2, m_nMaxColor - margin);
 			if (m_saliencies != nullptr && (CIELABConvertor::Y_Diff(pixel, c2) > acceptedDiff || CIELABConvertor::U_Diff(pixel, c2) > (2 * acceptedDiff))) {
 				if (m_dither)
-					c2 = BlueNoise::dither_pixel(m_image, bidx, m_width, baseSpread, m_saliencies, true, m_frameIndex);
+					c2 = BlueNoise::dither_pixel(m_image, bidx, m_width, baseSpread, m_saliencies, m_frameIndex);
 				else {
 					auto strength = 1 / 3.0f;
 					c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], strength, strength, x, y);
@@ -265,7 +254,7 @@ namespace Peano
 				qPixelIndex = ditherPixel(x, y, c2, beta);
 			else if (CIELABConvertor::Y_Diff(pixel, c2) > 3 && CIELABConvertor::U_Diff(pixel, c2) > 3) {				
 				if (m_dither)
-					c2 = BlueNoise::dither_pixel(m_image, bidx, m_width, baseSpread, m_saliencies, true, m_frameIndex);
+					c2 = BlueNoise::dither_pixel(m_image, bidx, m_width, baseSpread, m_saliencies, m_frameIndex);
 				else {
 					auto strength = 1 / 3.0f;
 					c2 = BlueNoise::diffuse(pixel, m_pPalette[qPixelIndex], strength, strength, x, y);
