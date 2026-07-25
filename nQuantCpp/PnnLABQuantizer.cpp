@@ -635,7 +635,7 @@ namespace PnnLABQuant
 		};
 
 		const auto bitmapHeight = pixels.size() / bitmapWidth;
-		bool fullDither = !hasAlpha() && nMaxColors >= 128 && weight < .02;
+		bool fullDither = !hasAlpha() && nMaxColors >= 128 && (weight < .02 || weight > .09);
 		if (isGA && !hasAlpha() && nMaxColors >= 128)
 			fullDither = true;
 

@@ -1,13 +1,15 @@
 ﻿/* Otsu's Image Segmentation Method
   Copyright (C) 2009 Tolga Birdal
-  Copyright (c) 2018 - 2024 Miller Cy Chan
+  Copyright (c) 2018 - 2026 Miller Cy Chan
 */
 
 #include "stdafx.h"
 #include "Otsu.h"
+#include "CIELABConvertor.h"
 #include "GilbertCurve.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <algorithm>
 #include <unordered_map>
 
 namespace OtsuThreshold
@@ -17,6 +19,8 @@ namespace OtsuThreshold
 	int m_transparentPixelIndex = -1;
 	ARGB m_transparentColor = Color::Transparent;
 	unordered_map<ARGB, unsigned short > nearestMap;
+	unordered_map<ARGB, CIELABConvertor::Lab> pixelMap;
+	vector<float> saliencies;
 
 	// function is used to compute the q values in the equation
 	static float px(int init, int end, int* hist)
@@ -121,7 +125,7 @@ namespace OtsuThreshold
 		vector<int> theta(area);
 		auto largestG = 0.0;
 
-		// perform canny edge detection on everything but the edges
+		// 1. Sobel Gradient Calculation
 		for (int i = 1; i < height - 1; ++i) {
 			for (int j = 1; j < width - 1; ++j) {
 				// find gx and gy for each pixel
@@ -136,7 +140,6 @@ namespace OtsuThreshold
 				}
 
 				const int center = i * width + j;
-				// calculate G and theta
 				G[center] = sqrt(pow(gxValue, 2) + pow(gyValue, 2));
 				auto atanResult = atan2(gyValue, gxValue) * 180.0 / M_PI;
 				theta[center] = (int)(180.0 + atanResult);
@@ -144,106 +147,82 @@ namespace OtsuThreshold
 				if (G[center] > largestG)
 					largestG = G[center];
 
-				// setting the edges
-				if (i == 1) {
-					G[center - 1] = G[center];
-					theta[center - 1] = theta[center];
-				}
-				else if (j == 1) {
-					G[center - width] = G[center];
-					theta[center - width] = theta[center];
-				}
-				else if (i == height - 1) {
-					G[center + 1] = G[center];
-					theta[center + 1] = theta[center];
-				}
-				else if (j == width - 1) {
-					G[center + width] = G[center];
-					theta[center + width] = theta[center];
-				}
-
-				// setting the corners
-				if (i == 1 && j == 1) {
-					G[center - width - 1] = G[center];
-					theta[center - width - 1] = theta[center];
-				}
-				else if (i == 1 && j == width - 1) {
-					G[center - width + 1] = G[center];
-					theta[center - width + 1] = theta[center];
-				}
-				else if (i == height - 1 && j == 1) {
-					G[center + width - 1] = G[center];
-					theta[center + width - 1] = theta[center];
-				}
-				else if (i == height - 1 && j == width - 1) {
-					G[center + width + 1] = G[center];
-					theta[center + width + 1] = theta[center];
-				}
-
-				// to the nearest 45 degrees
 				theta[center] = rint(theta[center] / 45) * 45;
 			}
 		}
 
-		largestG *= .5;
-
-		// non-maximum suppression
+		// 2. Non-Maximum Suppression (NMS) -> Ensures 1-pixel thin line candidates
+		vector<double> suppressedG(area);
 		for (int i = 1; i < height - 1; ++i) {
 			for (int j = 1; j < width - 1; ++j) {
 				const int center = i * width + j;
-				if (theta[center] == 0 || theta[center] == 180) {
-					if (G[center] < G[center - 1] || G[center] < G[center + 1])
-						G[center] = 0;
-				}
-				else if (theta[center] == 45 || theta[center] == 225) {
-					if (G[center] < G[center + width + 1] || G[center] < G[center - width - 1])
-						G[center] = 0;
-				}
-				else if (theta[center] == 90 || theta[center] == 270) {
-					if (G[center] < G[center + width] || G[center] < G[center - width])
-						G[center] = 0;
-				}
-				else {
-					if (G[center] < G[center + width - 1] || G[center] < G[center - width + 1])
-						G[center] = 0;
-				}
+				auto currentG = G[center];
 
-				auto grey = ~(BYTE)(G[center] * (255.0 / largestG));
-				Color c(pixelsGray[center]);
-				pixelsCanny[center] = Color::MakeARGB(c.GetA(), grey, grey, grey);
+				if (theta[center] == 0 || theta[center] == 180 || theta[center] == 360) {
+					if (currentG >= G[center - 1] && currentG >= G[center + 1]) suppressedG[center] = currentG;
+				} else if (theta[center] == 45 || theta[center] == 225) {
+					if (currentG >= G[center + width + 1] && currentG >= G[center - width - 1]) suppressedG[center] = currentG;
+				} else if (theta[center] == 90 || theta[center] == 270) {
+					if (currentG >= G[center + width] && currentG >= G[center - width]) suppressedG[center] = currentG;
+				} else { // 135 or 315
+					if (currentG >= G[center + width - 1] && currentG >= G[center - width + 1]) suppressedG[center] = currentG;
+				}
 			}
 		}
 
-		int k = 0;
-		auto minThreshold = lowerThreshold * largestG, maxThreshold = higherThreshold * largestG;
-		do {
-			for (int i = 1; i < height - 1; ++i) {
-				for (int j = 1; j < width - 1; ++j) {
-					const int center = i * width + j;
-					if (G[center] < minThreshold)
-						G[center] = 0;
-					else if (G[center] < maxThreshold) {
-						G[center] = 0;
-						for (int x = -1; x <= 1; ++x) {
-							for (int y = -1; y <= 1; ++y) {
-								if (x == 0 && y == 0)
-									continue;
-								if (G[center + x * width + y] >= maxThreshold) {
-									G[center] = higherThreshold * largestG;
-									k = 0;
-									x = 2;
-									break;
-								}
+		// 3. Saliency-Driven Hysteresis Thresholding
+		// A temporary tracking grid to mark confirmed clean edges (0 = background, 255 = edge)
+		vector<int> edges(area);
+
+		for (int i = 1; i < height - 1; ++i) {
+			for (int j = 1; j < width - 1; ++j) {
+				const int center = i * width + j;
+				
+				// Scale thresholds locally using the saliency value of the pixel
+				// Highly salient areas get responsive sensitivity adjustment
+				auto saliency = !saliencies.empty() ? saliencies[center] : 1.0f;
+				auto factor = 1.0 - (saliency * 0.6);
+				if (factor < 0.15)
+					factor = 0.15; // Ensures a 15% threshold floor always remains
+
+				auto localMin = lowerThreshold * largestG * factor; 
+				auto localMax = higherThreshold * largestG * factor;
+
+				if (suppressedG[center] >= localMax) {
+					edges[center] = 255; // Strong edge
+				} else if (suppressedG[center] >= localMin) {
+					// Hysteresis check: link weak edges to strong neighbors
+					auto connected = false;
+					for (int x = -1; x <= 1 && !connected; ++x) {
+						for (int y = -1; y <= 1; y++) {
+							if (suppressedG[center + x * width + y] >= localMax) {
+								connected = true;
+								break;
 							}
 						}
 					}
-					
-					auto grey = ~(BYTE)(G[center] * 255.0 / largestG);
-					Color c(pixelsGray[center]);
-					pixelsCanny[center] = Color::MakeARGB(c.GetA(), grey, grey, grey);
+					if (connected) {
+						edges[center] = BYTE_MAX;
+					}
 				}
 			}
-		} while (k++ < 100 && dither);
+		}
+
+		vector<int> dilatedEdges(area);
+		copy(edges.begin(), edges.begin() + area, dilatedEdges.begin());
+
+		// Render to Out-Pixel Array
+		for (int i = 0; i < area; ++i) {
+			Color c(pixelsGray[i]);
+			if (dilatedEdges[i] == BYTE_MAX) {
+				// Draw clean black edge lines
+				pixelsCanny[i] = Color::MakeARGB(c.GetA(), 0, 0, 0);
+			} else {
+				// Keep background white (or pass through original image depending on needs)
+				pixelsCanny[i] = Color::MakeARGB(c.GetA(), BYTE_MAX, BYTE_MAX, BYTE_MAX);
+			}
+		}
+
 		return pixelsCanny;
 	}
 
@@ -284,6 +263,17 @@ namespace OtsuThreshold
 		return k;
 	}
 
+	void getLab(const Color& c, CIELABConvertor::Lab& lab1)
+	{
+		auto got = pixelMap.find(c.GetValue());
+		if (got == pixelMap.end()) {
+			CIELABConvertor::RGB2LAB(c, lab1);
+			pixelMap[c.GetValue()] = lab1;
+		}
+		else
+			lab1 = got->second;
+	}
+
 	inline int GetColorIndex(const Color& c)
 	{
 		return GetARGBIndex(c, hasSemiTransparency, m_transparentPixelIndex >= 0);
@@ -293,7 +283,7 @@ namespace OtsuThreshold
 	{
 		float min1 = BYTE_MAX;
 		float max1 = .0f;
-
+		
 		for (const auto& pixel : pixels)
 		{
 			int alfa = (pixel >> 24) & 0xff;
@@ -305,11 +295,20 @@ namespace OtsuThreshold
 				min1 = green;
 
 			if (max1 < green)
-				max1 = green;
+				max1 = green;			
 		}
 
+		saliencies.resize(pixels.size());
+		auto saliencyBase = .1f;
 		for (int i = 0; i < pixels.size(); ++i)
 		{
+			const auto& pixel = pixels[i];
+			Color c(pixel);
+			CIELABConvertor::Lab lab1;
+			getLab(c, lab1);
+
+			saliencies[i] = saliencyBase + (1 - saliencyBase) * lab1.L / 100.0f * lab1.alpha / 255.0f;
+
 			int alfa = (pixels[i] >> 24) & 0xff;
 			if (alfa <= alphaThreshold)
 				continue;

@@ -7,6 +7,7 @@
 #include "BlueNoise.h"
 
 #include <algorithm>
+#include <algorithm>
 
 namespace BlueNoise
 {
@@ -215,6 +216,21 @@ namespace BlueNoise
 		}
     }
 
+	// Standard Interleaved Gradient Noise formula by Jorge Jimenez with a temporal frame seed
+	inline float GetTemporalInterleavedGradientNoise(int x, int y, unsigned int frameIndex)
+	{
+		// Wrap the frame index to prevent precision loss in floating-point math over time
+		unsigned int frameModulo = frameIndex % 8;
+
+		// Shift coordinates using fractional steps derived from low-discrepancy sequences
+		auto temporalOffsetX = float(frameModulo) * 0.75487767f;
+		auto temporalOffsetY = float(frameModulo) * 0.56984029f;
+
+		auto f = 0.06711056f * (float(x) + temporalOffsetX) + 0.00583715f * (float(y) + temporalOffsetY);
+
+		return fmod(52.9829189f * fmod(f, 1.0f), 1.0f);
+	}
+
 	// Convert signed-byte blue-noise value (-128 … 127) → float [0, 1]
 	// (the +0.5 / 256 form is the conventional unbiased mapping)
 	inline float BlueNoiseByteToFloat(char v)
@@ -240,26 +256,83 @@ namespace BlueNoise
 		return BlueNoiseByteToFloat(raw);               // returns [0,1]
 	}
 
+	inline float GetLuminanceFromSaliency(float saliency, BYTE alpha, float saliencyBase = 0.1f)
+	{
+		// Avoid division by zero for fully transparent pixels
+		if (alpha == 0) {
+			return 0.0f;
+		}
+
+		float alphaNormalized = static_cast<float>(alpha) / 255.0f;
+		float scale = (1.0f - saliencyBase) * alphaNormalized;
+
+		if (scale <= 0.0f) {
+			return 0.0f;
+		}
+
+		// Invert the formula to isolate L
+		auto L = (saliency - saliencyBase) / scale;
+
+		// Clamp L to the valid CIELAB Lightness range [0.0, 1.0]
+		return std::clamp(L, 0.0f, 1.0f);
+	}
+
+	ARGB dither_pixel_IGN(const ARGB* pixels, const UINT pixelIndex, const UINT width,
+		const float baseSpread, unsigned int frameIndex)
+	{
+		// Resolve x and y from pixelIndex and width
+		int x = static_cast<int>(pixelIndex % width);
+		int y = static_cast<int>(pixelIndex / width);
+
+		// Generate centered noise [-0.5, 0.5]
+		auto noise = GetTemporalInterleavedGradientNoise(x, y, frameIndex) - 0.5f;
+
+		Color c(pixels[pixelIndex]);
+
+		// Compute noise offset
+		auto offset = noise * baseSpread;
+
+		// Apply noise and clamp safely to RGB limits
+		int r = clamp(static_cast<int>(c.GetR() + offset), 0, BYTE_MAX);
+		int g = clamp(static_cast<int>(c.GetG() + offset), 0, BYTE_MAX);
+		int b = clamp(static_cast<int>(c.GetB() + offset), 0, BYTE_MAX);
+		int a = c.GetA();
+
+		return Color::MakeARGB(a, r, g, b);
+	}
+
 	ARGB dither_pixel(const ARGB* pixels, const UINT pixelIndex, const UINT width,
 		const float baseSpread, const float* saliencies, unsigned int frameIndex)
 	{
+		Color c(pixels[pixelIndex]);
+
+		// Saliency-weighted offset (same logic as original)
+		auto weight = saliencies[pixelIndex];
+
+		auto luminance = GetLuminanceFromSaliency(weight, c.GetA());
+		// Taper noise to 0 when luminance approaches 1.0 (pure white sky)
+		// Smoothstep / quadratic decay in the top 15% brightness range [0.85, 1.0]
+		auto highlightDampener = 1.0f;
+		if (luminance > 0.85f) {
+			// Smoothly drop from 1.0 (at 0.85) to 0.0 (at 1.0)
+			auto t = (luminance - 0.85f) / 0.15f;
+			highlightDampener = (1.0f - t) * (1.0f - t);
+		}
+
 		// Resolve x and y from pixelIndex and width
 		const int x = static_cast<int>(pixelIndex % width);
 		const int y = static_cast<int>(pixelIndex / width);
 		// Blue-noise sample centered to [-0.5, 0.5]
-		const float noise = GetTemporalBlueNoise(x, y, frameIndex) - 0.5f;
-		// Saliency-weighted offset (same logic as original)
-		const float weight = saliencies[pixelIndex];
-		float offset = noise * baseSpread * normalDistribution(weight, 1.0f);
-
-		Color c(pixels[pixelIndex]);
+		const auto noise = GetTemporalBlueNoise(x, y, frameIndex) - 0.5f;		
+		auto offset = noise * baseSpread * weight * highlightDampener;
+		
 		// Apply noise and clamp safely to RGB limits
 		const int r = clamp(static_cast<int>(c.GetR() + offset), 0, BYTE_MAX);
 		const int g = clamp(static_cast<int>(c.GetG() + offset), 0, BYTE_MAX);
 		const int b = clamp(static_cast<int>(c.GetB() + offset), 0, BYTE_MAX);
 		const int a = c.GetA();
 		return Color::MakeARGB(a, r, g, b);
-	}
+	}	
 
 	bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn,
 		const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels,
@@ -284,6 +357,35 @@ namespace BlueNoise
 
 				auto noisyArgb = dither_pixel(pixels, pixelIndex, width, baseSpread,
 					saliencies.data(), frameIndex);
+				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, noisyArgb, y + x);
+			}
+		}
+
+		return true;
+	}
+
+	bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn,
+		const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels,
+		const UINT width, const UINT height, unsigned int frameIndex)
+	{
+		// Introduce a tuning multiplier (e.g., 0.5f to 0.8f) to reduce overall noise amplitude
+		const float noiseDampener = 0.8f;
+		const float baseSpread = (255.0f / cbrt(static_cast<float>(nMaxColors))) * noiseDampener;
+
+		for (UINT y = 0; y < height; ++y)
+		{
+			for (UINT x = 0; x < width; ++x)
+			{
+				UINT pixelIndex = y * width + x;
+				Color c(pixels[pixelIndex]);
+
+				// Handle pure transparency early
+				if (transparentPixelIndex >= 0 && c.GetA() == 0) {
+					qPixels[pixelIndex] = static_cast<unsigned short>(transparentPixelIndex);
+					continue;
+				}
+
+				auto noisyArgb = dither_pixel_IGN(pixels, pixelIndex, width, baseSpread, frameIndex);
 				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, noisyArgb, y + x);
 			}
 		}

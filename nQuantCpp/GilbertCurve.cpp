@@ -90,7 +90,18 @@ namespace Peano
 	inline int compare(const ErrorBox& o1, const ErrorBox& o2)
 	{
 		return sign(o2.yDiff - o1.yDiff);
-	}	
+	}
+
+	float normalDistribution(float x, float peak) {
+		const float mean = .5f, stdDev = .1f;
+
+		// Calculate the probability density function (PDF)
+		auto exponent = -pow(x - mean, 2) / (2 * pow(stdDev, 2));
+		auto pdf = (1 / (stdDev * _sqrt(2 * M_PI))) * exp(exponent);
+		auto maxPdf = 1 / (stdDev * _sqrt(2 * M_PI)); // Peak at x = mean
+		auto scaledPdf = (pdf / maxPdf) * peak;
+		return (float)max(0.0, min(peak, scaledPdf));
+	}
 
 	unsigned short ditherPixel(int x, int y, Color c2, float beta)
 	{

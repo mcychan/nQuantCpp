@@ -664,9 +664,9 @@ namespace GrowingNeuralGas
 		const UINT width, const UINT height, const vector<float>& saliencies, bool enforcedDither, unsigned int frameIndex)
 	{
 		if (nMaxColors < 64)
-			return dither_image(pixels, pPalette, nMaxColors, ditherFn,
+			return BlueNoise::dither_image(pixels, pPalette, nMaxColors, ditherFn,
 				hasSemiTransparency, transparentPixelIndex, qPixels,
-				width, height, saliencies, enforcedDither, frameIndex);
+				width, height, frameIndex);
 		return BlueNoise::dither_image(pixels, pPalette, nMaxColors, ditherFn,
 				hasSemiTransparency, transparentPixelIndex, qPixels,
 				width, height, saliencies, frameIndex);
