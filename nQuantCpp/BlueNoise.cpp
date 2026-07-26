@@ -306,7 +306,7 @@ namespace BlueNoise
 		Color c(pixels[pixelIndex]);
 
 		// Saliency-weighted offset (same logic as original)
-		auto weight = saliencies[pixelIndex];
+		auto weight = (saliencies != nullptr) ? saliencies[pixelIndex] : 1.0f;
 
 		auto luminance = GetLuminanceFromSaliency(weight, c.GetA());
 		// Taper noise to 0 when luminance approaches 1.0 (pure white sky)
