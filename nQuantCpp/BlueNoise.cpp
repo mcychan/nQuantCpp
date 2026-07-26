@@ -7,7 +7,6 @@
 #include "BlueNoise.h"
 
 #include <algorithm>
-#include <algorithm>
 
 namespace BlueNoise
 {

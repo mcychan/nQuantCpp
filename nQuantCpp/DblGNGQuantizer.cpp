@@ -661,7 +661,7 @@ namespace GrowingNeuralGas
 
 	bool ditherImage(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn,
 		const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels,
-		const UINT width, const UINT height, const vector<float>& saliencies, bool enforcedDither, unsigned int frameIndex)
+		const UINT width, const UINT height, const vector<float>& saliencies, unsigned int frameIndex)
 	{
 		if (nMaxColors < 64)
 			return BlueNoise::dither_image(pixels, pPalette, nMaxColors, ditherFn,
@@ -680,7 +680,7 @@ namespace GrowingNeuralGas
 					return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 				return closestColorIndex(pPalette, nMaxColors, argb, pos);
 			};
-			return ditherImage(pixels.data(), pPalette, nMaxColors, NearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height, saliencies, enforcedDither, frameIndex);
+			return ditherImage(pixels.data(), pPalette, nMaxColors, NearestColorIndex, hasSemiTransparency, m_transparentPixelIndex, qPixels, width, height, saliencies, frameIndex);
 		}
 
 		UINT pixelIndex = 0;
