@@ -406,8 +406,7 @@ namespace Peano
 		else if (weight < .03 && m_nMaxColor / weight < density && m_nMaxColor >= 16 && m_nMaxColor < 256)
 			ditherMax = (BYTE)sqr(5 + edge);
 
-		if (!sortedByYDiff)
-			initWeights(DITHER_MAX);
+		initWeights(DITHER_MAX);
 
 		if (width >= height)
 			generate2d(0, 0, width, 0, 0, height);
