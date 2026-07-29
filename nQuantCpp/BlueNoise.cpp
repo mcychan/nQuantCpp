@@ -1,7 +1,7 @@
 ﻿/**
  * Alan Wolfe, Nathan Morrical, Tomas Akenine-Möller, Ravi Ramamoorthi:
  * Scalar Spatiotemporal Blue Noise Masks. CoRR abs/2112.09629 (2021)
- * Copyright (c) 2022 - 2023 Miller Cy Chan */
+ * Copyright (c) 2022 - 2026 Miller Cy Chan */
 
 #include "stdafx.h"
 #include "BlueNoise.h"
@@ -213,7 +213,7 @@ namespace BlueNoise
 				qPixels[bidx] = ditherFn(pPalette, nMaxColors, c1.GetValue(), bidx);
 			}
 		}
-    }
+	}
 
 	// Standard Interleaved Gradient Noise formula by Jorge Jimenez with a temporal frame seed
 	inline float GetTemporalInterleavedGradientNoise(int x, int y, unsigned int frameIndex)
@@ -280,8 +280,8 @@ namespace BlueNoise
 		const float baseSpread, unsigned int frameIndex)
 	{
 		// Resolve x and y from pixelIndex and width
-		int x = static_cast<int>(pixelIndex % width);
-		int y = static_cast<int>(pixelIndex / width);
+		const int x = static_cast<int>(pixelIndex % width);
+		const int y = static_cast<int>(pixelIndex / width);
 
 		// Generate centered noise [-0.5, 0.5]
 		auto noise = GetTemporalInterleavedGradientNoise(x, y, frameIndex) - 0.5f;
@@ -334,25 +334,18 @@ namespace BlueNoise
 	}	
 
 	bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn,
-		const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels,
-		const UINT width, const UINT height, const vector<float>& saliencies, unsigned int frameIndex)
+		unsigned short* qPixels, const UINT width, const UINT height,
+		const vector<float>& saliencies, unsigned int frameIndex)
 	{
 		// Introduce a tuning multiplier (e.g., 0.5f to 0.8f) to reduce overall noise amplitude
-		const float noiseDampener = 0.8f;
-		const float baseSpread = (255.0f / cbrt(static_cast<float>(nMaxColors))) * noiseDampener;
+		const auto noiseDampener = 0.8f;
+		const auto baseSpread = (255.0f / cbrt(static_cast<float>(nMaxColors))) * noiseDampener;
 
 		for (UINT y = 0; y < height; ++y)
 		{
 			for (UINT x = 0; x < width; ++x)
 			{
 				UINT pixelIndex = y * width + x;
-				Color c(pixels[pixelIndex]);
-
-				// Handle pure transparency early
-				if (transparentPixelIndex >= 0 && c.GetA() == 0) {
-					qPixels[pixelIndex] = static_cast<unsigned short>(transparentPixelIndex);
-					continue;
-				}
 
 				auto noisyArgb = dither_pixel(pixels, pixelIndex, width, baseSpread,
 					saliencies.data(), frameIndex);
@@ -364,25 +357,17 @@ namespace BlueNoise
 	}
 
 	bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn,
-		const bool& hasSemiTransparency, const int& transparentPixelIndex, unsigned short* qPixels,
-		const UINT width, const UINT height, unsigned int frameIndex)
+		unsigned short* qPixels, const UINT width, const UINT height, unsigned int frameIndex)
 	{
 		// Introduce a tuning multiplier (e.g., 0.5f to 0.8f) to reduce overall noise amplitude
-		const float noiseDampener = 0.8f;
-		const float baseSpread = (255.0f / cbrt(static_cast<float>(nMaxColors))) * noiseDampener;
+		const auto noiseDampener = 0.8f;
+		const auto baseSpread = (255.0f / cbrt(static_cast<float>(nMaxColors))) * noiseDampener;
 
 		for (UINT y = 0; y < height; ++y)
 		{
 			for (UINT x = 0; x < width; ++x)
 			{
 				UINT pixelIndex = y * width + x;
-				Color c(pixels[pixelIndex]);
-
-				// Handle pure transparency early
-				if (transparentPixelIndex >= 0 && c.GetA() == 0) {
-					qPixels[pixelIndex] = static_cast<unsigned short>(transparentPixelIndex);
-					continue;
-				}
 
 				auto noisyArgb = dither_pixel_IGN(pixels, pixelIndex, width, baseSpread, frameIndex);
 				qPixels[pixelIndex] = ditherFn(pPalette, nMaxColors, noisyArgb, y + x);
