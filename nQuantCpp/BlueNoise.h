@@ -9,8 +9,8 @@ namespace BlueNoise
 
 	void dither(const UINT width, const UINT height, const ARGB* pixels, const ARGB* pPalette, const unsigned short nMaxColors, DitherFn ditherFn, GetColorIndexFn getColorIndexFn, unsigned short* qPixels, const float weight = 1.0f);
 
-	ARGB dither_pixel(const ARGB* pixels, const UINT pixelIndex, const UINT width,
-		const float baseSpread, const float* saliencies, unsigned int frameIndex);
+	ARGB dither_pixel(const Color& pixel, const float saliency, const int x, const int y,
+		const float baseSpread, unsigned int frameIndex);
 
 	bool dither_image(const ARGB* pixels, const ARGB* pPalette, const UINT nMaxColors, DitherFn ditherFn,
 		unsigned short* qPixels, const UINT width, const UINT height,
