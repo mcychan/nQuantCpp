@@ -205,7 +205,7 @@ namespace Peano
 
 			int acceptedDiff = max(2, m_nMaxColor - margin);
 			if (m_saliencies != nullptr && (CIELABConvertor::Y_Diff(pixel, c2) > acceptedDiff || CIELABConvertor::U_Diff(pixel, c2) > (2 * acceptedDiff))) {
-				if (m_dither)
+				if (m_dither && !(m_hasAlpha && m_nMaxColor < 24))
 					c2 = BlueNoise::dither_pixel(pixel, (m_saliencies != nullptr) ? m_saliencies[bidx] : 1.0f, x, y, baseSpread, m_frameIndex);
 				else {
 					auto strength = 1 / 3.0f;
