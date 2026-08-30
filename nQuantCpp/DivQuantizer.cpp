@@ -19,6 +19,7 @@
 #include "CIELABConvertor.h"
 #include "BlueNoise.h"
 #include <algorithm>
+#include <cfloat>
 #include <unordered_map>
 #include <type_traits>
 

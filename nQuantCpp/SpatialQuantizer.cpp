@@ -85,7 +85,7 @@ namespace SpatialQuant
 
 		inline int get_length() const { return length; }
 
-		T norm_squared() {
+		T norm_squared() const {
 			T result = 0;
 			for (int i = 0; i < length; ++i)
 				result += data[i] * data[i];
@@ -99,7 +99,7 @@ namespace SpatialQuant
 			return *this;
 		}
 
-		vector_fixed<T, length> direct_product(const vector_fixed<T, length>& rhs) {
+		vector_fixed<T, length> direct_product(const vector_fixed<T, length>& rhs) const {
 			vector_fixed<T, length> result;
 			for (int i = 0; i < length; ++i)
 				result[i] = data[i] * rhs.data[i];
@@ -107,7 +107,7 @@ namespace SpatialQuant
 			return result;
 		}
 
-		T dot_product(const vector_fixed<T, length>& rhs) {
+		T dot_product(const vector_fixed<T, length>& rhs) const {
 			T result = 0;
 			for (int i = 0; i < length; ++i)
 				result += data[i] * rhs.data[i];
@@ -558,7 +558,7 @@ namespace SpatialQuant
 						if (i_x == j_x && i_y == j_y)
 							continue;
 
-						auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
+						const auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 						for (int v = 0; v < palette_size; ++v) {
 							auto v1 = coarse_variables(i_x, i_y, v);
 							for (int alpha = v; alpha < palette_size; ++alpha) {
@@ -626,9 +626,9 @@ namespace SpatialQuant
 
 		const short length = hasSemiTransparency ? 4 : 3;
 		for (int k = 0; k < length; ++k) {
-			auto& S_k = extract_vector_layer_2d(s, k);
-			auto& R_k = extract_vector_layer_1d(r, k);
-			auto& palette_channel = (-2.0 * S_k).matrix_inverse() * R_k;
+			auto S_k = extract_vector_layer_2d(s, k);
+			auto R_k = extract_vector_layer_1d(r, k);
+			auto palette_channel = (-2.0 * S_k).matrix_inverse() * R_k;
 			for (UINT v = 0; v < nMaxColor; ++v) {
 				auto val = palette_channel[v];
 				auto j = palette.size() > 2 ? k : 3;
@@ -638,7 +638,7 @@ namespace SpatialQuant
 					val = maxLabValues[j];
 
 				if (k > 2)
-					val = max(alphaThreshold, val);
+					val = max(static_cast<double>(alphaThreshold), val);
 				palette[v][k] = val;
 			}
 		}
@@ -736,7 +736,7 @@ namespace SpatialQuant
 			auto& a = a_vec[coarse_level];
 			auto& b = b_vec[coarse_level];
 			const int b_width = b.get_width(), b_height = b.get_height();
-			auto& middle_b = b_value(b, 0, 0, 0, 0);
+			const auto& middle_b = b_value(b, 0, 0, 0, 0);
 
 			const int center_x = (b_width - 1) / 2, center_y = (b_height - 1) / 2;
 			const int min_x = min(1, center_x - 1), min_y = min(1, center_y - 1);
@@ -773,7 +773,7 @@ namespace SpatialQuant
 								continue;
 							if (j_x < 0 || j_x >= coarse_width)
 								continue;
-							auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
+							const auto& b_ij = b_value(b, i_x, i_y, j_x, j_y);
 							auto& j_pal = (*p_palette_sum)(j_x, j_y);
 							for (int p = 0; p < length; ++p)
 								p_i[p] += b_ij[p] * j_pal[p];
@@ -829,7 +829,7 @@ namespace SpatialQuant
 
 					auto max_v = best_match_color(coarse_variables, i_x, i_y, nMaxColor);
 					if (length > 3)
-						palette[max_v][3] = max(alphaThreshold + 1, palette[max_v][3]);
+						palette[max_v][3] = max(static_cast<double>(alphaThreshold + 1), palette[max_v][3]);
 
 					// Only consider it a change if the colors are different enough
 					if ((palette[max_v] - palette[old_max_v]).norm_squared() >= length) {

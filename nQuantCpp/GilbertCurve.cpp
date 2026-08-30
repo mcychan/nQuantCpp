@@ -100,7 +100,7 @@ namespace Peano
 		auto pdf = (1 / (stdDev * _sqrt(2 * M_PI))) * exp(exponent);
 		auto maxPdf = 1 / (stdDev * _sqrt(2 * M_PI)); // Peak at x = mean
 		auto scaledPdf = (pdf / maxPdf) * peak;
-		return (float)max(0.0, min(peak, scaledPdf));
+		return max(0.0f, min(peak, (float) scaledPdf));
 	}
 
 	unsigned short ditherPixel(int x, int y, Color c2, float beta)
@@ -186,10 +186,10 @@ namespace Peano
 			i += sortedByYDiff ? -1 : 1;
 		}
 
-		auto r_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[0], 0)));
-		auto g_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[1], 0)));
-		auto b_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[2], 0)));
-		auto a_pix = static_cast<BYTE>(min(BYTE_MAX, max(error[3], 0)));
+		auto r_pix = static_cast<BYTE>(min(255.0f, max(error[0], 0.0f)));
+		auto g_pix = static_cast<BYTE>(min(255.0f, max(error[1], 0.0f)));
+		auto b_pix = static_cast<BYTE>(min(255.0f, max(error[2], 0.0f)));
+		auto a_pix = static_cast<BYTE>(min(255.0f, max(error[3], 0.0f)));
 
 		Color c2 = Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 		auto qPixelIndex = m_qPixels[bidx];

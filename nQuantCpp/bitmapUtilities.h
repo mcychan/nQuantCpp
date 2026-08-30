@@ -5,13 +5,6 @@
 #include <vector>
 using namespace std;
 
-#ifndef _WIN32
-	#include <guiddef.h>
-	#include <gdiplus.h>
-	using namespace Gdiplus;
-#endif
-
-
 //////////////////////////////////////////////////////////////////////////
 //
 // GetBitmapHeaderSize
@@ -66,7 +59,7 @@ BOOL FixBitmapHeight(PVOID pDib, ULONG nSize, BOOL bTopDown);
 
 BOOL FillBitmapFileHeader(LPCVOID pDib, PBITMAPFILEHEADER pbmfh);
 
-using DitherFn = function<unsigned short(const ARGB*, const UINT nMaxColor, ARGB, const UINT)>;
+using DitherFn = function<unsigned short(const ARGB*, const UINT, ARGB, const UINT)>;
 
 using GetColorIndexFn = function<int(const Color&)>;
 

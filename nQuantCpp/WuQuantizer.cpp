@@ -334,7 +334,8 @@ namespace nQuant
 		}
 
 		BitmapData data;
-		Status status = sourceImage->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, PixelFormat32bppARGB, &data);
+		Gdiplus::Rect rect(0, 0, bitmapWidth, bitmapHeight);
+		auto status = sourceImage->LockBits(&rect, ImageLockModeRead, PixelFormat32bppARGB, &data);
 		if (status != Ok)
 			return;
 

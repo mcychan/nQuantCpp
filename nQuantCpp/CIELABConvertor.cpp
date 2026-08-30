@@ -1,4 +1,5 @@
-﻿#include "stdafx.h"
+﻿
+#include "stdafx.h"
 #include "CIELABConvertor.h"
 
 #include <algorithm>
@@ -38,7 +39,7 @@ void CIELABConvertor::RGB2LAB(const Color& c1, Lab& lab)
 	const auto z = pivotXyzComponent(100 * (sr * 0.0193 + sg * 0.1192 + sb * 0.9505) / XYZ_WHITE_REFERENCE_Z);
 
 	lab.alpha = c1.GetA();
-	lab.L = max(0, 116 * y - 16);
+	lab.L = max(0.0f, 116 * y - 16);
 	lab.A = 500 * (x - y);
 	lab.B = 200 * (y - z);
 }

@@ -1,33 +1,49 @@
 // stdafx.h
-
 #pragma once
+#define _USE_MATH_DEFINES
+
+#ifndef GDIPVER
+	#define GDIPVER 0x0110 // Enable GDI+ 1.1 features
+#endif
 
 #define COM_NO_WINDOWS_H
-#define GDIPVER 0x0110 //Use more advanced GDI+ features
-#include <unknwn.h>				// Needed for non-MFC/ATL use
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64)
+	#include <unknwn.h>         // Base COM interfaces (IUnknown)
+#endif
+
+#if defined(_MSC_VER)
+	// --- Microsoft Visual Studio ---
 	#pragma comment(lib, "gdiplus")
 
 	#include <gdiplus.h>
-	using namespace Gdiplus;
+
 	#ifdef _WIN64
 		#pragma comment(linker, "\"/manifestdependency:type='Win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
 	#else
 		#pragma comment(linker, "\"/manifestdependency:type='Win32' name='Microsoft.Windows.GdiPlus' version='1.1.0.0' processorArchitecture='X86' publicKeyToken='6595b64144ccf1df' language='*'\"")
 	#endif
-#else
-	#include <guiddef.h>
-	#include <gdiplus.h>
-	using namespace Gdiplus;
 
-	#ifndef LPCWSTR
-		typedef _Null_terminated_ CONST WCHAR* LPCWSTR, * PCWSTR;
-	#endif
+#elif defined(__MINGW32__) || defined(__MINGW64__)
+	// --- MinGW-w64 (GCC for Windows) ---
+	#include <windows.h>
+	#include <gdiplus.h>
+	#include <objbase.h>
+
+#else
+	// --- Wine / WineG++ Compiler
+	#include <windows.h>
+	#include <guiddef.h>
+	#include <gdiplus/gdiplus.h>
+
 #endif
+
+// Shared namespace usage across all environments
+using namespace Gdiplus;
 
 #ifndef BYTE_MAX
 	#include <climits>
+	#include <cmath>
 	#define BYTE_MAX UCHAR_MAX
 #endif
 

@@ -191,10 +191,10 @@ namespace BlueNoise
 		auto adj = (TELL_BLUE_NOISE[(x & 63) | (y & 63) << 6] + 0.5f) / 127.5f;
 		adj += ((x + y & 1) - 0.5f) * strength / 8.0f;
 		adj *= weight;
-		r_pix = static_cast<BYTE>(min(BYTE_MAX, max(r_pix + (adj * (r_pix - qPixel.GetR())), 0)));
-		g_pix = static_cast<BYTE>(min(BYTE_MAX, max(g_pix + (adj * (g_pix - qPixel.GetG())), 0)));
-		b_pix = static_cast<BYTE>(min(BYTE_MAX, max(b_pix + (adj * (b_pix - qPixel.GetB())), 0)));
-		a_pix = static_cast<BYTE>(min(BYTE_MAX, max(a_pix + (adj * (a_pix - qPixel.GetA())), 0)));
+		r_pix = static_cast<BYTE>(min(255.0f, max(r_pix + (adj * (r_pix - qPixel.GetR())), 0.0f)));
+		g_pix = static_cast<BYTE>(min(255.0f, max(g_pix + (adj * (g_pix - qPixel.GetG())), 0.0f)));
+		b_pix = static_cast<BYTE>(min(255.0f, max(b_pix + (adj * (b_pix - qPixel.GetB())), 0.0f)));
+		a_pix = static_cast<BYTE>(min(255.0f, max(a_pix + (adj * (a_pix - qPixel.GetA())), 0.0f)));
 
 		return Color::MakeARGB(a_pix, r_pix, g_pix, b_pix);
 	}

@@ -646,7 +646,7 @@ namespace MedianCutQuant
 
 			// looks only at max variance, because it's only going to split by it
 			const double cv = max(bv[i].variance.r, max(bv[i].variance.g, bv[i].variance.b));
-			double thissum = bv[i].sum * max(bv[i].variance.a, cv);
+			double thissum = bv[i].sum * fmax(bv[i].variance.a, cv);
 
 			if (bv[i].max_error > max_mse)
 				thissum *= bv[i].max_error / max_mse;
@@ -915,7 +915,7 @@ namespace MedianCutQuant
 			auto break_p = histItemSortHalfVar(&hist.histIterms[indx], clrs, &lowervar, halfvar);
 			int break_at = clrs - 1;
 			if (break_p)
-				break_at = min(break_at, break_p - &hist.histIterms[indx] + 1);
+				break_at = min<int>(break_at, static_cast<int>(break_p - &hist.histIterms[indx] + 1));
 
 			/*
 			** Split the box.

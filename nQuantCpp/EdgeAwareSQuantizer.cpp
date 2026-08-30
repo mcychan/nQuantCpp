@@ -112,7 +112,7 @@ namespace EdgeAwareSQuant
 	void random_permutation_2d(int width, int height, deque<pair<int, int> >& result) {
 		vector<int> perm1d;
 		random_permutation(width * height, perm1d);
-		for (auto& it = perm1d.cbegin(); it != perm1d.cend(); ++it)
+		for (auto it = perm1d.cbegin(); it != perm1d.cend(); ++it)
 			result.emplace_front(*it % width, *it / width);
 	}
 
@@ -322,12 +322,12 @@ namespace EdgeAwareSQuant
 		const int length = hasSemiTransparency ? 4 : 3;
 		const auto maxDelta = hasSemiTransparency ? 1.0 / palette.size() : 1.0f / 64.0f;
 
-		for (short k = 0; k < length; ++k) {			
+		for (short k = 0; k < length; ++k) {
 			auto j = palette.size() > 2 ? k : 3;
 
-			auto& S_k = extract_vector_layer_2d(s, k);
-			auto& R_k = extract_vector_layer_1d(r, k);
-			auto& palette_channel = (-2.0f * S_k).matrix_inverse() * R_k;
+			auto S_k = extract_vector_layer_2d(s, k);
+			auto R_k = extract_vector_layer_1d(r, k);
+			auto palette_channel = (-2.0f * S_k).matrix_inverse() * R_k;
 			for (UINT v = 0; v < palette.size(); ++v) {
 				auto val = palette_channel[v];
 				if (val < minLabValues[j] || isnan(val))
@@ -336,7 +336,7 @@ namespace EdgeAwareSQuant
 					val = maxLabValues[j];
 
 				if (k > 2)
-					val = max(alphaThreshold, val);
+					val = max(static_cast<float>(alphaThreshold), val);
 
 				auto palette_delta = abs(palette[v][k] - val);
 				if (palette_delta > maxDelta)
@@ -535,7 +535,7 @@ namespace EdgeAwareSQuant
 						}
 
 						if (length > 3)
-							palette[bestLabel][3] = max(alphaThreshold + 1, palette[bestLabel][3]);
+							palette[bestLabel][3] = max(static_cast<float>(alphaThreshold + 1), palette[bestLabel][3]);
 						pIndexImg8->at(i_y, i_x) = bestLabel;
 						if ((palette[bestLabel] - palette[old_max_v]).norm_squared() >= maxDelta)
 							++pixels_changed;

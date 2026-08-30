@@ -81,15 +81,14 @@ bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstrin
 		transform(currentArg.begin(), currentArg.end(), currentArg.begin(), ::toupper);
 
 		auto currentCmd = currentArg[0];
-		if (currentArg.length() > 1 && 
-			(currentCmd == L'-' || currentCmd == L'/')) {
+		if (currentArg.length() > 1 && (currentCmd == L'-' || currentCmd == L'/')) {
 			if (index >= argc - 1) {
 				PrintUsage();
 				return false;
 			}
 
 			if (currentArg[1] == L'A') {
-				auto strAlgo = argv[index + 1];
+				auto strAlgo = argv[++index];
 				transform(strAlgo.begin(), strAlgo.end(), strAlgo.begin(), ::toupper);
 				if (!isAlgo(strAlgo)) {
 					PrintUsage();
@@ -98,18 +97,18 @@ bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstrin
 				algo = strAlgo;
 			}
 			else if (currentArg[1] == L'M') {
-				if (!isdigit(argv[index + 1].c_str())) {
+				if (!isdigit(argv[++index].c_str())) {
 					PrintUsage();
 					return false;
 				}
-				nMaxColors = stoi(argv[index + 1].c_str());
+				nMaxColors = stoi(argv[index].c_str());
 				if (nMaxColors < 2)
-					nMaxColors = 2;
+					nMaxColors = 2; 
 				else if (nMaxColors > 65536)
-					nMaxColors = 65536;
+					nMaxColors = 65536; 
 			}
 			else if (currentArg[1] == L'D') {
-				auto strDither = argv[index + 1];
+				auto strDither = argv[++index];
 				transform(strDither.begin(), strDither.end(), strDither.begin(), ::toupper);
 				if (!(strDither == L"Y" || strDither == L"N")) {
 					PrintUsage();
@@ -118,14 +117,14 @@ bool ProcessArgs(int argc, wstring& algo, UINT& nMaxColors, bool& dither, wstrin
 				dither = strDither == L"Y";
 			}
 			else if (currentArg[1] == L'F') {
-				if (!isdigit(argv[index + 1].c_str(), false)) {
+				if (!isdigit(argv[++index].c_str(), false)) {
 					PrintUsage();
 					return false;
 				}
-				delay = stol(argv[index + 1].c_str());
+				delay = stol(argv[index].c_str());
 			}
 			else if (currentArg[1] == L'O') {
-				auto szPath = argv[index + 1].c_str();
+				auto szPath = argv[++index].c_str(); 
 				wstring tmpPath(szPath, szPath + wcslen(szPath));
 				targetPath = tmpPath;
 			}
@@ -167,7 +166,7 @@ bool OutputImage(const fs::path& sourcePath, const wstring& algorithm, const UIN
 
 	auto targetExtension = (pDest->GetPixelFormat() < PixelFormat16bppARGB1555 && nMaxColors > 256) ? L".bmp" : defaultExtension;
 	destPath += std::to_wstring(nMaxColors) + targetExtension;
-	auto status = pDest->Save(destPath.c_str(), &extensionMap[targetExtension]);
+	auto status = pDest->Save(destPath.c_str(), &extensionMap.at(targetExtension), nullptr);
 	if (status == Status::Ok)
 		wcout << L"Converted image: " << destPath << endl;
 	else
@@ -366,91 +365,117 @@ static void OutputImages(const fs::path& sourceDir, wstring& targetDir, const UI
 	wcout << "Completed in " << dur << " secs." << endl;
 }
 
-int wmain(int argc, wchar_t** argv)
-{
-	_setmode(_fileno(stdout), _O_U16TEXT);
+extern "C" {
+	int wmain(int argc, wchar_t** argv)
+	{
+		#if defined(_MSC_VER)
+			_setmode(_fileno(stdout), _O_U16TEXT);
+		#else
+			setvbuf(stdout, NULL, _IONBF, 0);
+			setvbuf(stderr, NULL, _IONBF, 0);
 
-#ifndef _DEBUG
-	if (argc <= 1) {
-		PrintUsage();
-		return 0;
-	}
-#endif
-	
-	auto szDir = fs::current_path().wstring();
-	
-	bool dither = true;
-	UINT nMaxColors = 256;
-	long delay = -1;
-	wstring algo = L"";
-	wstring targetDir = L"";
+			CoInitialize(NULL);
+		#endif
 
-	vector<wstring> argList(argc);
-	for (int i = 1; i < argc; ++i)
-		argList[i] = wstring(argv[i], argv[i] + wcslen(argv[i]));
-
-#ifdef _DEBUG
-	wstring sourceFile = szDir + L"/../ImgV64.gif";
-	nMaxColors = 1024;
-#else
-	if (!ProcessArgs(argc, algo, nMaxColors, dither, targetDir, argList.data(), delay))
-		return 0;
-
-	wstring sourceFile(argv[1], argv[1] + wcslen(argv[1]));
-	if (!fileExists(sourceFile) && sourceFile.find_first_of(L"\\/") != wstring::npos)
-		sourceFile = szDir + L"/" + sourceFile;
-#endif
-	
-	if(!fileExists(sourceFile)) {
-		wcout << "The source file you specified does not exist." << endl;
-		return 0;
-	}		
-
-	if(GdiplusStartup(&m_gdiplusToken, &m_gdiplusStartupInput, NULL) == Ok) {
-		if(fs::is_directory(fs::status(sourceFile.c_str())) ) {
-			if (!targetDir.empty() && !fileExists(targetDir))
-				fs::create_directories(targetDir);
-			OutputImages(sourceFile, targetDir, nMaxColors, dither, algo, delay);
-			GdiplusShutdown(m_gdiplusToken);
+	#ifndef _DEBUG
+		if (argc <= 1) {
+			PrintUsage();
+			#if !defined(_MSC_VER)
+				CoUninitialize();
+			#endif
 			return 0;
 		}
+	#endif
 		
-		auto pSource = shared_ptr<Bitmap>(Bitmap::FromFile(sourceFile.c_str()));
-		auto status = pSource->GetLastStatus();
-		if (status == Ok) {
-			auto start = chrono::steady_clock::now();
-			if (!fileExists(targetDir))
-				targetDir = fs::path(sourceFile).parent_path().wstring();
+		auto szDir = fs::current_path().wstring();
+		
+		bool dither = true;
+		UINT nMaxColors = 256;
+		long delay = -1;
+		wstring algo = L"";
+		wstring targetDir = L"";
+
+		// Convert wchar_t** directly into std::wstring vector
+		vector<wstring> argList(argc);
+		for (int i = 0; i < argc; ++i) {
+			argList[i] = argv[i];
+		}
 
 	#ifdef _DEBUG
-			auto sourcePath = fs::canonical(fs::path(sourceFile));
-			sourceFile = sourcePath;
+		wstring sourceFile = szDir + L"/../ImgV64.gif";
+		nMaxColors = 1024;
+	#else
+		if (!ProcessArgs(argc, algo, nMaxColors, dither, targetDir, argList.data(), delay))
+			return 0;
+
+		wstring sourceFile = argList[1];
+		std::replace(sourceFile.begin(), sourceFile.end(), L'/', L'\\');
+
+		try {
+			fs::path p(sourceFile);
+			sourceFile = fs::absolute(p).lexically_normal().wstring();
+		} catch (const std::exception& e) {
+			wcout << L"Path resolution exception: " << e.what() << endl;
+		}
+
 	#endif
 
-			sourceFile = (sourceFile[sourceFile.length() - 1] != L'/' && sourceFile[sourceFile.length() - 1] != L'\\') ? sourceFile : sourceFile.substr(0, sourceFile.find_last_of(L"\\/"));
-			if (algo == L"") {
-				//QuantizeImage(L"MMC", sourceFile, targetDir, pSource, nMaxColors, dither);
-				QuantizeImage(L"DIV", sourceFile, targetDir, pSource, nMaxColors, dither);
-				if (nMaxColors > 32) {
-					QuantizeImage(L"PNN", sourceFile, targetDir, pSource, nMaxColors, dither);
-					QuantizeImage(L"WU", sourceFile, targetDir, pSource, nMaxColors, dither);
-					QuantizeImage(L"NEU", sourceFile, targetDir, pSource, nMaxColors, dither);
-				}
-				else {
-					QuantizeImage(L"PNNLAB", sourceFile, targetDir, pSource, nMaxColors, dither);
-					QuantizeImage(L"EAS", sourceFile, targetDir, pSource, nMaxColors, dither);
-					QuantizeImage(L"SPA", sourceFile, targetDir, pSource, nMaxColors, dither);
-				}
-			}
-			else
-				QuantizeImage(algo, sourceFile, targetDir, pSource, nMaxColors, dither);
-
-			auto dur = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;
-			wcout << "Completed in " << dur << " secs." << endl;
+		if(!fileExists(sourceFile)) {
+			wcout << "The source file you specified does not exist." << endl;
+			return 0;
 		}
-		else
-			wcout << "Failed to read image in '" << sourceFile.c_str() << "' file";
+
+		if(GdiplusStartup(&m_gdiplusToken, &m_gdiplusStartupInput, NULL) == Ok) {
+			if(fs::is_directory(fs::status(sourceFile.c_str())) ) {
+				if (!targetDir.empty() && !fileExists(targetDir))
+					fs::create_directories(targetDir);
+				OutputImages(sourceFile, targetDir, nMaxColors, dither, algo, delay);
+				GdiplusShutdown(m_gdiplusToken);
+				return 0;
+			}
+			
+			auto pSource = shared_ptr<Bitmap>(Bitmap::FromFile(sourceFile.c_str()));
+			auto status = pSource->GetLastStatus();
+			if (status == Ok) {
+				auto start = chrono::steady_clock::now();
+				if (!fileExists(targetDir))
+					targetDir = fs::path(sourceFile).parent_path().wstring();
+
+		#ifdef _DEBUG
+				auto sourcePath = fs::canonical(fs::path(sourceFile));
+				sourceFile = sourcePath;
+		#endif
+
+				sourceFile = (sourceFile[sourceFile.length() - 1] != L'/' && sourceFile[sourceFile.length() - 1] != L'\\') ? sourceFile : sourceFile.substr(0, sourceFile.find_last_of(L"\\/"));
+				if (algo == L"") {
+					//QuantizeImage(L"MMC", sourceFile, targetDir, pSource, nMaxColors, dither);
+					QuantizeImage(L"DIV", sourceFile, targetDir, pSource, nMaxColors, dither);
+					if (nMaxColors > 32) {
+						QuantizeImage(L"PNN", sourceFile, targetDir, pSource, nMaxColors, dither);
+						QuantizeImage(L"WU", sourceFile, targetDir, pSource, nMaxColors, dither);
+						QuantizeImage(L"NEU", sourceFile, targetDir, pSource, nMaxColors, dither);
+					}
+					else {
+						QuantizeImage(L"PNNLAB", sourceFile, targetDir, pSource, nMaxColors, dither);
+						QuantizeImage(L"EAS", sourceFile, targetDir, pSource, nMaxColors, dither);
+						QuantizeImage(L"SPA", sourceFile, targetDir, pSource, nMaxColors, dither);
+					}
+				}
+				else
+					QuantizeImage(algo, sourceFile, targetDir, pSource, nMaxColors, dither);
+
+				auto dur = chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count() / 1000000.0;
+				wcout << "Completed in " << dur << " secs." << endl;
+			}
+			else {
+				wcout << "Failed to read image in '" << sourceFile.c_str() << "' file";
+				wcout << L"[DEBUG] GDI+ Load Error Code: " << static_cast<int>(status) << endl;
+			}
+		}
+		GdiplusShutdown(m_gdiplusToken);
+		#if !defined(_MSC_VER)
+			CoUninitialize();
+		#endif
+		return 0;
 	}
-	GdiplusShutdown(m_gdiplusToken);
-	return 0;
 }

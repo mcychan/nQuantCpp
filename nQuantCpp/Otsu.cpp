@@ -7,8 +7,6 @@
 #include "Otsu.h"
 #include "CIELABConvertor.h"
 #include "GilbertCurve.h"
-#define _USE_MATH_DEFINES
-#include <math.h>
 #include <algorithm>
 #include <unordered_map>
 

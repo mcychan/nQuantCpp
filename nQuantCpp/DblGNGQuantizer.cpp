@@ -4,6 +4,8 @@
 #include "CIELABConvertor.h"
 #include "BlueNoise.h"
 #include "GilbertCurve.h"
+
+#include <cfloat>
 #include <random>
 #include <stdexcept>
 #include <unordered_map>
@@ -672,7 +674,7 @@ namespace GrowingNeuralGas
 	bool DblGNGQuantizer::quantize_image(const vector<ARGB>& pixels, const ARGB* pPalette, const UINT nMaxColors, unsigned short* qPixels, const UINT width, const UINT height, const UINT frameIndex, const bool dither)
 	{
 		if (dither) {
-			auto NearestColorIndex = [this, nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
+			auto NearestColorIndex = [this](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
 				if (nMaxColors <= 4)
 					return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 				return closestColorIndex(pPalette, nMaxColors, argb, pos);
@@ -729,7 +731,7 @@ namespace GrowingNeuralGas
 		auto GetColorIndex = [&](const Color& c) -> int {
 			return GetARGBIndex(c, hasSemiTransparency, hasAlpha());
 		};
-		auto NearestColorIndex = [this, nMaxColors](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
+		auto NearestColorIndex = [this](const ARGB* pPalette, const UINT nMaxColors, ARGB argb, const UINT pos) -> unsigned short {
 			if (nMaxColors <= 4)
 				return nearestColorIndex(pPalette, nMaxColors, argb, pos);
 			return closestColorIndex(pPalette, nMaxColors, argb, pos);

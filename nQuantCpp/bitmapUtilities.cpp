@@ -681,10 +681,11 @@ bool ProcessImagePixels(Bitmap* pDest, const ARGB* qPixels, const bool& hasSemiT
 		pDest->ConvertFormat(PixelFormat16bppRGB565, DitherTypeNone, PaletteTypeCustom, nullptr, 0);
 
 	BitmapData targetData;
-	UINT w = pDest->GetWidth();
-	UINT h = pDest->GetHeight();
+	auto w = pDest->GetWidth();
+	auto h = pDest->GetHeight();
 
-	Status status = pDest->LockBits(&Gdiplus::Rect(0, 0, w, h), ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
+	Gdiplus::Rect rect(0, 0, w, h);
+	auto status = pDest->LockBits(&rect, ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
 	if (status != Ok) {
 		cerr << "Cannot write image" << endl;
 		return false;
@@ -755,10 +756,11 @@ bool ProcessImagePixels(Bitmap* pDest, const unsigned short* qPixels, const bool
 	}	
 
 	BitmapData targetData;
-	UINT w = pDest->GetWidth();
-	UINT h = pDest->GetHeight();
+	auto w = pDest->GetWidth();
+	auto h = pDest->GetHeight();
 
-	Status status = pDest->LockBits(&Gdiplus::Rect(0, 0, w, h), ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
+	Gdiplus::Rect rect(0, 0, w, h);
+	auto status = pDest->LockBits(&rect, ImageLockModeWrite, pDest->GetPixelFormat(), &targetData);
 	if (status != Ok) {
 		cerr << "Cannot write image" << endl;
 		return false;
@@ -849,7 +851,8 @@ bool GrabPixels(Bitmap* pSource, vector<ARGB>& pixels, int& semiTransCount, int&
 	}		
 
 	BitmapData data;
-	Status status = pSource->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, PixelFormat32bppARGB, &data);
+	Gdiplus::Rect rect(0, 0, bitmapWidth, bitmapHeight);
+	auto status = pSource->LockBits(&rect, ImageLockModeRead, PixelFormat32bppARGB, &data);
 	if (status != Ok)
 		return false;
 
@@ -945,7 +948,8 @@ bool HasTransparency(Bitmap* pSource)
 	}
 
 	BitmapData data;
-	Status status = pSource->LockBits(&Rect(0, 0, bitmapWidth, bitmapHeight), ImageLockModeRead, PixelFormat32bppARGB, &data);
+	Gdiplus::Rect rect(0, 0, bitmapWidth, bitmapHeight);
+	auto status = pSource->LockBits(&rect, ImageLockModeRead, PixelFormat32bppARGB, &data);
 	if (status != Ok)
 		return false;
 

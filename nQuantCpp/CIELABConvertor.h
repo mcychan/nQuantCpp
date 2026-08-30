@@ -1,9 +1,5 @@
 #pragma once
 #ifndef _WIN32
-	#include <guiddef.h>
-	#include <gdiplus.h>
-	using namespace Gdiplus;
-
 	#ifndef BYTE
 		typedef unsigned char BYTE;
 	#endif
@@ -12,8 +8,6 @@
 		#define BYTE_MAX UCHAR_MAX
 	#endif
 #endif
-#define _USE_MATH_DEFINES
-#include <math.h>
 
 class CIELABConvertor
 {
