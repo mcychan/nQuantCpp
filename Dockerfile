@@ -2,7 +2,7 @@ FROM ubuntu:24.04
 
 ENV WINEARCH=win64
 ENV WINEPREFIX=/root/.wine64
-ENV DISPLAY=:99
+ENV DISPLAY=""
 ENV WINEDEBUG=-all
 
 WORKDIR /tmp
@@ -17,7 +17,6 @@ RUN dpkg --add-architecture i386 && apt update -y && apt install -y \
     wine \
     wine64 \
     wine32:i386 \
-    xvfb \
     libgdiplus \
     libgif7 \
     libjpeg-turbo8 \
@@ -41,7 +40,6 @@ RUN cmake -S . -B ../build \
     -DCMAKE_CXX_STANDARD_LIBRARIES="-Wl,-Bstatic -lstdc++ -lgomp -lwinpthread -lole32 -Wl,-Bdynamic"
 RUN cmake --build ../build
 RUN cp *.gif /tmp/build/nQuantCpp/
-RUN Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
 WORKDIR /tmp/build/nQuantCpp
 
 # docker system prune -a
