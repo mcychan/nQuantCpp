@@ -1,5 +1,5 @@
 /* Fast pairwise nearest neighbor based genetic algorithm with CIELAB color space
-* Copyright (c) 2023 - 2025 Miller Cy Chan */
+* Copyright (c) 2023 - 2026 Miller Cy Chan */
 
 #include "stdafx.h"
 #include "PnnLABGAQuantizer.h"
@@ -97,12 +97,13 @@ namespace PnnLABQuant
 		int length = accumulate(begin(m_pixelsList), end(m_pixelsList), 0, [](int i, const vector<ARGB>& pixels){
 			return pixels.size() + i;
 		});
-		for (int i = 0; i < errors.size(); ++i)
-			errors[i] /= maxError * length;
 
-		for (int i = 0; i < errors.size(); ++i) {
+		auto p = m_pq->hasAlpha() ? 2.5f : 3.0f;
+		for (int i = 0; i < errors.size(); ++i){
+			errors[i] /= maxError * length;
 			if (i >= 1)
 				errors[i] /= 2.55;
+			errors[i] = pow(errors[i], p); // Applying K-harmonic means power transformation
 			fitness -= errors[i];
 		}
 
@@ -155,7 +156,7 @@ namespace PnnLABQuant
 					errors[0] += sqr(lab2.L - lab1.L);
 					errors[1] += sqr(lab2.A - lab1.A);
 					errors[2] += sqr(lab2.B - lab1.B);
-					errors[3] += sqr(lab2.alpha - lab1.alpha) / exp(1.5);
+					errors[3] += sqr(lab2.alpha - lab1.alpha) * TRANS_RATE;
 				}
 				else {
 					errors[0] += abs(lab2.L - lab1.L);
